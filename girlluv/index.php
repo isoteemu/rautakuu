@@ -31,7 +31,9 @@ $conf['accurate']  = true;
 $style['bgcolor']  = "#333333"; // taustaväri
 $style['color']    = "#d0ffd0"; // tekstin väri
 $style['thumbimg'] = "border : solid 1px; border-top-color : #B3DCB3; border-right-color :  #F3FFF3; border-bottom-color :  #F3FFF3;    border-left-color : #B3DCB3;"; // Thumbnail kuvan CSS
-$style['thumbitm'] ="border : solid 1px; border-top-color : #F3FFF3; border-right-color :  #B3DCB3; border-bottom-color :  #B3DCB3;    border-left-color : #F3FFF3; background:#d0ffd0; color:#333333;"; // Kuvan laatikon CSS
+$style['thumbitm'] = "border : solid 1px; border-top-color : #F3FFF3; border-right-color :  #B3DCB3; border-bottom-color :  #B3DCB3;    border-left-color : #F3FFF3; background:#d0ffd0; color:#333333;"; // Kuvan laatikon CSS
+
+$style['imgtitle'] = "padding:0px; background:#333333; margin:0px; font-size:22px; border-style:solid none none; border-width:1px medium medium; border-top-color:#bce6bc;";
 
 /* Mitä tietoja kerrotaan kuvan vierellä? Tämä onkin vaikeaselkoisempi osa.
  * HTML lause, jossa:
@@ -265,6 +267,9 @@ $kuvat          = array(); // Kuvien säilytykseen
 $thumbs         = array(); // Thumbnailien säilytykseen
 
 $jsarray        = "sivut = new Array("; // Kuvien javascript array.
+$jsWidths       = "widths = new Array("; // Kuvien leveyden ilmaiseva array.
+$jsHeights      = "heights = new Array("; // Kuvien korkeuden ilmaiseva array.
+
 
 $tmp            = array();  // Väliaikaisten asioiden säilytykseen.
 
@@ -307,9 +312,18 @@ foreach ( $kuvat as $key => $kuva ) {
 
     $img = urlencode(stripBackSlash($conf['galleria']))."/".urlencode($kuva);
 
-    if( $key > 0 ) $jsarray .= ", ";
-    $jsarray .= '"'.urlencode($kuva).'"';
+    // JavaScript arrayden hahmotus
+    if( $key > 0 ) {
+        $jsarray    .= ", ";
+        $jsWidths   .= ", ";
+        $jsHeights  .= ", ";
+    }
+    $jsarray    .= '"'.urlencode($kuva).'"';
+    $jsWidths   .= $w;
+    $jsHeights  .= $h;
 
+
+    $str .= '<a name="'.$kuva.'"></a>';
     $str .= '<table border="0" style="'.$style['thumbitm'].'" width="100%"><tr><td width="'.($conf["thumbsize"]+10).'" align="center">';
 
     $str .= '<A HREF="javascript:popupPage(\''.$key
@@ -319,7 +333,7 @@ foreach ( $kuvat as $key => $kuva ) {
             .'Näytä '.$kuva.'"></a><br />';
 
     if( function_exists("exif_read_data")) {
-        $exif = exif_read_data($myDir.$conf['galleria'].$kuva);
+        $exif = @exif_read_data($myDir.$conf['galleria'].$kuva);
         $comment = "";
         if( isset($exif['COMMENT'])) {
             foreach( $exif['COMMENT'] as $tmp['cmt'] ) {
@@ -341,7 +355,9 @@ foreach ( $kuvat as $key => $kuva ) {
     $str .= '</td><td>'.$tmp['i'].'</td><td>&nbsp;</td></tr></table>';
 }
 
-$jsarray .=" );";
+$jsarray    .=" );";
+$jsWidths   .=" );";
+$jsHeights  .=" );";
 
 ?>
 <html>
@@ -352,9 +368,11 @@ $jsarray .=" );";
     <meta name="author" content="Rautakuu [dot] org :: http://rautakuu.org" />
     <script language="JavaScript">
     <!-- Begin
-    var <?= $jsarray."\n"; ?>
+    // Hack.this.fucking.javaScript.
+    var <?= $jsarray; ?>
+
     var galleria = "<?= $conf['galleria']; ?>";
-    var sivut;
+
     function popupPage(key, height, width) {
         windowprops="toolbar=no,width="+width+",height="+height+","
                     +"directories=no,status=no,scrollbars=no,"
@@ -367,16 +385,70 @@ $jsarray .=" );";
         sivu.document.write("<base href=\"<?=$baseHref;?>\"/>");
 
         sivu.document.write("<script language=\"JavaScript\">");
-        sivu.document.write("var galleria = \"<?= $conf['galleria']; ?>\";");
-        sivu.document.write("var <?=addslashes($jsarray);?>");
-        sivu.document.write("");
-        sivu.document.write("</scri"+"pt>");
 
+        sivu.document.write("var galleria = \"<?= $conf['galleria']; ?>\";");
+        sivu.document.write("var key = "+key+";");
+        sivu.document.write("var <?=addslashes($jsarray);?>");
+        sivu.document.write("var <?=addslashes($jsWidths);?>");
+        sivu.document.write("var <?=addslashes($jsHeights);?>");
+
+        sivu.document.write("function next() {");
+        sivu.document.write("   if(key == (sivut.length-1)) {");
+        sivu.document.write("       key = 0;");
+        sivu.document.write("   } else {");
+        sivu.document.write("       key = key+1;");
+        sivu.document.write("   }");
+        sivu.document.write("   changeImg();");
+        sivu.document.write("}");
+
+        sivu.document.write("function prev() {");
+        sivu.document.write("   if(key == 0) {");
+        sivu.document.write("       key = sivut.length-1;");
+        sivu.document.write("   } else {");
+        sivu.document.write("       key = key-1;");
+        sivu.document.write("   }");
+        sivu.document.write("   changeImg();");
+        sivu.document.write("}");
+
+        sivu.document.write("function changeImg() {");
+        sivu.document.write("   document[\"image\"].src=galleria+\"/\"+sivut[key];");
+        sivu.document.write("   var toWidth=widths[key]+15;");
+        sivu.document.write("   var toHeight=heights[key]+60;");
+        sivu.document.write("   self.resizeTo(toWidth, toHeight);");
+        sivu.document.write("   updateShowTitle();");
+        sivu.document.write("}");
+
+        sivu.document.write("function printRand() {");
+        sivu.document.write("   for(var i = 0; i < sivut.length; i++) {");
+        sivu.document.write("       document.write('<span id=\"'+sivut[i]+'\" style=\"display:none;\">'+sivut[i]+'</span>');");
+        sivu.document.write("   }");
+        sivu.document.write("   updateShowTitle();");
+        sivu.document.write("}");
+
+        sivu.document.write("function updateShowTitle() {");
+        sivu.document.write("   var toHide;");
+        sivu.document.write("   for(var i = 0; i < sivut.length; i++) {");
+        sivu.document.write("       toHide = document.getElementById(sivut[i]);");
+        sivu.document.write("       toHide.style.display='none';");
+        sivu.document.write("   }");
+        sivu.document.write("   var toShow = document.getElementById(sivut[key]);");
+        sivu.document.write("   toShow.style.display=''");
+        sivu.document.write("}");
+
+
+        sivu.document.write("</scri"+"pt>");
         sivu.document.write("</head><body style=\"padding:0px; margin:0px;\" bgcolor=\"<?=$style['bgcolor'];?>\"  text=\"<?=$style['color'];?>\">");
         sivu.document.write("<center>");
-        sivu.document.write("<a href=\"javascript:self.close();\"><img "
-                             +"style=\"padding:0px; margin:0px;\" src=\""+galleria+"/"+sivut[key]
+        sivu.document.write("<a href=\"javascript:self.close();\"><img name=\"image\""
+                             +"style=\"padding:0px; margin:0px; align:center;\" src=\""+galleria+"/"+sivut[key]
                              +"\" border=\"0\" alt=\""+sivut[key]+"\" align=\"center\" /></a>");
+        sivu.document.write("<div style=\"<?= $style['imgtitle']; ?>\">");
+        sivu.document.write("<a href=\"javascript:prev();\" style=\"color:<?=$style['color'];?>;\">&nbsp;&#171;&nbsp;</a>");
+        sivu.document.write("<script language=\"JavaScript\">");
+        sivu.document.write("printRand();");
+        sivu.document.write("</script>");
+        sivu.document.write("<a href=\"javascript:next();\" style=\"color:<?=$style['color'];?>;\">&nbsp;&#187;&nbsp;</a>");
+        sivu.document.write("</div>");
         sivu.document.write("</center>");
         sivu.document.write("</body></html>");
         sivu.focus();
@@ -403,7 +475,7 @@ $jsarray .=" );";
       <tbody>
         <tr><td colspan="4"><pre>
         <?= $str ?>
-        </td></tr>
+        </pre></td></tr>
       </tbody>
     </table>
     <p align="center">Suoritettu: <?= round(timer(), 4); ?>s.</p>

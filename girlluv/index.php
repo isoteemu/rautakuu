@@ -371,7 +371,8 @@ foreach ( $kuvat as $key => $kuva ) {
         $comment = "";
         if( isset($exif['COMMENT'])) {
             foreach( $exif['COMMENT'] as $tmp['cmt'] ) {
-                $comment .= htmlStr($tmp['cmt'])."<br />";
+                if( $comment != "" ) $comment .= "<br />";
+                $comment .= htmlStr($tmp['cmt']);
             }
         }
     } else {

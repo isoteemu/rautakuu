@@ -108,5 +108,5 @@ foreach( $userNicks as $uid => $user ) {
         }
         echo '"';
     }
-    echo " link=\"http://irc-galleria.net/".$userUrls[$uid]."\">\n";
+    echo " link=\"http://irc-galleria.net/view.php?nick=".urlencode($userNicks[$uid])."\">\n";
 }

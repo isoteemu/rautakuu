@@ -1,0 +1,62 @@
+<html>
+<!-- keeping code tidy! ;-->
+<head>
+<title>noIE</title>
+<meta http-equiv="content-type" content="text/html;charset=ISO-8859-1"/>
+<meta http-equiv="content-style-type" content="text/css"/>
+<meta name="author" content="Dean Edwards"/>
+<base target="_top"/>
+<style type="text/css">
+html, body {margin: 0; font: 14px/16px "Lucida Grande", "Trebuchet MS", Verdana, Geneva, Helvetica, sans-serif;}
+body {color: #666; border: 8px #666 solid; overflow: hidden; background: url(background.gif);}
+#content {background: url(noIE.gif) 10px 10px no-repeat;
+ padding: 5px 10px 0px 100px; text-align: center;}
+#alt-browser {background: url(browse-happy.gif); width: 150px; height: 40px; margin: 10px 0;}
+:link, :visited {color: #e70;}
+#footer {margin: 0px 10px 0px 10px;}
+#footer * {margin: 0}
+p {margin-bottom: 0px; margin-top: 5px;}
+#continue {font: 12px/14px; float: right;}
+#continue a {font-weight: bold;}
+#continue :visited {color: #e70;}
+#continue :link {color: #e70;}
+hr {color: #666; height: 1px; border-style: solid;}
+#noIE-home {font: 10px/12px; float: left; width: 15px; height: 15px; background: url(misbehavior.gif);}
+#noIE-home:hover {background: url(misbehover.gif);}
+#content a:hover, #footer a:hover {color: #e00;}
+</style>
+<script type="text/javascript">
+onload = function() {
+ // link to the next page
+ var nextPage = document.getElementById("next-page");
+ // retrieve private data
+ var noIE = parent.document.documentElement.runtimeStyle.noIE;
+ if (!noIE) return;
+ // get info about the next page and make it look pretty...
+ nextPage.href = noIE.href;
+ //  trim a long url for display
+ nextPage.innerText = noIE.href.slice(0, noIE.href.indexOf("/", 8) + 1);
+ //  use the link&#8217;s innerText as a tooltip
+ nextPage.title = noIE.innerText;
+ //  add the full url to the tooltip.
+ //  don&#8217;t do "http://www.cnn.com/: http://www.cnn.com/" - it looks dumb
+ if (noIE.innerText != noIE.href) nextPage.title += ": " + noIE.href;
+ // let the enter key do the work...
+ nextPage.focus();
+};
+</script>
+</head>
+<body>
+<div id="content">
+ <p><a href="http://browsehappy.com/why/">Internet Explorer can make your computer unsafe.<br /></a>
+  <a href="http://www.spreadfirefox.com/?q=affiliates&id=9387&t=68">Why not switch to a browser that&#8217;s more secure?</a></p>
+
+ <p><a id="alt-browser" title="Browse Happy: http://browsehappy.com/" href="http://browsehappy.com/"></a></p>
+</div>
+<div id="footer">
+ <hr/>
+ <p><span id="continue">continue to: <a id="next-page"></a></span>
+ <a id="noIE-home" title="Anti-Social Behaviors: http://dean.edwards.name/my/misbehaviors/#noIE-popup" href="http://dean.edwards.name/my/misbehaviors/"></a></p>
+</div>
+</body>
+</html>

@@ -22,6 +22,11 @@ $aliasdb         = array();
 $aliasdb['map']  = array();
 $aliasdb['rmap'] = array();
 
+/**
+ * Hakee sivun käyttäen curlin kirjastoa
+ * @param  $url  haettavan sivun url
+ * @return  string  Sivun sisältö
+ */
 function fetchPageCurl($url) {
     global $ie;
     $curl = curl_init();
@@ -34,17 +39,27 @@ function fetchPageCurl($url) {
     return $result;
 }
 
+/**
+ * Yksinkertainen PHP wrappereita käyttävä sivun haku
+ * @param  $url  Haettavan sivun url
+ * @return  string  Sivun sisältö
+ */
 function fetchPageWrapper($url) {
     $lines = file($url);
     return implode("", $lines);
 }
 
+/**
+ * Varmistaa että sivu noudatta irc-gallerian tyyliä
+ */
 function confirmPage( $page ) {
     if(preg_match('/<table id="channelmembers">.*<\/table>/', $page)) return true;
     return false;
 }
 
-
+/**
+ * Erottelee nickit irc-gallerian sivusta
+ */
 function parseNicks($page) {
     $frontalbrobe=str_replace("\n", "", $page);
 
@@ -53,7 +68,10 @@ function parseNicks($page) {
     return $users[1];
 }
 
-// Crap
+/**
+ * Erottelee aliakset pisgin confista
+ * @param  $pisgcfg  Pisgin conffin polku
+ */
 function readPisgCfg($pisgcfg) {
 
     global $aliasdb;
@@ -78,14 +96,17 @@ function readPisgCfg($pisgcfg) {
     return false;
 }
 
+// Jos curl extension on käytettävissä, käytä sitä
+// Jos ei, käytä sitä mitä php sattuu käyttämään.
 if ( extension_loaded("curl")) {
     $http = fetchPageCurl($page);
 } else {
     $http = fetchPageWrapper($page);
 }
 
+// Jos sivu ei vastaa irc-gallerian tyyliä, panikoi.
 if ( confirmPage( $http ) ) {
-    die(__LINE__);
+    die();
 }
 
 // Lue pisgin conf <user> attribuuteista, ja etsi aliakset
@@ -93,8 +114,8 @@ if (is_readable($pisgcfg)){
     readPisgCfg($pisgcfg);
 }
 
+// Lue nickit sivulta ja luo <user> tagit.
 $userNicks = parseNicks($http);
-
 foreach( $userNicks as $uid => $user ) {
 
     if( isset( $aliasdb['rmap'][$user] )) {

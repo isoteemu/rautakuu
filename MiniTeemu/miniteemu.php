@@ -1,5 +1,7 @@
 <?php
 
+define("MINITEEMU", __FILE__);
+
 /**
  * Ajastin function.
  */
@@ -32,6 +34,12 @@ class irc_data {
 
     // Viimeksi tarkastettu rivi
     var $lastExecLine=0;
+
+    // IRC olion referenssi
+    var $irc;
+
+    // Triggerit.
+    var $triggers;
 
     function append($rawdata) {
         // Muutetaan windows enterit UNIX enteriksi.
@@ -77,9 +85,12 @@ class irc_data {
      */
     function runTriggers() {
         irc::trace("lastExecLine: {$this->lastExecLine} i: {$this->i} ");
-        global $irc_triggers;
+
+        if(!isset($this->triggers)) {
+            $this->triggers =& new irc_trigger_plugins(&$this->irc);
+        }
         while( $this->lastExecLine < $this->i ) {
-            $irc_triggers->event($this->lines[$this->lastExecLine]);
+            $this->triggers->newEvent(&$this->lines[$this->lastExecLine]);
             $this->lastExecLine++;
         }
     }
@@ -331,6 +342,7 @@ class irc {
 
         if(!isset($this->irc_data)) {
             $this->irc_data =& new irc_data();
+            $this->irc_data->irc =& $this;
         }
 
         // Niin kauan kuin me olemme yhteydessä, kuuntele.
@@ -444,420 +456,211 @@ class irc {
 }
 
 /**
- * base Luokka joka yrittää hanskata mitä datalla tehdään
+ * @class irc_trigger_plugin IRC trigger plugin luokka
+ * Tämä luokka toimii jokaisen trigger pluginin pohjana
  */
-class irc_triggers_base {
 
+class irc_trigger_plugin {
     /**
-     * Triggerit ja niiden säännöt
+     * @var $line senhetkinen irc_data_line olion referenssi
      */
-    var $triggers;
-
     var $line;
 
-    function irc_triggers_base() {
-        // Rekisteröidään Ping vastaus.
-        $this->registerTrigger(array('ping'  => true,
-                                     'event' => array(&$this,'pong')));
-
-        // liitty-ensin vastaus
-        $this->registerTrigger(array('code'  => '451',
-                                     'break' => true,
-                                     'event' => array(&$this,'login')));
-
-        // Welcome koodi.
-        $this->registerTrigger(array('code'  => '001',
-                                     'break' => true,
-                                     'event' => array(&$this,'channel')));
-
-        // Nick jo käytössä
-        $this->registerTrigger(array('code'  => '433',
-                                     'break' => true,
-                                     'event' => array(&$this,'changeNick')));
-        // Potkittu ulos
-        $this->registerTrigger(array('code'  => 'KICK',
-                                     'break' => true,
-                                     'event' => array($this,'kicked')));
-    }
-
-    function __construct() {
-        $this->irc_triggers_base();
-    }
+    /**
+     * @var irc senhetkisen irc olion referenssi
+     */
+    var $irc;
 
     /**
-     * Lisää triggerin trigger kasaan
-     * @param $rules triggerin säännöt
-     * @param $offset -1 nostaa päällimäiseksi, 0 seuraavaksi ja sitä suuremmat sijainnin
+     * @var $rules Laukaisuun johtavat säännöt
      */
-    function registerTrigger( $rules, $offset=0 ) {
-        if( $offset == 0 ) {
-            $this->triggers[] = $rules;
+    var $rules = array();
+
+    /**
+     * @var $_lamdadriver plugin koodin functio
+     */
+    var $_lamdadriver;
+
+    /**
+     * Constructori, initialisoi lamdadriverin functioksi
+     * @param $irc IRC olion referenssi
+     * @param $code pluginin koodi
+     */
+    function irc_trigger_plugin(&$irc, $code) {
+        $this->irc =& $irc;
+
+        /* Ensimmäinen parametri on viittaus itseemme. Toinen muuttuja, $init
+         * kertoo taas pluginille asetetaanko vain säännöt kuntoon */
+        if($this->_lamdadriver = create_function('&$plugin, $init=false', $code)) {
+            $this->initLamda();
         } else {
-            $this->triggers[$offset] = $rules;
+            return false;
         }
     }
 
+    /**
+     * PHP5 constructori. Kutsuu PHP4 constructorin
+     */
+    function __construct(&$irc, $code) {
+        $this->irc_trigger_plugin(&$irc, $code);
+    }
+
+    /**
+     * Käskee pluginiä asettamaan parametrinsa (rules) kohdalleen
+     */
+    function &initLamda() {
+        $lamda =& $this->_lamdadriver;
+        return $lamda(&$this, true);
+    }
+
+    /**
+     * Ajaa pluginin
+     * Ajetaan jos säännöt täsmäsivät
+     */
+    function &trigger() {
+        $lamda =& $this->_lamdadriver;
+        $lamda(&$this, false);
+    }
+
+    function addRule($name, $rule) {
+        $this->rules[$name] = $rule;
+        return $name;
+    }
+
+    function &getRule($ruleName, $silent=false) {
+        if(isset($this->rules[$ruleName])) return $this->rules[$ruleName];
+        if($silent==false) irc::trace("No such rule {$ruleName}");
+    }
+
+    function &getRules() {
+        return $this->rules;
+    }
+
+    function &setLine(&$line) {
+        $this->line =& $line;
+    }
+}
+
+/**
+ * @class irc_trigger_plugins Pluginit stack
+ */
+class irc_trigger_plugins {
+
+    /**
+     * @var $plugins Plugin stack.
+     */
+    var $plugins = array();
+
+    var $pluginDir;
+
+    var $irc;
+
+    var $line;
+
+    function irc_trigger_plugins(&$irc) {
+        $this->irc =& $irc;
+        $this->pluginDir = dirname(__FILE__)."/plugins";
+        $this->scanPlugins();
+    }
+
+    function scanPlugins() {
+        if(!is_readable($this->pluginDir) || !is_dir($this->pluginDir)) {
+            irc::trace("Plugindir {$this->pluginDir} is not readable");
+            return false;
+        }
+        if($PDHandle = opendir($this->pluginDir)) {
+            while (false !== ($file = readdir($PDHandle))) {
+                if(is_dir($this->pluginDir."/".$file)) continue;
+                if(!is_readable($this->pluginDir."/".$file)) continue;
+                // Jos ei pääty .php niin hypätään ohi
+                if( substr($file, -4) != ".php" ) continue;
+
+                $this->registerPluginFile($this->pluginDir."/".$file);
+
+            }
+            closedir($PDHandle);
+            irc::trace("Registered ".count($this->plugins)." plugins");
+        } else {
+            irc::trace("Could not open plugindir");
+        }
+    }
+
+    function registerPlugin($pluginname) {
+        $pluginfile = $this->pluginDir."/".basename($pluginname).".php";
+        if(!file_exists($pluginfile)) {
+            return false;
+        }
+        return $this->registerPluginFile($pluginfile);
+    }
+
+    function registerPluginFile($pluginFile) {
+        $pluginName = basename($pluginFile);
+        $pluginName = substr($pluginName, 0, strlen($pluginName)-4);
+        $read = implode("\n", file($pluginFile));
+
+        // Irrota PHPn tagit jos on.
+        if( preg_match("/(<\?php|<\?)(.*)\?>/si", $read, $readPreg )) {
+            irc::trace("PHP tags found in plugin {$pluginName}");
+            $read = $readPreg[2];
+        }
+
+        irc::trace("Registering plugin {$pluginName}");
+        $this->plugins[$pluginName] =& new irc_trigger_plugin($this->irc, $read);
+        if(is_a($this->plugins[$pluginName], "irc_trigger_plugin")) {
+            irc::trace("Plugin {$pluginName} registered succesfully");
+            return true;
+        } else {
+            irc::trace("Plugin {$pluginName} NOT registered");
+            return false;
+        }
+    }
 
     function &triggerLine( &$line ) {
         $this->line =& $line;
     }
 
-    function event( &$line ) {
+    /**
+     * Käy plugin stackin läpi ja suorittaa soveliaat pluginit;
+     */
+    function newEvent( &$line ) {
         if( $line !== null ) {
             $this->triggerLine(&$line);
         }
 
-        foreach($this->triggers as $trigger) {
-            $valid = true;
-            // Testaa sääntöjen paikkaansa pitävyyden.
-            foreach( $trigger as $key => $param ) {
-                if( $key == "event" ) continue;
+        foreach($this->plugins as $pluginName => $plugin) {
+            $validPlugin = true;
+
+            // Ajaa rulesien tarkistukset
+            $rules = $this->plugins[$pluginName]->getRules();
+            foreach( $rules as $key => $param ) {
                 if( $key == "break" ) continue;
 
-                if( $this->line->$key != $param ) {
-                    //irc::trace("Avain $key ei vastaa arvoa $param");
-                    $valid = false;
-                    break;
-                }
-            }
-
-            if ($valid == true) {
-                // Katsotaan, voiko tapahtumaa suorittaa
-                if( is_array( $trigger['event'] )) {
-                    call_user_method($trigger['event'][1], $trigger['event'][0]);
-                } else {
-                    if(function_exists($trigger['event'])) {
-                        call_user_method($trigger['event']);
-                    } else {
-                        irc::trace("Rekisteröity event ei kutsuttavissa: ".print_r($trigger['event'], 1));
+                // Vertailee onko prefix täsmäävä
+                if( $key == "prefix" ) {
+                    if( substr($this->line->msg, 0, strlen($param)) != $param) {
+                        $validPlugin = false;
                     }
+                    continue;
                 }
-                // Katkaistaanko sääntöketjun tarkistus?
-                if ( $trigger['break'] == true ) break;
+
+                if( $this->line->$key != $param ) {
+                    $validPlugin = false;
+                }
+            }
+            if( $validPlugin == true ) {
+                irc::trace("Plugin \"{$pluginName}\" matched");
+                // Aseta dataline vastaamaan
+                $this->plugins[$pluginName]->setLine($this->line);
+                // Aja plugin
+                $this->plugins[$pluginName]->trigger();
+                // Katkaise suoritus jos plugin niin haluaa.
+                if($this->plugins[$pluginName]->getRule('break', true) == true) break;
             }
         }
-    }
 
-
-    function pong() {
-        global $irc;
-        irc::trace("Ping? Pong! ".$this->line->getLine());
-        $irc->pong(substr( $this->line->getLine(), 5));
-    }
-
-    function login() {
-        global $irc;
-        irc::trace("451; Rekisteröidy ensin.");
-        $irc->login();
-    }
-
-    function channel() {
-        global $irc;
-        irc::trace("Liitytään kanavalle");
-        $irc->join();
-    }
-
-    function changeNick() {
-        global $irc;
-        $nick =& $irc->botNick;
-
-        $nickLchar = substr($nick, -1);
-
-        if( is_int($nickLchar)) {
-            $nickLchar++;
-            $nick = substr($nick, 0, strlen($nick)-1).$nickLchar;
-        } else {
-            $nick .= 0;
-        }
-
-        irc::trace("Nick jo käytössä. Vaihdetaan se $nick");
-
-        $irc->login();
-    }
-
-    function kicked() {
-        global $irc;
-        if( strstr($this->line->getLine()," ".$irc->botNick." :")) {
-            irc::trace("Kicked: ".$this->line->msg);
-            $irc->disconnect();
-            die("KICKED");
-        }
-    }
-}
-
-/**
- * Oma event trigger homma
- */
-class irc_triggers extends irc_triggers_base {
-    function irc_triggers() {
-        $this->irc_triggers_base();
-
-        // MOTD
-        $this->registerTrigger(array('code'  => '372',
-                                     'break' => true,
-                                     'event' => array(&$this,'motd')));
-    }
-
-    function __construct() {
-        $this->irc_triggers();
-    }
-
-    /**
-     * Kerää palvelimen MOTDn.
-     */
-    function motd() {
-        static $motd;
-        if(!isset($motd)) $motd = "";
-        $motd .= $this->line->get("msg");
-        return $motd;
     }
 
 }
-
-// Satunnaisia testifunctioita
-
-class irc_triggers_test extends irc_triggers {
-    function irc_triggers_test() {
-        $this->irc_triggers();
-
-        // MOTD
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'nick'  => 'IsoTeemu',
-                                     'msg'   => 'MiniMe, uptime',
-                                     'break' => true,
-                                     'event' => array(&$this,'getUptime')));
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'nick'  => 'IsoTeemu',
-                                     'msg'   => 'MiniMe, memusage',
-                                     'break' => true,
-                                     'event' => array(&$this,'getMemUsage')));
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'nick'  => 'IsoTeemu',
-                                     'msg'   => 'MiniMe, exectime',
-                                     'break' => true,
-                                     'event' => array(&$this,'exectime')));
-
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'msg'   => 'MiniMe, disconnect',
-                                     'nick'  => 'IsoTeemu',
-                                     'break' => true,
-                                     'event' => array(&$this,'disconnect')));
-
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'msg'   => 'fortune',
-                                     'break' => true,
-                                     'event' => array(&$this,'fortune')));
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'event' => array(&$this,'notMaster')));
-        $this->registerTrigger(array('code'  => 'MODE',
-                                     'event' => array(&$this,'didIGotOP')));
-        $this->registerTrigger(array('code'  => 'JOIN',
-                                     'event' => array(&$this,'opTeemu')));
-
-    }
-
-    function __construct() {
-        $this->irc_triggers_test();
-    }
-
-    function getUptime() {
-        global $irc;
-        $irc->message(trim(exec("uptime")));
-    }
-
-    function getMemUsage() {
-        global $irc;
-        if(! function_exists("memory_get_usage")) {
-            $irc->message("Herrani, en voi täyttää pyyntöäsi");
-            return false;
-        }
-        $irc->message("Käytän muisitia: ".memory_get_usage());
-    }
-
-    function notMaster() {
-        if(strstr($this->line->get("msg"), "MiniMe," )) {
-            global $irc;
-            $irc->message("Hyvä Herra ".$this->line->get("nick").", et vaikuta isännältäni, enkä suostu pyyntöösi");
-        }
-    }
-
-    function execTime() {
-        global $irc;
-        $irc->message("Olen ollut päällä ".timer()."s.");
-    }
-
-    function didIGotOP() {
-        global $irc;
-
-        if( strstr($this->line->getLine(), " +") && strstr($this->line->getLine()," ".$irc->botNick)) {
-            $irc->message("Kiitos rakas ".$this->line->get("nick"));
-        } elseif( strstr($this->line->getLine(), "-o ".$irc->botNick)) {
-            if( $this->line->nick != "IsoTeemu" ) {
-                $irc->message("Hei, tuo oli niinku tosi uncoolia!");
-            } else {
-                $irc->message("Oih herrani, kurita minua lisää. Olen ollut tuhma poika");
-            }
-        }
-    }
-
-    function fortune() {
-        global $irc;
-        exec('fortune -s', $rows);
-        foreach( $rows as $row ) {
-            $irc->message($row);
-        }
-    }
-
-    function opTeemu() {
-        global $irc;
-        if( $this->line->get("nick") == "IsoTeemu" ) {
-            $irc->send("MODE ".$irc->channel." +o ".$this->line->get("nick"));
-        }
-    }
-
-    function tracePath() {
-        global $irc;
-        if( $irc->traceDrv == IRC_TRACE_ECHO ) {
-            $irc->message("Vaihdetaan traceksi IRC_TRACE_SEND");
-            $irc->traceDrv = IRC_TRACE_SEND;
-        } elseif( $irc->traceDrv == IRC_TRACE_SEND ) {
-            $irc->message("Vaihdetaan traceksi IRC_TRACE_ECHO");
-            $irc->traceDrv = IRC_TRACE_ECHO;
-        } else {
-            $irc->message("Tuntematon trace ajuri");
-        }
-    }
-
-    function disconnect() {
-        global $irc;
-        $irc->message("Bye!");
-        $irc->disconnect();
-    }
-
-}
-
-class irc_triggers_hlstats extends irc_triggers_test {
-
-    var $db;
-
-    function irc_triggers_hlstats() {
-        $this->irc_triggers_test();
-
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'msg'   => 'skill',
-                                     'break' => true,
-                                     'event' => array(&$this,'skill')));
-
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'msg'   => 'top15',
-                                     'break' => true,
-                                     'event' => array(&$this,'top15')));
-
-        $this->registerTrigger(array('code'  => 'PRIVMSG',
-                                     'break' => true,
-                                     'event' => array(&$this,'skillByName')));
-
-    }
-
-    function __construct() {
-        $this->irc_triggers_hlstats();
-    }
-
-    /**
-     * @todo
-     */
-    function skill() {
-        global $irc;
-        $skill = $this->_getSkill(addslashes($this->line->get("nick")));
-
-       if( $skill === false ) {
-            $irc->message("Anteeksi, mutten löytänyt pisteitä nickillesi ".$this->line->get("nick").".");
-        } else {
-            $irc->message("Nickillä ".$this->line->get("nick")." on ".$skill." pistettä.");
-        }
-    }
-
-    function skillbyname() {
-        if(!strstr($this->line->get("msg"), "skill ")) return false;
-        global $irc;
-
-        list( $nick ) = sscanf($this->line->get("msg"), "skill %s");
-        $nick = trim($nick);
-        if(empty($nick)) return false;
-        $skill = $this->_getSkill(addslashes($nick));
-
-        if( $skill === false ) {
-            $irc->message("Ei löytynyt pisteitä nickille ".$nick.".");
-        } else {
-            $irc->message("Nickin \"$nick\" pisteet on $skill.");
-        }
-    }
-
-    function _getSkill($nick) {
-        if(!$this->_db()) return false;
-        $sql = sprintf("SELECT hlstats_Players.skill
-                        FROM hlstats_Players
-                        LEFT JOIN hlstats_PlayerNames ON
-                        hlstats_PlayerNames.playerId = hlstats_Players.playerId
-                        WHERE hlstats_Players.lastName LIKE '%s'
-                        OR hlstats_PlayerNames.name LIKE '%s'
-                        GROUP BY hlstats_Players.playerId
-                        ORDER BY hlstats_PlayerNames.numuses DESC",
-                        $nick, $nick);
-        $res =& $this->db->query($sql);
-        if (DB::isError($res)) {
-            global $irc;
-            $irc->message("Yritin suoritta hakua, mutta sain viestin: ".$res->getMessage());
-            return false;
-        } else {
-            if( $res->numRows() < 1 ) {
-                return false;
-            } else {
-                $entry = $res->fetchRow();
-                $res->free();
-                return $entry[0];
-            }
-        }
-    }
-
-    function _db() {
-        global $irc;
-        if(empty($this->db)) {
-            include_once("DB.php");
-            $this->db =& DB::Connect("mysql://cs:f9307fe00c@localhost/hlds");
-        }
-        if (DB::isError($this->db)) {
-            $irc->message("Yritin yhdistää tiedokantaan, mutta sain viestin: ".$this->db->getMessage());
-            return false;
-        }
-        return true;
-    }
-
-    function top15() {
-        if(!$this->_db()) return false;
-        global $irc;
-        $top15 =& $this->db->query("SELECT lastName
-FROM hlstats_Players
-WHERE game='cstrike'
-AND hideranking=0
-AND kills >= 1
-ORDER BY skill desc, lastName ASC
-LIMIT 0,15");
-        if (DB::isError($top15)) {
-            $irc->message("Virhe haettassa top15: ".$top->getMessage());
-            return false;
-        }
-        $nicks = "";
-        while( $row =& $top15->fetchRow()) {
-            if( $nicks != "" ) $nicks .= ", ";
-            $nicks .= $row[0];
-        }
-        $top15->free();
-        $irc->message("Top15; $nicks");
-    }
-}
-
-$irc_triggers =& new irc_triggers_hlstats();
 
 $irc =& new irc();
 $GLOBALS['irc'] =& $irc;
@@ -866,6 +669,3 @@ irc::trace("Yhdistetään...");
 $irc->connect();
 irc::trace("Kuunnellaan...");
 $irc->listen();
-
-
-?>

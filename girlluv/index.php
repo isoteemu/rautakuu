@@ -2,7 +2,7 @@
 
 //
 // PARAMETRIT
-// Näillä säädetään aseutksia
+// Nï¿½llï¿½sï¿½detï¿½n aseutksia
 //
 
 // Kansio, jossa kuvat sijaitsevat. (relatiivinen)
@@ -15,40 +15,45 @@ $conf['thumbs']    = "cache";
 $conf['header']    = ucfirst(basename(dirname(__FILE__))).":n kuvagalleria";
 
 // Locale asetus
-setlocale(LC_TIME, "fi_FI");
+setlocale(LC_ALL, "fi_FI.utf-8");
+ini_set("default_charset", "UTF-8");
+ini_set("mbstring.encoding_translation", "on");
+if( function_exists("putenv")) putenv('LANG="fi_FI.utf-8"');
+if( function_exists("mb_internal_encoding")) mb_internal_encoding("UTF-8");
 
 // luotavien Thumbnailien koko (px)
 $conf['thumbsize'] = 150;
 
-// Käytetäänkö nopeampaa vai luetettavampaa cachen varmistusta.
-// (ero, md5 nimestä vs. md5 sisällöstä)
+// KÃ¤ytetÃ¤Ã¤kÃ¶ï¿½nopeampaa vai luetettavampaa cachen varmistusta.
+// (ero, md5 nimestÃ¤ vs. md5 sisÃ¤llÃ¶stÃ¤)
 $conf['accurate']  = true;
 
 //
-// Tyyli määritteet
+// Tyyli mï¿½ritteet
 //
 
-$style['bgcolor']  = "#333333"; // taustaväri
-$style['color']    = "#d0ffd0"; // tekstin väri
+$style['bgcolor']  = "#333333"; // taustavï¿½i
+$style['color']    = "#d0ffd0"; // tekstin vï¿½i
 $style['thumbimg'] = "border : solid 1px; border-top-color : #B3DCB3; border-right-color :  #F3FFF3; border-bottom-color :  #F3FFF3;    border-left-color : #B3DCB3;"; // Thumbnail kuvan CSS
 $style['thumbitm'] = "border : solid 1px; border-top-color : #F3FFF3; border-right-color :  #B3DCB3; border-bottom-color :  #B3DCB3;    border-left-color : #F3FFF3; background:#d0ffd0; color:#333333;"; // Kuvan laatikon CSS
 
 $style['imgtitle'] = "padding:0px; background:#333333; margin:0px; font-size:22px; border-style:solid none none; border-width:1px medium medium; border-top-color:#bce6bc;";
 
-/* Mitä tietoja kerrotaan kuvan vierellä? Tämä onkin vaikeaselkoisempi osa.
+/* Mitï¿½tietoja kerrotaan kuvan vierellï¿½ Tï¿½ï¿½onkin vaikeaselkoisempi osa.
  * HTML lause, jossa:
  *  \W  on kuvan leveys
  *  \H  on kuvan korkeus
  *  \N  on kuvan tiedostonimi
  *  \C  on kuvan EXIF kommetti
  *  \Z  on kuvan tiedostokoko
- *  \M  on kuvan viimeksi muokattu päivämäärä.
+ *  \M  on kuvan viimeksi muokattu pÃ¤ivÃ¤mÃ¤Ã¤rÃ¤
  */
 
 $fileInfo = "
 <strong>Nimi: </strong>\N<br />
-<strong>Mitat: </strong>\Wx\H<br />
 <strong>Koko: </strong>\Z<br />
+<strong>Mitat: </strong>\Wx\H<br />
+<strong>Muokattu: </strong>\M<br />
 <strong>&nbsp;&nbsp;----</strong><br />
 <strong>Kommentti: </strong>\C<br />";
 
@@ -183,7 +188,7 @@ class thumbnail
 //
 
 /**
- * Lisää backslashin jos ei ole.
+ * Lisï¿½ backslashin jos ei ole.
  */
 function backSlash( $str )
 {
@@ -205,7 +210,7 @@ function stripBackSlash( $str )
 }
 
 /**
- * Pyöristää tiedoston koon ihmiselle selvemmäksi
+ * Pyï¿½istï¿½ tiedoston koon ihmiselle selvemmï¿½si
  */
 function roundedFileSize( $filename ) {
     $type = Array ('b', 'kb', 'Mb', 'gb');
@@ -232,12 +237,12 @@ function timer() {
 }
 
 //
-// Tekevä osa.
+// Tekevï¿½osa.
 //
 
 timer();
 
-// Lisätään backslash kansioiden nimiin.
+// Lisï¿½ï¿½n backslash kansioiden nimiin.
 $conf['thumbs']   = backSlash($conf['thumbs']);
 
 $conf['galleria'] = backSlash($conf['galleria']);
@@ -254,24 +259,25 @@ if(! is_readable( $myDir.$conf['galleria'])) {
 
 // Alustetaan muutamia muuttujia.
 
-$myDir = dirname(__FILE__)."/"; // Kansio, jossa ollaan ja jossa työskennellään.
+$myDir = dirname(__FILE__)."/"; // Kansio, jossa ollaan ja jossa tyï¿½kennellï¿½n.
 
-$numOfImages    = (int)    0;   // Kuvien lukumäärä
-$lastUpdateUNIX = (int)    0;   // Viimeksi päivitetty UNIX aikaleima
-$lastUpdate     = (string) "[Tuntematon]"; // Selkokielinen "Viimeksi päivitetty" aikaleima
+$numOfImages    = (int)    0;   // Kuvien lukumÃ¤rÃ¤
+$lastUpdateUNIX = (int)    0;   // Viimeksi pÃ¤vitetty UNIX aikaleima
+$lastUpdate     = (string) "[Tuntematon]"; // Selkokielinen "Viimeksi pÃ¤vitetty" aikaleima
 
 $baseHref       = (string) "http://".backSlash($_SERVER['SERVER_NAME']
                            .$_SERVER['REQUEST_URI']);
 
-$kuvat          = array(); // Kuvien säilytykseen
-$thumbs         = array(); // Thumbnailien säilytykseen
+$kuvat          = array(); // Kuvien sÃ¤ilytykseen
+$thumbs         = array(); // Thumbnailien sÃ¤ilytykseen
 
 $jsarray        = "sivut = new Array("; // Kuvien javascript array.
 $jsWidths       = "widths = new Array("; // Kuvien leveyden ilmaiseva array.
 $jsHeights      = "heights = new Array("; // Kuvien korkeuden ilmaiseva array.
 
+$str            = (string) ""; // Gallerian HTML osa
 
-$tmp            = array();  // Väliaikaisten asioiden säilytykseen.
+$tmp            = array();  // VÃ¤liaikaisten asioiden sÃ¤ilytykseen.
 
 // Luetaan kuvat galleria hakemisosta
 $gallery        = dir( $myDir.$conf['galleria'] );
@@ -303,8 +309,6 @@ $gallery->close();
 // Konvertoidaan unix aika paikalliseen aikaan.
 $lastUpdate = strftime( "%c", $lastUpdateUNIX );
 
-$str = (string) "";
-
 foreach ( $kuvat as $key => $kuva ) {
     $imgParams = getimagesize($myDir.$conf['galleria'].$kuva);
     $w = $imgParams[0];
@@ -330,23 +334,23 @@ foreach ( $kuvat as $key => $kuva ) {
             .'\',\''.($h+60).'\',\''.($w+15).'\');"><img '
             .'src="'.$conf["thumbs"].$thumbs[$key].'" '
             .'style="'.$style['thumbimg'].'" border="0" title="'
-            .'Näytä '.$kuva.'"></a><br />';
+            .'NÃ¤ytÃ¤ '.$kuva.'"></a><br />';
 
     if( function_exists("exif_read_data")) {
         $exif = @exif_read_data($myDir.$conf['galleria'].$kuva);
         $comment = "";
         if( isset($exif['COMMENT'])) {
             foreach( $exif['COMMENT'] as $tmp['cmt'] ) {
-                $comment .= $tmp['cmt'];
+                $comment .= htmlspecialchars($tmp['cmt']);
             }
         }
     } else {
-        $comment = "[Kommentit eivä tuettuja]";
+        $comment = "[Kommentit eivÃ¤t tuettuja]";
     }
-    // Tylsä osa. Nyt korvataan avaimet oikeilla arvoilla.
+    // Tylsï¿½osa. Nyt korvataan avaimet oikeilla arvoilla.
     $tmp['i'] = str_replace("\W", $w, $fileInfo);
     $tmp['i'] = str_replace("\H", $h, $tmp['i']);
-    $tmp['i'] = str_replace("\N", $kuva, $tmp['i']);
+    $tmp['i'] = str_replace("\N", htmlentities($kuva), $tmp['i']);
     $tmp['i'] = str_replace("\C", $comment, $tmp['i']);
 
     $tmp['i'] = str_replace("\Z", roundedFileSize( $myDir.$conf['galleria'].$kuva), $tmp['i']);
@@ -359,6 +363,7 @@ $jsarray    .=" );";
 $jsWidths   .=" );";
 $jsHeights  .=" );";
 
+Header("Content-Type: text/html; charset=UTF-8");
 ?>
 <html>
   <head>
@@ -366,6 +371,7 @@ $jsHeights  .=" );";
     <base href="<?=$baseHref;?>" />
     <meta name="generator" content="Girl'luv" />
     <meta name="author" content="Rautakuu [dot] org :: http://rautakuu.org" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <script language="JavaScript">
     <!-- Begin
     // Hack.this.fucking.javaScript.
@@ -412,6 +418,8 @@ $jsHeights  .=" );";
 
         sivu.document.write("function changeImg() {");
         sivu.document.write("   document[\"image\"].src=galleria+\"/\"+sivut[key];");
+        sivu.document.write("   document[\"image\"].width=widths[key];");
+        sivu.document.write("   document[\"image\"].height=heights[key];");
         sivu.document.write("   var toWidth=widths[key]+15;");
         sivu.document.write("   var toHeight=heights[key]+60;");
         sivu.document.write("   self.resizeTo(toWidth, toHeight);");
@@ -461,23 +469,23 @@ $jsHeights  .=" );";
     <table width="90%" align="center">
       <thead>
         <tr>
-          <th colspan="4" align="left"><h2><?= $conf['header']; ?></h2></th>
+          <th align="left"><h2><?= $conf['header']; ?></h2></th>
         </tr>
         <tr>
-          <th colspan="4" align="left">
+          <th align="left">
             <p>
               <em>Kuvia galleriassa:</em> <?= $numOfImages; ?><br />
-              <em>Viimeisin päivitys:</em> <?= $lastUpdate ?>
+              <em>Viimeisin pÃ¤vitys:</em> <?= $lastUpdate ?>
             </p>
           </th>
         </tr>
       </thead>
       <tbody>
-        <tr><td colspan="4"><pre>
+        <tr><td><pre>
         <?= $str ?>
         </pre></td></tr>
       </tbody>
     </table>
-    <p align="center">Suoritettu: <?= round(timer(), 4); ?>s.</p>
+    <p align="center">Suoritettu ajassa: <?= round(timer(), 4); ?>s.</p>
   </body>
 </html>

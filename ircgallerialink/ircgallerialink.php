@@ -1,13 +1,23 @@
 #!/usr/bin/php -q
 <?php
 
+// IRC gallerian kanavan sivu
 $page    = "http://irc-galleria.net/channel.php?channel_id=686740";
+
+// Pisgin conf tiedosto. Sieltä luetaan user aliakset.
 $pisgcfg = "pisg.cfg";
 
-$ie      = "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98; All_Your_Oil_Belong_To_US;)";
+// Tunnistetiedot. Jos joskus scripti blokataan, vaihdat vain tähän jonkin toisen selaimen.
+$ie      = "Mozilla/4.0 (compatible; MSIE 5.0; Windows 98;)";
 
-/* KOODIOSA */
+//
+// KOODIOSA
+//
 
+/**
+ * Pidetään tämä globalsina, että voidaan käsin määritellä
+ * aliaksia tarvittaessa.
+ */
 $aliasdb         = array();
 $aliasdb['map']  = array();
 $aliasdb['rmap'] = array();
@@ -35,14 +45,15 @@ function confirmPage( $page ) {
 }
 
 
-function parsePage($page) {
+function parseNicks($page) {
     $frontalbrobe=str_replace("\n", "", $page);
 
     preg_match('|<table id=\"channelmembers\">.*</table>|U', $frontalbrobe, $table);
-    preg_match_all('|<a href="(.*)">(.*)</a>|U', $table[0], $users);
-    return $users;
+    preg_match_all('|<a.*>(.*)</a>|U', $table[0], $users);
+    return $users[1];
 }
 
+// Crap
 function readPisgCfg($pisgcfg) {
 
     global $aliasdb;
@@ -82,9 +93,7 @@ if (is_readable($pisgcfg)){
     readPisgCfg($pisgcfg);
 }
 
-$users = parsePage($http);
-$userUrls  =& $users[1];
-$userNicks =& $users[2];
+$userNicks = parseNicks($http);
 
 foreach( $userNicks as $uid => $user ) {
 

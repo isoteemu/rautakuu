@@ -1,0 +1,24 @@
+<!DOCTYPE webproject>
+<webproject>
+  <project usePreviewPrefix="0" type="Local" previewPrefix="" name="Rautakuusivut" encoding="utf8" >
+    <upload/>
+    <author>Teemu A</author>
+    <email>teemu@rautakuu.org</email>
+    <defaultDTD>-//W3C//DTD HTML 4.01 Transitional//EN</defaultDTD>
+    <item url="" uploadstatus="1" />
+    <item url="config.inc.php" uploadstatus="1" />
+    <item url="index.php" uploadstatus="1" />
+    <item url="nimeton_1.jpg" uploadstatus="1" />
+    <item url="nimeton_2.jpg" uploadstatus="1" />
+    <item url="nimeton_3.jpg" uploadstatus="1" />
+    <item url="splash.jpg" uploadstatus="1" />
+    <item url="pages/AllPages.inc" uploadstatus="1" />
+    <item url="pages/" uploadstatus="1" />
+    <item url="pages/PageSearch.inc" uploadstatus="1" />
+    <templates>templates/</templates>
+    <toolbars>toolbars/</toolbars>
+    <treestatus>
+      <openfolder url="pages" />
+    </treestatus>
+  </project>
+</webproject>

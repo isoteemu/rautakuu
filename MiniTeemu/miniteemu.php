@@ -122,7 +122,7 @@ class irc_data_line {
         $this->nick  = substr($exs[0], 0, $poe);
         $this->host  = substr($exs[0], $poa+1);
         $this->ident = substr($exs[0], $poe+1, ($poa-$poe)-1);
-        $this->msg   = substr($this->data, $poc);
+        $this->msg   = trim(substr($this->data, $poc+1));
     }
 
     function getLine() {
@@ -422,7 +422,7 @@ class irc_triggers_base {
         $this->line =& $line;
     }
 
-    function event( &$line = null ) {
+    function event( &$line ) {
         if( $line !== null ) {
             $this->triggerLine(&$line);
         }

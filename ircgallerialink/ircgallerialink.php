@@ -1,7 +1,16 @@
+#!/usr/bin/php -q
 <?php
 
-$page = "http://irc-galleria.net/channel.php?channel_id=686740";
-$ie   = "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98;)";
+$page    = "http://irc-galleria.net/channel.php?channel_id=686740";
+$pisgcfg = "pisg.cfg";
+
+$ie      = "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98; All_Your_Oil_Belong_To_US;)";
+
+/* KOODIOSA */
+
+$aliasdb         = array();
+$aliasdb['map']  = array();
+$aliasdb['rmap'] = array();
 
 function fetchPageCurl($url) {
     global $ie;
@@ -34,19 +43,70 @@ function parsePage($page) {
     return $users;
 }
 
+function readPisgCfg($pisgcfg) {
+
+    global $aliasdb;
+
+    $handle = fopen($pisgcfg, "r");
+    $file = fread( $handle, filesize($pisgcfg) );
+    fclose($handle);
+
+    if(preg_match('/<user[^>]+>/', $file)) {
+        $allisone=str_replace("\n", "", $file);
+        preg_match_all('|<user.*nick="(.*)".*alias="(.*)".*>|Um', $allisone, $aliases);
+        foreach($aliases[1] as $id => $nick) {
+            if(empty($aliases[2][$id])) continue;
+            $ealiases =& explode(" ", $aliases[2][$id]);
+            foreach( $ealiases as $ln ) {
+
+                $aliasdb['map'][$nick][] = $ln;
+                $aliasdb['rmap'][$ln] = $nick;
+            }
+        }
+    }
+    return false;
+}
+
 if ( extension_loaded("curl")) {
     $http = fetchPageCurl($page);
 } else {
     $http = fetchPageWrapper($page);
 }
+
 if ( confirmPage( $http ) ) {
     die(__LINE__);
 }
 
+// Lue pisgin conf <user> attribuuteista, ja etsi aliakset
+if (is_readable($pisgcfg)){
+    readPisgCfg($pisgcfg);
+}
+
 $users = parsePage($http);
-$userUrls  = $users[1];
-$userNicks = $users[2];
+$userUrls  =& $users[1];
+$userNicks =& $users[2];
 
 foreach( $userNicks as $uid => $user ) {
-    echo "<user nick=\"".$user."\" link=\"http://irc-galleria.net/".$userUrls[$uid]."\">\n";
+
+    if( isset( $aliasdb['rmap'][$user] )) {
+        echo "<user nick=\"".$aliasdb['rmap'][$user]."\"";
+        $rnick =& $aliasdb['rmap'][$user];
+    } else {
+        echo "<user nick=\"".$user."\"";
+        $rnick =& $user;
+    }
+    if( isset( $aliasdb['map'][$rnick] )) {
+        echo " alias=\"";
+        $first = true;
+        foreach( $aliasdb['map'][$rnick] as $a ) {
+            if( $first == false ) {
+                echo " ";
+            } else {
+                $first = false;
+            }
+            echo $a;
+        }
+        echo '"';
+    }
+    echo " link=\"http://irc-galleria.net/".$userUrls[$uid]."\">\n";
 }

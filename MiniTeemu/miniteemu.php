@@ -358,16 +358,17 @@ class irc {
      * ja kenelle viesti on osoitettu on asetettu.
      */
     function message($msg, $to=null) {
-        if($to === null) $to = $this->channel;
-
-        $message = "PRIVMSG ".$to." :".$msg;
 
         //irc::trace("Yritetään lähettää viestiä: ".$message);
 
         global $irc;
         if(is_a($this, "irc")) {
+            if($to === null) $to = $this->channel;
+            $message = "PRIVMSG ".$to." :".$msg;
             $this->send($message);
         } elseif( is_a($irc, "irc")) {
+            if($to === null) $to = $irc->channel;
+            $message = "PRIVMSG ".$to." :".$msg;
             $irc->send($message);
         }
     }
@@ -704,11 +705,9 @@ class irc_triggers_hlstats extends irc_triggers_test {
                                      'break' => true,
                                      'event' => array(&$this,'top15')));
 
-
         $this->registerTrigger(array('code'  => 'PRIVMSG',
                                      'break' => true,
                                      'event' => array(&$this,'skillByName')));
-
 
     }
 
@@ -724,7 +723,7 @@ class irc_triggers_hlstats extends irc_triggers_test {
         $skill = $this->_getSkill(addslashes($this->line->get("nick")));
 
        if( $skill === false ) {
-            $irc->message("Anteeksi, mutten löytänyt pisteitä nickillesi ".$this->line->get($nick).".");
+            $irc->message("Anteeksi, mutten löytänyt pisteitä nickillesi ".$this->line->get("nick").".");
         } else {
             $irc->message("Nickillä ".$this->line->get("nick")." on ".$skill." pistettä.");
         }
@@ -759,6 +758,7 @@ class irc_triggers_hlstats extends irc_triggers_test {
                         $nick, $nick);
         $res =& $this->db->query($sql);
         if (DB::isError($res)) {
+            global $irc;
             $irc->message("Yritin suoritta hakua, mutta sain viestin: ".$res->getMessage());
             return false;
         } else {
@@ -773,6 +773,7 @@ class irc_triggers_hlstats extends irc_triggers_test {
     }
 
     function _db() {
+        global $irc;
         if(empty($this->db)) {
             include_once("DB.php");
             $this->db =& DB::Connect("mysql://cs:f9307fe00c@localhost/hlds");
@@ -781,6 +782,7 @@ class irc_triggers_hlstats extends irc_triggers_test {
             $irc->message("Yritin yhdistää tiedokantaan, mutta sain viestin: ".$this->db->getMessage());
             return false;
         }
+        return true;
     }
 
     function top15() {
@@ -793,15 +795,18 @@ AND hideranking=0
 AND kills >= 1
 ORDER BY skill desc, lastName ASC
 LIMIT 0,15");
+        if (DB::isError($top15)) {
+            $irc->message("Virhe haettassa top15: ".$top->getMessage());
+            return false;
+        }
         $nicks = "";
         while( $row =& $top15->fetchRow()) {
             if( $nicks != "" ) $nicks .= ", ";
             $nicks .= $row[0];
         }
-
-        $irc->message("Top15: $nicks");
+        $top15->free();
+        $irc->message("Top15; $nicks");
     }
-
 }
 
 $irc_triggers =& new irc_triggers_hlstats();

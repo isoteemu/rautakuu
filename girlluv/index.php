@@ -420,7 +420,7 @@ $jsHeights  .=" );";
 
         sivu.document.write("function printRand() {");
         sivu.document.write("   for(var i = 0; i < sivut.length; i++) {");
-        sivu.document.write("       document.write('<span id=\"'+sivut[i]+'\" style=\"display:none;\">'+sivut[i]+'</span>');");
+        sivu.document.write("       document.write('<span id=\"'+sivut[i]+'\" style=\"display:none;\">'+unescape(sivut[i])+'</span>');");
         sivu.document.write("   }");
         sivu.document.write("   updateShowTitle();");
         sivu.document.write("}");

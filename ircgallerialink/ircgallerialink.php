@@ -3,7 +3,7 @@
 $page = "http://irc-galleria.net/channel.php?channel_id=686740";
 $ie   = "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98;)";
 
-function fetchPage($url) {
+function fetchPageCurl($url) {
     global $ie;
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $url);
@@ -13,6 +13,11 @@ function fetchPage($url) {
     $result = curl_exec($curl);
     curl_close($curl);
     return $result;
+}
+
+function fetchPageWrapper($url) {
+    $lines = file($url);
+    return implode("", $lines);
 }
 
 function confirmPage( $page ) {
@@ -29,7 +34,11 @@ function parsePage($page) {
     return $users;
 }
 
-$http = fetchPage($page);
+if ( extension_loaded("curl")) {
+    $http = fetchPageCurl($page);
+} else {
+    $http = fetchPageWrapper($page);
+}
 if ( confirmPage( $http ) ) {
     die(__LINE__);
 }

@@ -2,22 +2,37 @@
 
 class irc_data {
 
-    var $rawdata;
+    // Käsiteltävä data
+    var $data;
 
-    var $message;
+    // Ylijäänyt osa
+    var $leftOver = "";
 
-    var $lines;
+    // Rivi objectit
+    var $lines = array();
 
+    // Kokonais rivien määrä
     var $i=0;
 
+    // Viimeksi tarkastettu rivi
     var $lastExecLine=0;
 
     function append($rawdata) {
         // Muutetaan windows enterit UNIX enteriksi.
-        $data = str_replace("\r", '', $rawdata);
-        $this->rawdata = $data;
+        $this->data = str_replace("\r", '', $rawdata);
+        $this->leftOver = "";
 
-        $lines = explode("\n", $this->rawdata );
+        // Jos dataa jää yli, yritettän se ottaa talteen.
+        if(( $strrpos = strrpos($data ,"\n")) !== false ) {
+            $this->leftOver = substr($this->data, $strrpos+1);
+            irc::trace("LEFTOVER DATA: {$this->leftOver}");
+
+            // Otetaan oleellinen osa, ja jätetään yliäänyt osa pois.
+            $this->data = substr($this->data, 0, $strrpos);
+        }
+
+        // Hajotettaan data riveiksi.
+        $lines = explode("\n", $this->data );
 
         while( count( $lines ) > 0 ) {
             $this->lines[$this->i] =& new irc_data_line( array_shift($lines) );
@@ -54,7 +69,20 @@ class irc_data {
     }
 
     /**
-     * Tämä functio palauttaa viimeisen rivin.
+     * palauttaa ylijääneen osan.
+     * @param $nuke hävitetäänkö ylijäänyt osa.
+     */
+    function getLeftOvers($nuke=true) {
+        if(empty($this->leftOver)) return;
+        $data = $this->leftOver;
+        if( $nuke == true ) {
+            $this->leftOver = "";
+        }
+        return $data;
+    }
+
+    /**
+     * Tämä palauttaa viimeisen rivin.
      */
     function getLastLine() {
         if( is_array($this->lines) && count($this->lines) > 0 ) {
@@ -75,6 +103,7 @@ class irc_data_line {
     var $code;
     var $host;
     var $ident;
+    var $channel;
 
     var $msg;
 
@@ -116,13 +145,15 @@ class irc_data_line {
         $poa = strpos( $exs[0], "@" );
         $poc = strpos( $this->data, ":" );
 
-        $this->code  = $exs[1];
+        $this->code    = $exs[1];
 
-        $this->from  = $exs[0];
-        $this->nick  = substr($exs[0], 0, $poe);
-        $this->host  = substr($exs[0], $poa+1);
-        $this->ident = substr($exs[0], $poe+1, ($poa-$poe)-1);
-        $this->msg   = trim(substr($this->data, $poc+1));
+        $this->from    = $exs[0];
+        $this->nick    = substr($exs[0], 0, $poe);
+        $this->host    = substr($exs[0], $poa+1);
+        $this->ident   = substr($exs[0], $poe+1, ($poa-$poe)-1);
+        $this->channel = $exs[4];
+
+        $this->msg     = trim(substr($this->data, $poc+1));
     }
 
     function getLine() {
@@ -139,13 +170,13 @@ class irc_data_line {
     }
 }
 
-// Tarvitaan signal handlerille
-declare(ticks = 1);
+define("IRC_TRACE_ECHO", 0);
+define("IRC_TRACE_SEND", 1);
 
 class irc {
 
     // Serveri, jolle liitytään
-    var $server     = "irc.quakenet.org";
+    var $server     = "port80.se.quakenet.org";
 
     // Serverin portti.
     var $port       = "6667";
@@ -159,16 +190,22 @@ class irc {
     var $botUName   = "rautakuu";
 
     // Kuinka monta kertaa yritetään yhdistää ennen kuin annetaan periksi.
-    var $tries = 5;
+    var $tries      = 5;
 
     // Yhteys resurssi
     var $_connection;
 
     // Kuinka kauan odotetaan tapahtumahorisonttia?
-    var $_delay = 100;
+    var $_delay     = 100;
+
+    // IRC data container
+    var $irc_data;
 
     // Bufferi joka sisältää kaiken saamamme datan.
-    var $_loggedin = false;
+    var $_loggedin  = false;
+
+    // Trace ajuri
+    var $traceDrv   = IRC_TRACE_ECHO;
 
     /**
      * PHP5 constructori. Kutsuu PHP4 constructorin
@@ -200,8 +237,8 @@ class irc {
         }
 
         // Signal handlerit
-        pcntl_signal(SIGTERM, array(&$this,"_SigTerm"));
-        pcntl_signal(SIGKILL, array(&$this,"_SigKill"));
+        //pcntl_signal(SIGTERM, array(&$this,"_SigTerm"));
+        //pcntl_signal(SIGKILL, array(&$this,"_SigKill"));
 
     }
 
@@ -212,6 +249,7 @@ class irc {
             return false;
         }
         if(! fwrite($this->_connection, $msg."\r\n")) {
+
             $this->trace("Viestin lähetys epäonnistui \"{$msg}\"");
             return false;
         }
@@ -252,6 +290,7 @@ class irc {
     function login($usermode=0) {
         $this->send("NICK ".$this->botNick);
         $this->send("USER ".$this->botUName." ".$usermode." * :".$this->botRName);
+        $this->loggedin = true;
     }
 
     /**
@@ -268,8 +307,12 @@ class irc {
      * Kuuntelee kanavaa.
      */
     function listen() {
-        static $irc_data;
-        $partialData = "";
+
+        if(!isset($this->irc_data)) {
+            $this->irc_data =& new irc_data();
+        }
+
+        // Niin kauan kuin me olemme yhteydessä, kuuntele.
         while( $this->_state() ) {
             // Nukutaan hetki
             usleep( $this->_delay*1000 );
@@ -277,23 +320,19 @@ class irc {
             // Jos ei kirjauduttu, kirjaudu.
             if($this->loggedin == false) {
                 $this->login();
-                $this->loggedin = true;
             }
 
             $rawdata = trim(fread($this->_connection, 10240));
 
+            // Littetään edellinen ylijäänyt data nykyiseen dataan
+            $rawdata = trim($this->irc_data->getLeftOvers()).$rawdata;
+
             if(!empty( $rawdata )) {
-                // Liitetään viimeksi ylijäänyt data nyt käsiteltävään dataan.
-                if(!isset($irc_data)) {
-                    $irc_data =& new irc_data();
-                }
-                $irc_data->append( $rawdata.$partialData );
-                $this->trace("Data liitetty");
 
-                $irc_data->runTriggers();
+                // Liitetään data ja otetaan ylijäänyt data talteen
+                $this->irc_data->append( $rawdata );
 
-                //$partialData = $irc_data->getLastLine();
-                $partialData="";
+                $this->irc_data->runTriggers();
             }
         }
     }
@@ -339,6 +378,17 @@ class irc {
             if( $tstack[0]['function'] == "trace" ) $tstack = array_slice($tstack, 1);
             $msg = $tstack[0]['class'].$tstack[0]['type'].$tstack[0]['function']."[".$tstack[0]['line']."]: ".$msg;
         }
+        /*
+        switch( $this->traceDrv ) {
+            case IRC_TRACE_SEND :
+                $this->message($msg);
+                break;
+            case IRC_TRACE_ECHO :
+            default :
+                echo $msg."\n";
+                break;
+        }
+        */
         echo $msg."\n";
     }
 
@@ -388,8 +438,7 @@ class irc_triggers_base {
         $this->registerTrigger(array('ping'  => true,
                                      'event' => array(&$this,'pong')));
 
-        // Rekisteröidään liitty-ensin vastaus
-
+        // liitty-ensin vastaus
         $this->registerTrigger(array('code'  => '451',
                                      'break' => true,
                                      'event' => array(&$this,'login')));
@@ -398,6 +447,11 @@ class irc_triggers_base {
         $this->registerTrigger(array('code'  => '001',
                                      'break' => true,
                                      'event' => array(&$this,'channel')));
+
+        // Nick jo käytössä
+        $this->registerTrigger(array('code'  => '433',
+                                     'break' => true,
+                                     'event' => array(&$this,'changeNick')));
     }
 
     function __construct() {
@@ -476,6 +530,24 @@ class irc_triggers_base {
         irc::trace("Liitytään kanavalle");
         $irc->join();
     }
+
+    function changeNick() {
+        global $irc;
+        $nick =& $irc->botNick;
+
+        $nickLchar = substr($nick, -1);
+
+        if( is_int($nickLchar)) {
+            $nickLchar++;
+            $nick = substr($nick, 0, strlen($nick)-1).$nickLchar;
+        } else {
+            $nick .= 0;
+        }
+
+        irc::trace("Nick jo käytössä. Vaihdetaan se $nick");
+
+        $irc->login();
+    }
 }
 
 /**
@@ -489,7 +561,6 @@ class irc_triggers extends irc_triggers_base {
         $this->registerTrigger(array('code'  => '372',
                                      'break' => true,
                                      'event' => array(&$this,'motd')));
-
     }
 
     function __construct() {
@@ -526,6 +597,16 @@ class irc_triggers_test extends irc_triggers {
                                      'break' => true,
                                      'event' => array(&$this,'getMemUsage')));
 
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'msg'   => 'MiniMe, disconnect',
+                                     'nick'  => 'IsoTeemu',
+                                     'break' => true,
+                                     'event' => array(&$this,'disconnect')));
+
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'msg'   => 'fortune',
+                                     'break' => true,
+                                     'event' => array(&$this,'fortune')));
         $this->registerTrigger(array('code'  => 'PRIVMSG',
                                      'event' => array(&$this,'notMaster')));
         $this->registerTrigger(array('code'  => 'MODE',
@@ -565,6 +646,16 @@ class irc_triggers_test extends irc_triggers {
 
         if( strstr($this->line->getLine(), "+o ".$irc->botNick)) {
             $irc->message("Kiitos rakas ".$this->line->get("nick"));
+        } elseif( strstr($this->line->getLine(), "-o ".$irc->botNick)) {
+            $irc->message("Hei, tuo oli niinku tosi uncoolia!");
+        }
+    }
+
+    function fortune() {
+        global $irc;
+        exec('fortune -s', $rows);
+        foreach( $rows as $row ) {
+            $irc->message($row);
         }
     }
 
@@ -574,10 +665,146 @@ class irc_triggers_test extends irc_triggers {
             $irc->send("MODE ".$irc->channel." +o ".$this->line->get("nick"));
         }
     }
+
+    function tracePath() {
+        global $irc;
+        if( $irc->traceDrv == IRC_TRACE_ECHO ) {
+            $irc->message("Vaihdetaan traceksi IRC_TRACE_SEND");
+            $irc->traceDrv = IRC_TRACE_SEND;
+        } elseif( $irc->traceDrv == IRC_TRACE_SEND ) {
+            $irc->message("Vaihdetaan traceksi IRC_TRACE_ECHO");
+            $irc->traceDrv = IRC_TRACE_ECHO;
+        } else {
+            $irc->message("Tuntematon trace ajuri");
+        }
+    }
+
+    function disconnect() {
+        global $irc;
+        $irc->message("Bye!");
+        $irc->disconnect();
+    }
+
 }
 
+class irc_triggers_hlstats extends irc_triggers_test {
 
-$irc_triggers =& new irc_triggers_test();
+    var $db;
+
+    function irc_triggers_hlstats() {
+        $this->irc_triggers_test();
+
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'msg'   => 'skill',
+                                     'break' => true,
+                                     'event' => array(&$this,'skill')));
+
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'msg'   => 'top15',
+                                     'break' => true,
+                                     'event' => array(&$this,'top15')));
+
+
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'break' => true,
+                                     'event' => array(&$this,'skillByName')));
+
+
+    }
+
+    function __construct() {
+        $this->irc_triggers_hlstats();
+    }
+
+    /**
+     * @todo
+     */
+    function skill() {
+        global $irc;
+        $skill = $this->_getSkill(addslashes($this->line->get("nick")));
+
+       if( $skill === false ) {
+            $irc->message("Anteeksi, mutten löytänyt pisteitä nickillesi ".$this->line->get($nick).".");
+        } else {
+            $irc->message("Nickillä ".$this->line->get("nick")." on ".$skill." pistettä.");
+        }
+    }
+
+    function skillbyname() {
+        if(!strstr($this->line->get("msg"), "skill ")) return false;
+        global $irc;
+
+        list( $nick ) = sscanf($this->line->get("msg"), "skill %s");
+        $nick = trim($nick);
+        if(empty($nick)) return false;
+        $skill = $this->_getSkill(addslashes($nick));
+
+        if( $skill === false ) {
+            $irc->message("Ei löytynyt pisteitä nickille ".$nick.".");
+        } else {
+            $irc->message("Nickin \"$nick\" pisteet on $skill.");
+        }
+    }
+
+    function _getSkill($nick) {
+        if(!$this->_db()) return false;
+        $sql = sprintf("SELECT hlstats_Players.skill
+                        FROM hlstats_Players
+                        LEFT JOIN hlstats_PlayerNames ON
+                        hlstats_PlayerNames.playerId = hlstats_Players.playerId
+                        WHERE hlstats_Players.lastName LIKE '%s'
+                        OR hlstats_PlayerNames.name LIKE '%s'
+                        GROUP BY hlstats_Players.playerId
+                        ORDER BY hlstats_PlayerNames.numuses DESC",
+                        $nick, $nick);
+        $res =& $this->db->query($sql);
+        if (DB::isError($res)) {
+            $irc->message("Yritin suoritta hakua, mutta sain viestin: ".$res->getMessage());
+            return false;
+        } else {
+            if( $res->numRows() < 1 ) {
+                return false;
+            } else {
+                $entry = $res->fetchRow();
+                $res->free();
+                return $entry[0];
+            }
+        }
+    }
+
+    function _db() {
+        if(empty($this->db)) {
+            include_once("DB.php");
+            $this->db =& DB::Connect("mysql://cs:f9307fe00c@localhost/hlds");
+        }
+        if (DB::isError($this->db)) {
+            $irc->message("Yritin yhdistää tiedokantaan, mutta sain viestin: ".$this->db->getMessage());
+            return false;
+        }
+    }
+
+    function top15() {
+        if(!$this->_db()) return false;
+        global $irc;
+        $top15 =& $this->db->query("SELECT lastName
+FROM hlstats_Players
+WHERE game='cstrike'
+AND hideranking=0
+AND kills >= 1
+ORDER BY skill desc, lastName ASC
+LIMIT 0,15");
+        $nicks = "";
+        while( $row =& $top15->fetchRow()) {
+            if( $nicks != "" ) $nicks .= ", ";
+            $nicks .= $row[0];
+        }
+
+        $irc->message("Top15: $nicks");
+    }
+
+}
+
+$irc_triggers =& new irc_triggers_hlstats();
 
 $irc =& new irc();
 $GLOBALS['irc'] =& $irc;

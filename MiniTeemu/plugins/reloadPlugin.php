@@ -4,7 +4,7 @@
  */
 if( $init==true ) {
     $plugin->addRule('code',   "PRIVMSG");
-    $plugin->addRule('prefix', "reloadPlugin ");
+    $plugin->addRule('prefix', "MiniMe, reloadPlugin ");
     $plugin->addRule('nick',   "IsoTeemu");
     $plugin->addRule('break',  true);
     return;

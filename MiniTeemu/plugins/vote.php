@@ -21,13 +21,11 @@ switch( $voteCmd ) {
 
     case "result" :
     case "tulos"  :
-        if($vote == false) {
-            $plugin->irc->message("{$plugin->line->nick}: Ei ole ollut äänestyksiä.");
-            break;
-        } elseif ($vote['ongoing'] == true && $vote['time'] > time()) {
+        if ($vote['ongoing'] == true && $vote['time'] > time()) {
             $plugin->irc->message("{$plugin->line->nick}: Äänestys ei ole vielä päättynyt.");
             break;
         }
+        if( $vote['ongoing'] == true ) $vote['ongoing'] = false;
         $plugin->irc->message("{$plugin->line->nick}: Äänestys oli: \"".$vote['topic']."\"");
         if(($yes = count($vote['votes']['yes'])) > ($no = count($vote['votes']['no']))) {
             $plugin->irc->message("Äänestyksen tulos: Kyllä voitti äänin ".$yes."/".($yes+$no).".");

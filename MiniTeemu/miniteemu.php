@@ -183,7 +183,7 @@ class irc_data_line {
         $this->nick    = substr($exs[0], 0, $poe);
         $this->host    = substr($exs[0], $poa+1);
         $this->ident   = substr($exs[0], $poe+1, ($poa-$poe)-1);
-        $this->channel = $exs[4];
+        $this->channel = $exs[2];
 
         $this->msg     = trim(substr($this->data, $poc+1));
     }

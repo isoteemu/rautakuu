@@ -1,5 +1,21 @@
 <?php
 
+/**
+ * Ajastin function.
+ */
+function timer() {
+    static $start;
+    list($usec, $sec) = explode(" ", microtime());
+    $now = ((float)$usec + (float)$sec);
+    if(!isset( $start )) {
+        $start = $now;
+    }
+    $timed = $now - $start;
+    $secs = explode(".", $timed );
+    return $secs[0].".".substr($secs[1], 0, 2);
+}
+
+
 class irc_data {
 
     // Käsiteltävä data
@@ -109,7 +125,12 @@ class irc_data_line {
 
     var $ping = false;
 
+    var $timestamp;
+
     function irc_data_line($line) {
+
+        $this->timestamp = timer();
+
         irc::trace("Saatu dataa:\n<< \"{$line}\"");
         if( substr($line,0,6) != "PING :" && $this->valid($line) ) {
             $this->data = substr($line, 1);
@@ -328,7 +349,6 @@ class irc {
             $rawdata = trim($this->irc_data->getLeftOvers()).$rawdata;
 
             if(!empty( $rawdata )) {
-
                 // Liitetään data ja otetaan ylijäänyt data talteen
                 $this->irc_data->append( $rawdata );
 
@@ -379,6 +399,7 @@ class irc {
             if( $tstack[0]['function'] == "trace" ) $tstack = array_slice($tstack, 1);
             $msg = $tstack[0]['class'].$tstack[0]['type'].$tstack[0]['function']."[".$tstack[0]['line']."]: ".$msg;
         }
+        $msg = timer()." ".$msg;
         /*
         switch( $this->traceDrv ) {
             case IRC_TRACE_SEND :
@@ -453,6 +474,10 @@ class irc_triggers_base {
         $this->registerTrigger(array('code'  => '433',
                                      'break' => true,
                                      'event' => array(&$this,'changeNick')));
+        // Potkittu ulos
+        $this->registerTrigger(array('code'  => 'KICK',
+                                     'break' => true,
+                                     'event' => array($this,'kicked')));
     }
 
     function __construct() {
@@ -549,6 +574,15 @@ class irc_triggers_base {
 
         $irc->login();
     }
+
+    function kicked() {
+        global $irc;
+        if( strstr($this->line->getLine()," ".$irc->botNick." :")) {
+            irc::trace("Kicked: ".$this->line->msg);
+            $irc->disconnect();
+            die("KICKED");
+        }
+    }
 }
 
 /**
@@ -597,6 +631,11 @@ class irc_triggers_test extends irc_triggers {
                                      'msg'   => 'MiniMe, memusage',
                                      'break' => true,
                                      'event' => array(&$this,'getMemUsage')));
+        $this->registerTrigger(array('code'  => 'PRIVMSG',
+                                     'nick'  => 'IsoTeemu',
+                                     'msg'   => 'MiniMe, exectime',
+                                     'break' => true,
+                                     'event' => array(&$this,'exectime')));
 
         $this->registerTrigger(array('code'  => 'PRIVMSG',
                                      'msg'   => 'MiniMe, disconnect',
@@ -632,23 +671,32 @@ class irc_triggers_test extends irc_triggers {
             $irc->message("Herrani, en voi täyttää pyyntöäsi");
             return false;
         }
-        $irc->message(memory_get_usage());
+        $irc->message("Käytän muisitia: ".memory_get_usage());
     }
 
     function notMaster() {
         if(strstr($this->line->get("msg"), "MiniMe," )) {
             global $irc;
-            $irc->message("Hyvä herra ".$this->line->get("nick").", et vaikuta isännältäni, enkä suostu pyyntöösi");
+            $irc->message("Hyvä Herra ".$this->line->get("nick").", et vaikuta isännältäni, enkä suostu pyyntöösi");
         }
+    }
+
+    function execTime() {
+        global $irc;
+        $irc->message("Olen ollut päällä ".timer()."s.");
     }
 
     function didIGotOP() {
         global $irc;
 
-        if( strstr($this->line->getLine(), "+o ".$irc->botNick)) {
+        if( strstr($this->line->getLine(), " +") && strstr($this->line->getLine()," ".$irc->botNick)) {
             $irc->message("Kiitos rakas ".$this->line->get("nick"));
         } elseif( strstr($this->line->getLine(), "-o ".$irc->botNick)) {
-            $irc->message("Hei, tuo oli niinku tosi uncoolia!");
+            if( $this->line->nick != "IsoTeemu" ) {
+                $irc->message("Hei, tuo oli niinku tosi uncoolia!");
+            } else {
+                $irc->message("Oih herrani, kurita minua lisää. Olen ollut tuhma poika");
+            }
         }
     }
 

@@ -1,8 +1,24 @@
 <?php
+/***************************************************************************
+        index.php  -  Girl'luv kuvagalleria scripti
+           -------------------
+    begin                : Min Dec 13 2004
+    copyright            : (C) 2004 by Teemu A
+    email                : teemu@rautakuu.org
+ ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 
 //
 // PARAMETRIT
-// N�ll�s�det�n aseutksia
+// Näillä säädetään aseutksia
 //
 
 // Kansio, jossa kuvat sijaitsevat. (relatiivinen)
@@ -32,8 +48,8 @@ $conf['accurate']  = true;
 // Tyyli m�ritteet
 //
 
-$style['bgcolor']  = "#333333"; // taustav�i
-$style['color']    = "#d0ffd0"; // tekstin v�i
+$style['bgcolor']  = "#333333"; // taustaväri
+$style['color']    = "#d0ffd0"; // tekstin väri
 $style['thumbimg'] = "border : solid 1px; border-top-color : #B3DCB3; border-right-color :  #F3FFF3; border-bottom-color :  #F3FFF3;    border-left-color : #B3DCB3;"; // Thumbnail kuvan CSS
 $style['thumbitm'] = "border : solid 1px; border-top-color : #F3FFF3; border-right-color :  #B3DCB3; border-bottom-color :  #B3DCB3;    border-left-color : #F3FFF3; background:#d0ffd0; color:#333333;"; // Kuvan laatikon CSS
 
@@ -210,7 +226,7 @@ function stripBackSlash( $str )
 }
 
 /**
- * Py�ist� tiedoston koon ihmiselle selvemm�si
+ * Pyöristää�tiedoston koon ihmiselle selvemmäksi.
  */
 function roundedFileSize( $filename ) {
     $type = Array ('b', 'kb', 'Mb', 'gb');
@@ -220,6 +236,19 @@ function roundedFileSize( $filename ) {
         $filesize /= 1024;
 
     return round ($filesize, 2)." $type[$i]";
+}
+
+/**
+ * muotoilee lauseen paremmin HTMLksi sopivaksi
+ */
+function htmlStr( $str ) {
+    $str = htmlspecialchars($str);
+    $str = eregi_replace( "([[:alnum:]]+)://([^[:space:]]*)([[:alnum:]#?/&=])",
+                            "<a href=\"\\1://\\2\\3\" target=\"_blank\">\\1://\\2\\3</a>", $str);
+    $str = eregi_replace( "(([a-z0-9_]|\\-|\\.)+@([^[:space:]]*)([[:alnum:]-]))",
+                            "<a href=\"mailto:\\1%s\" >\\1</a>", $str);
+    $str = nl2br( $str );
+    return $str;
 }
 
 /**
@@ -237,12 +266,13 @@ function timer() {
 }
 
 //
-// Tekev�osa.
+// Tekevä�osa.
 //
 
+// Alustetaan timer.
 timer();
 
-// Lis��n backslash kansioiden nimiin.
+// Lisätään backslash kansioiden nimiin.
 $conf['thumbs']   = backSlash($conf['thumbs']);
 
 $conf['galleria'] = backSlash($conf['galleria']);
@@ -341,7 +371,7 @@ foreach ( $kuvat as $key => $kuva ) {
         $comment = "";
         if( isset($exif['COMMENT'])) {
             foreach( $exif['COMMENT'] as $tmp['cmt'] ) {
-                $comment .= htmlspecialchars($tmp['cmt']);
+                $comment .= htmlStr($tmp['cmt'])."<br />";
             }
         }
     } else {
@@ -363,7 +393,7 @@ $jsarray    .=" );";
 $jsWidths   .=" );";
 $jsHeights  .=" );";
 
-Header("Content-Type: text/html; charset=UTF-8");
+Header("Content-Type: text/html; charset=utf-8");
 ?>
 <html>
   <head>

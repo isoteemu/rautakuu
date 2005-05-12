@@ -157,7 +157,7 @@ public checkcamping(){
                 campmeter[id] += (camptolerancedefending-standarddeviation)/get_cvar_num("anticamping_camptime")
         }
         if (campmeter[id] < 80 ) {
-            emit_sound(id,CHAN_VOICE,"misc/snore.wav", 0.0, ATTN_NORM, SND_STOP, PITCH_NORM)
+            emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.0, ATTN_NORM, SND_STOP, PITCH_NORM)
         }
         if (campmeter[id] < 0) {
             campmeter[id] = 0
@@ -170,7 +170,11 @@ public checkcamping(){
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish"))
                 }
                 case 3: {
-                    emit_sound(id,CHAN_VOICE,"misc/snore.wav", 1.0, ATTN_NORM, 0, PITCH_NORM)
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 1.0, ATTN_NORM, 0, PITCH_NORM)
+                }
+                case 4: {
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish"))
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 1.0, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
             campmeter[id] = 100
@@ -183,7 +187,11 @@ public checkcamping(){
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 5)
                 }
                 case 3: {
-                    emit_sound(id,CHAN_VOICE,"misc/snore.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
+                }
+                case 4: {
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish")
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
         } else if (campmeter[id]>80){
@@ -195,10 +203,21 @@ public checkcamping(){
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 10)
                 }
                 case 3: {
-                    emit_sound(id,CHAN_VOICE,"misc/snore.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
+                }
+                case 4: {
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish")
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.2, ATTN_NORM, 0, PITCH_NORM)
+                }
+            }
+        } else if (campmeter[id]>70){
+            switch(get_cvar_num("anticamping")) {
+                case 4: {
+                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
         }
+
         displaymeter(id)
     }
     set_task(2.0,"checkcamping",1)
@@ -284,7 +303,7 @@ public round_end() {
 }
 
 public plugin_precache() {
-    precache_sound("misc/snore.wav")
+    precache_sound("misc/heart.wav")
     return PLUGIN_CONTINUE
 }
 public plugin_init() {
@@ -295,7 +314,7 @@ public plugin_init() {
     register_event("SendAudio", "bomb_planted", "a", "2&%!MRAD_BOMBPL")
     register_event("SendAudio", "round_end", "a", "2&%!MRAD_terwin","2&%!MRAD_ctwin","2&%!MRAD_rounddraw")
     register_event("StatusIcon", "got_bomb", "be", "1=1", "1=2", "2=c4")
-    register_cvar("anticamping","3",0)  //0=Disabled, 1=Slap, 2=Health Reduction, 3=Heartbeat
+    register_cvar("anticamping","4",0)  //0=Disabled, 1=Slap, 2=Health Reduction, 3=Heartbeat, 4=Health+Heartbeat
     register_cvar("anticamping_camptime","20",0)  //Amount of time allowed to camp
     register_cvar("anticamping_healthpunish","10",0)  //Amount of health taken due to punishment
     register_cvar("anticamping_meter","1",0) //Display 'campmeter' to each cilent

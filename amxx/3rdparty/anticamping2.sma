@@ -139,10 +139,13 @@ public checkcamping(){
         standarddeviation=sqrt(variancetotal)
         team = get_user_team(id)
         if (!de_map){
+            /*
             if (team==2)    // Team 1 = Terro, Team 2 = CT
                 campmeter[id] += (camptoleranceattacking - standarddeviation) / get_cvar_num("anticamping_camptime")
             else
                 campmeter[id] = 0
+            */
+            campmeter[id] += (camptoleranceattacking - standarddeviation) / get_cvar_num("anticamping_camptime")
         }
         else if (bombplanted){
             if (team == 1)    // Team 1 = Terro, Team 2 = CT
@@ -174,7 +177,7 @@ public checkcamping(){
                 }
                 case 4: {
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish"))
-                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 1.0, ATTN_NORM, 0, PITCH_NORM)
+                    // emit_sound(id,CHAN_VOICE,"misc/heart.wav", 1.0, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
             campmeter[id] = 100
@@ -191,7 +194,7 @@ public checkcamping(){
                 }
                 case 4: {
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 5)
-                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
+                    // emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
         } else if (campmeter[id]>80){
@@ -207,16 +210,20 @@ public checkcamping(){
                 }
                 case 4: {
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 10)
-                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.2, ATTN_NORM, 0, PITCH_NORM)
+                    // emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.2, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
         } else if (campmeter[id]>70){
             switch(get_cvar_num("anticamping")) {
                 case 4: {
                     set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 20)
-                    emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
+                    // emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
+        }
+        if( get_cvar_num("anticamping") == 4 ) {
+            new Float:sndVol = (float(campmeter[id])/100.0)
+            emit_sound(id,CHAN_VOICE,"misc/heart.wav", sndVol, ATTN_NORM, 0, PITCH_NORM)
         }
 
         displaymeter(id)

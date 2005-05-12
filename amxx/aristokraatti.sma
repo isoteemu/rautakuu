@@ -29,13 +29,22 @@
 #include <amxmisc>
 #include <dbi>
 
+#define HIDE_RESERVEDSLOTS
+
 new Sql:sql
 new error[128]
 
 new aristokraatit[32];
 
+new Author[] = "Rautakuu [dot] org"
+new Plugin[] = "Aristokraatti"
+new Version[] = "0.1.1"
+
 public plugin_init() {
-    register_plugin("Aristokraatti","0.1","Rautakuu [dot] org")
+    register_plugin(Plugin, Version, Author)
+    register_cvar("aristokraatti_version", Version, FCVAR_SERVER|FCVAR_SPONLY) // For GameSpy/HLSW and such
+    server_cmd("localinfo aristokraatti_version %s", Version) // For Statsme/AMX Welcome
+
     register_cvar("amx_reservation","1")
 
     new host[64],user[32],pass[32],db[32]
@@ -49,6 +58,9 @@ public plugin_init() {
     if (sql <= SQL_FAILED) {
         log_amx("Ei tietokantayhteytta. Ongelmia tiedossa: %s",error)
     }
+    #if defined HIDE_RESERVEDSLOTS
+        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
+    #endif
 }
 
 public plugin_end() {
@@ -61,8 +73,8 @@ public client_authorized(id) {
     new isAristokraatti = isKnownPlayer(id, status)
 
     // Lisätään reserver flagi (b) jos aristokraatti
-    if ( isAristokraatti == 1 ) {
-        aristokraatit[id] = 1;
+    if ( isAristokraatti >= 1 ) {
+        aristokraatit[id] = isAristokraatti;
     }
 
     new maxplayers = get_maxplayers()
@@ -73,11 +85,12 @@ public client_authorized(id) {
         new bool:allowIn = true
         if ( limit == players ) {
             allowIn = false
-            if ( isAristokraatti == 1 ) {
+            if ( isAristokraatti >= 1 ) {
                 // Etsitään monotettava
-                new monotettu = monotaPingein()
+                new monotettu = monotaPingein(isAristokraatti)
 
-                if ( monotettu == 1 ) {
+                if ( monotettu >= 1 ) {
+                    log_amx("Monotettu pelaajaa pingilla: %i", monotettu)
                     allowIn = true
                 } else {
                     client_print(id,print_console,"Ei ketaan monotettavaa :(")
@@ -95,15 +108,15 @@ public client_authorized(id) {
         }
     }
     else {
-        log_amx("Ei vapaita paikkoja serverillä")
+        log_amx("Ei vapaita paikkoja serverilla")
     }
     return PLUGIN_HANDLED
 }
 
 public client_disconnect(id)
 {
-    if( aristokraatit[id] == 1 ) {
-        log_amx("Poistetaan aristokraatti merkinta idx:%s", id);
+    if( aristokraatit[id] >= 1 ) {
+        log_amx("Poistetaan aristokraatti merkinta idx:%i", id);
         aristokraatit[id] = 0
     }
     return PLUGIN_CONTINUE
@@ -142,7 +155,7 @@ public isKnownPlayer(id, status[32]) {
             dbi_result(Res, "status", status, 31)
             dbi_free_result(Res)
             log_amx("Pelaaja idx:%s sai statuksen %s", id, status);
-            return 1
+            return 3
         }
     }
 
@@ -162,34 +175,50 @@ public isKnownPlayer(id, status[32]) {
             dbi_result(Res2, "status", status, 31)
             dbi_free_result(Res2)
             log_amx("Pelaaja idx:%s sai statuksen %s", id, status);
-            return 1
+            return 2
         }
     }
+
+    /**
+     * TODO: Rekisteröityneille level 1 access
+     */
 
     return 0
 }
 
-public monotaPingein ( ) {
+public monotaPingein ( aristoLevel ) {
     new Players[32]
     new playerCount, i
     new bigPing = 0
-    new myPing, myLoss, bigPingOwner
+    new myPing, myLoss, bigPingOwner, pingMultiply
     new bool:toKick = false
 
     get_players(Players, playerCount)
 
     for (i=0; i<playerCount; i++) {
-        // Hypätään aristokraattien yli tietty
-        if (access(Players[i],ADMIN_RESERVATION)) {
+        if ( !is_user_connected(Players[i]) && !is_user_connecting(Players[i]) ) {
             continue
         }
-        else if ( aristokraatit[i] == 1 ) {
-            log_amx("Loytyi aristokraatti idx:%s")
+        else if (access(Players[i],ADMIN_RESERVATION)) {
+            continue
+        }
+        else if ( aristokraatit[i] >= aristoLevel ) {
+            // Hypätään saman tasoisten tai korkearvoisempien yli
             continue
         }
         else {
-
+            // Haetaan Pingi
             get_user_ping(Players[i], myPing, myLoss)
+
+            // Lisätään levelOffset*100 pingiin
+            if( aristokraatit[i] > 0 ) {
+                pingMultiply = (aristoLevel-aristokraatit[i])*100
+            }
+            else {
+                pingMultiply = aristoLevel*100;
+            }
+            myPing = myPing+pingMultiply
+
             if ( myPing > bigPing ) {
                 toKick = true
                 bigPingOwner = Players[i]
@@ -200,7 +229,7 @@ public monotaPingein ( ) {
     // Onko ketään potkittavaa?
     if ( bigPingOwner && toKick == true ) {
         redirectPlayer(bigPingOwner)
-        return 1
+        return bigPing
     }
     else {
         log_amx("Ei ketaan joka voitaisiin poistaa.")
@@ -228,7 +257,7 @@ public redirectPlayer(id) {
     }
     else if (Res == RESULT_NONE) {
         log_amx("Ei muita serverita? Vahan turhaa sitten minua kayttaa.")
-        // Ei serveritä? Monota sitten
+        // Ei serverietä? Monota sitten
         dbi_free_result(Res)
         dbi_close(sql)
 
@@ -261,7 +290,7 @@ public redirectPlayer(id) {
     // Varmistetaan viela etta häipyy
     new id_str[3]
     num_to_str(id, id_str, 3)
-    set_task(2.0, "kickPlayer",0,id_str)
+    set_task(5.0, "kickPlayer",0,id_str)
 }
 
 public kickPlayer(id_str[3]) {

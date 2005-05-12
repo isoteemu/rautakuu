@@ -38,7 +38,7 @@ new aristokraatit[32] = 0
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.1.1"
+new Version[] = "0.1.2"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -52,7 +52,7 @@ public plugin_init() {
     #endif
 
     // Hieman aikaa että asetukset etc ehditään lukea
-    set_task(3.0,"sqlInit")
+    set_task(0.1,"sqlInit")
 }
 
 public sqlInit() {
@@ -97,7 +97,7 @@ public client_authorized(id) {
                 new monotettu = monotaPingein(isAristokraatti)
 
                 if ( monotettu >= 1 ) {
-                    log_amx("Monotettu pelaajaa pingilla: %i", monotettu)
+                    log_amx("Monotettu pelaajaa pingilla: %d", monotettu)
                     allowIn = true
                 } else {
                     client_print(id,print_console,"Ei ketaan monotettavaa :(")
@@ -161,7 +161,7 @@ public isKnownPlayer(id, status[32]) {
             // Pelaaja on aristokraatti.
             dbi_result(Res, "status", status, 31)
             dbi_free_result(Res)
-            log_amx("Pelaaja idx:%s sai statuksen %s", id, status);
+            log_amx("Pelaaja idx:%s sai statuksen %d", id, status);
             return 3
         }
     }

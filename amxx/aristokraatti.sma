@@ -34,18 +34,28 @@
 new Sql:sql
 new error[128]
 
-new aristokraatit[32];
+new aristokraatit[32] = 0
 
 new Author[] = "Rautakuu [dot] org"
-new Plugin[] = "Aristokraatti"
+new Plugin[] = "RQ_Aristokraatti"
 new Version[] = "0.1.1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
-    register_cvar("aristokraatti_version", Version, FCVAR_SERVER|FCVAR_SPONLY) // For GameSpy/HLSW and such
-    server_cmd("localinfo aristokraatti_version %s", Version) // For Statsme/AMX Welcome
+    register_cvar("rq_aristokraatti_version", Version, FCVAR_SERVER|FCVAR_SPONLY) // For GameSpy/HLSW and such
+    server_cmd("localinfo rq_aristokraatti_version %s", Version) // For Statsme/AMX Welcome
 
     register_cvar("amx_reservation","1")
+
+    #if defined HIDE_RESERVEDSLOTS
+        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
+    #endif
+
+    // Hieman aikaa ett‰ asetukset etc ehdit‰‰n lukea
+    set_task(3.0,"sqlInit")
+}
+
+public sqlInit() {
 
     new host[64],user[32],pass[32],db[32]
 
@@ -58,9 +68,6 @@ public plugin_init() {
     if (sql <= SQL_FAILED) {
         log_amx("Ei tietokantayhteytta. Ongelmia tiedossa: %s",error)
     }
-    #if defined HIDE_RESERVEDSLOTS
-        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
-    #endif
 }
 
 public plugin_end() {
@@ -116,7 +123,7 @@ public client_authorized(id) {
 public client_disconnect(id)
 {
     if( aristokraatit[id] >= 1 ) {
-        log_amx("Poistetaan aristokraatti merkinta idx:%i", id);
+        log_amx("Poistetaan aristokraatti merkinta idx:%d", id);
         aristokraatit[id] = 0
     }
     return PLUGIN_CONTINUE
@@ -256,8 +263,8 @@ public redirectPlayer(id) {
         return
     }
     else if (Res == RESULT_NONE) {
-        log_amx("Ei muita serverita? Vahan turhaa sitten minua kayttaa.")
-        // Ei serveriet‰? Monota sitten
+        log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa.")
+        // Ei servereiet‰? Monota sitten
         dbi_free_result(Res)
         dbi_close(sql)
 

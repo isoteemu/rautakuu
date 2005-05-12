@@ -70,7 +70,7 @@ public sqlInit() {
 public client_disconnect(id) {
 
     // TARKISTUKSET
-    if(get_cvar_num("bank_state")) {
+    if(!get_cvar_num("bank_state")) {
         // Pankki ei ole käytössä
         return PLUGIN_HANDLED
     }

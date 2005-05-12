@@ -37,7 +37,7 @@ new error[128]
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_AutoBank"
-new Version[] = "0.1.0"
+new Version[] = "0.1.1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -125,7 +125,7 @@ public client_disconnect(id) {
         }
         dbi_free_result(inres)
     } else {
-        new Result:upres = dbi_query(sql, "UPDATE `bank` SET `amount` = '%s' WHERE `sid` = '%s'", curmoney, sid)
+        new Result:upres = dbi_query(sql, "UPDATE `bank` SET `amount` = `amount`+'%s' WHERE `sid` = '%s'", curmoney, sid)
         if(upres == RESULT_FAILED) {
             dbi_error(sql,error,127)
             log_amx("Virhe paivitettaessa lopetuksen yhteydessa pankkitilia: %s",error)

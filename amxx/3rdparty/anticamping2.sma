@@ -190,7 +190,7 @@ public checkcamping(){
                     emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
                 }
                 case 4: {
-                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish")
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 5)
                     emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.5, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
@@ -206,13 +206,14 @@ public checkcamping(){
                     emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
                 }
                 case 4: {
-                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish")
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 10)
                     emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.2, ATTN_NORM, 0, PITCH_NORM)
                 }
             }
         } else if (campmeter[id]>70){
             switch(get_cvar_num("anticamping")) {
                 case 4: {
+                    set_user_health(id, get_user_health(id) - get_cvar_num("anticamping_healthpunish") / 20)
                     emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.1, ATTN_NORM, 0, PITCH_NORM)
                 }
             }

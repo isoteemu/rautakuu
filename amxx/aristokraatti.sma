@@ -76,6 +76,9 @@ public plugin_end() {
 
 public client_authorized(id) {
 
+    if(is_user_bot(id)) return PLUGIN_HANDLED
+    if (!is_user_connected(id) && !is_user_connecting(id)) return PLUGIN_HANDLED
+
     new status[32]
     new isAristokraatti = isKnownPlayer(id, status)
 
@@ -122,11 +125,13 @@ public client_authorized(id) {
 
 public client_disconnect(id)
 {
+    if(is_user_bot(id)) return PLUGIN_HANDLED
+
     if( aristokraatit[id] >= 1 ) {
         log_amx("Poistetaan aristokraatti merkinta idx:%d", id);
         aristokraatit[id] = 0
     }
-    return PLUGIN_CONTINUE
+    return PLUGIN_HANDLED
 }
 
 
@@ -161,7 +166,7 @@ public isKnownPlayer(id, status[32]) {
             // Pelaaja on aristokraatti.
             dbi_result(Res, "status", status, 31)
             dbi_free_result(Res)
-            log_amx("Pelaaja idx:%s sai statuksen %d", id, status);
+            log_amx("Pelaaja idx:%d sai statuksen %s", id, status);
             return 3
         }
     }
@@ -181,7 +186,7 @@ public isKnownPlayer(id, status[32]) {
             // Pelaaja on aristokraatti.
             dbi_result(Res2, "status", status, 31)
             dbi_free_result(Res2)
-            log_amx("Pelaaja idx:%s sai statuksen %s", id, status);
+            log_amx("Pelaaja idx:%d sai statuksen %s", id, status);
             return 2
         }
     }
@@ -252,57 +257,56 @@ public redirectPlayer(id) {
 
     if (Res == RESULT_FAILED) {
         dbi_error(sql,error,127)
-        log_amx("Virhe haettaessa serverita: %s",error)
+        log_amx("Virhe haettaessa servereita: %s",error)
         dbi_free_result(Res)
         dbi_close(sql)
 
         new id_str[3]
-        num_to_str(id, id_str, 3)
+        num_to_str(id, id_str, 2)
         kickPlayer(id_str)
 
         return
     }
     else if (Res == RESULT_NONE) {
-        log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa.")
+        log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa. Sitten monotan.")
         // Ei servereietä? Monota sitten
         dbi_free_result(Res)
         dbi_close(sql)
 
         new id_str[3]
-        num_to_str(id, id_str, 3)
+        num_to_str(id, id_str, 2)
         kickPlayer(id_str)
 
         return
     }
 
+    new redirName[32], redirAddr[32], redirPort[5]
     while( dbi_nextrow(Res) > 0 ) {
-        new redirName[32], redirAddr[32], redirPort[5]
         dbi_result(Res, "name", redirName, 31)
         dbi_result(Res, "publicaddress", redirAddr, 31)
         dbi_result(Res, "port", redirPort, 31)
 
         dbi_free_result(Res)
-        dbi_close(sql)
-
-        client_print(id,print_console,"======================================================")
-        client_print(id,print_console," %s",redirName)
-        client_print(id,print_console," Kyseinen serveri on pelaajalimitissa")
-        client_print(id,print_console," Sinut ohjataan toiselle serverille: %s:%s",redirAddr,redirPort)
-        client_print(id,print_console,"======================================================")
-
-        client_cmd(id,"echo;disconnect; connect %s:%s",redirAddr,redirPort)
-        break
     }
+
+    client_print(id,print_console,"======================================================")
+    client_print(id,print_console," Tama serveri on pelaajalimitissa")
+    client_print(id,print_console," Sinut ohjataan toiselle serverille:")
+    client_print(id,print_console," > %s",redirName)
+    client_print(id,print_console," > %s:%s",redirAddr,redirPort)
+    client_print(id,print_console,"======================================================")
+
+    client_cmd(id,"echo;disconnect; connect %s:%s",redirAddr,redirPort)
 
     // Varmistetaan viela etta häipyy
     new id_str[3]
-    num_to_str(id, id_str, 3)
+    num_to_str(id, id_str, 2)
     set_task(5.0, "kickPlayer",0,id_str)
 }
 
 public kickPlayer(id_str[3]) {
     new player_id
-    str_to_num(id_str,player_id,3)
+    player_id = str_to_num(id_str)
     new userid = get_user_userid(player_id)
     server_cmd("kick #%d Serveri ei vastaanota pelaajia enempaa",userid)
     return PLUGIN_CONTINUE

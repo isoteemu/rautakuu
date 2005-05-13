@@ -29,16 +29,20 @@
 #include <amxmisc>
 #include <dbi>
 
-#define HIDE_RESERVEDSLOTS
+//#define HIDE_RESERVEDSLOTS
+
+#define NOISY
 
 new Sql:sql
 new error[128]
 
 new aristokraatit[32] = 0
 
+new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
+
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.1.2"
+new Version[] = "0.1.3"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -77,10 +81,11 @@ public plugin_end() {
 public client_authorized(id) {
 
     if(is_user_bot(id)) return PLUGIN_HANDLED
-    if (!is_user_connected(id) && !is_user_connecting(id)) return PLUGIN_HANDLED
 
-    new status[32]
-    new isAristokraatti = isKnownPlayer(id, status)
+    new name[32]
+    get_user_name(id, name, 31)
+
+    new isAristokraatti = isKnownPlayer(id)
 
     // Lis‰t‰‰n reserver flagi (b) jos aristokraatti
     if ( isAristokraatti >= 1 ) {
@@ -108,12 +113,14 @@ public client_authorized(id) {
             }
         }
 
-        if (allowIn == true) {
-            new pname[32]
-            get_user_name(id, pname, 31)
-            client_print(0,print_chat,"%s %s yhdistyy serverille", status, pname)
-        }
-        else {
+        /* Jos pelaaja p‰‰stet‰‰n sis‰‰n, viiv‰styt‰ sekunnilla ilmoitusta.
+         * Viiv‰stetty ilmoitus tarkistaa onko pelaaja sis‰ll‰. */
+        if (allowIn == false) {
+            #if defined NOISY
+                new pName[32]
+                get_user_name(id,pName,31)
+                log_amx("Ohjataaan %s %s muualle",statukset[aristokraatit[id]], pName)
+            #endif
             redirectPlayer(id)
         }
     }
@@ -121,6 +128,18 @@ public client_authorized(id) {
         log_amx("Ei vapaita paikkoja serverilla")
     }
     return PLUGIN_HANDLED
+}
+
+public client_putinserver(id) {
+        /*
+        new id_str[3]
+        num_to_str(id, id_str, 2)
+        #if defined NOISY
+            log_amx("Passaan arvot announcePlayerille s:%s d:%d", id_str, id)
+        #endif
+        set_task(1.0, "announcePlayer",1,id_str)
+        */
+        announcePlayer(id)
 }
 
 public client_disconnect(id)
@@ -135,9 +154,7 @@ public client_disconnect(id)
 }
 
 
-public isKnownPlayer(id, status[32]) {
-
-    copy(status,8,"Pelaaja")
+public isKnownPlayer(id) {
 
     if (sql <= SQL_FAILED) {
         log_amx("Ei tietokantayhteytta. Ei voida tarkistaa aatelismia: %s", error)
@@ -151,7 +168,7 @@ public isKnownPlayer(id, status[32]) {
     // On perkele kˆyh‰n miehen hax hax hax.
     // Liian tiukka lauseiden pituudesta niin t‰ytyy erillisill‰ hauilla teh‰
 
-    new Result:Res = dbi_query(sql,"SELECT 'Aristokraatti' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
+    new Result:Res = dbi_query(sql,"SELECT '3' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
 
     if (Res == RESULT_FAILED) {
         dbi_error(sql,error,127)
@@ -164,18 +181,16 @@ public isKnownPlayer(id, status[32]) {
     else {
         while( dbi_nextrow(Res) > 0 ) {
             // Pelaaja on aristokraatti.
-            dbi_result(Res, "status", status, 31)
             dbi_free_result(Res)
-            log_amx("Pelaaja idx:%d sai statuksen %s", id, status);
             return 3
         }
     }
 
-    new Result:Res2 = dbi_query(sql,"SELECT 'Statuskraatti' AS status FROM hlstats_PlayerUniqueIds LEFT JOIN hlstats_Players ON hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE `skill`>=( SELECT skill FROM hlstats_Players ORDER BY skill DESC LIMIT 3,1) AND `hideranking`=0 AND `uniqueId`='%s'",userauthid)
+    new Result:Res2 = dbi_query(sql,"SELECT '2' AS status FROM hlstats_PlayerUniqueIds LEFT JOIN hlstats_Players ON hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE `skill`>=( SELECT skill FROM hlstats_Players ORDER BY skill DESC LIMIT 3,1) AND `hideranking`=0 AND `uniqueId`='%s'",userauthid)
 
     if (Res2 == RESULT_FAILED) {
         dbi_error(sql,error,127)
-        log_amx("Ei voitu ladata aristokraatteja: %s",error)
+        log_amx("Ei voitu ladata statuskraatteja: %s",error)
         dbi_free_result(Res2)
     }
     else if (Res2 == RESULT_NONE) {
@@ -183,10 +198,8 @@ public isKnownPlayer(id, status[32]) {
     }
     else {
         while( dbi_nextrow(Res) > 0 ) {
-            // Pelaaja on aristokraatti.
-            dbi_result(Res2, "status", status, 31)
+            // Pelaaja on statuskraatti
             dbi_free_result(Res2)
-            log_amx("Pelaaja idx:%d sai statuksen %s", id, status);
             return 2
         }
     }
@@ -194,7 +207,7 @@ public isKnownPlayer(id, status[32]) {
     /**
      * TODO: Rekisterˆityneille level 1 access
      */
-
+    // Pelaaja on n00bi
     return 0
 }
 
@@ -240,6 +253,13 @@ public monotaPingein ( aristoLevel ) {
 
     // Onko ket‰‰n potkittavaa?
     if ( bigPingOwner && toKick == true ) {
+
+        #if defined NOISY
+            new pName[32]
+            get_user_name(bigPingOwner,pName,31)
+            log_amx("Pelaaja %s statuksella %s monotetaan pingilla %d", pName, statukset[aristokraatit[bigPingOwner]], bigPing)
+        #endif
+
         redirectPlayer(bigPingOwner)
         return bigPing
     }
@@ -253,13 +273,12 @@ public redirectPlayer(id) {
     new myIP
     myIP = get_cvar_num("ip")
 
-    new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
+    new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
 
     if (Res == RESULT_FAILED) {
         dbi_error(sql,error,127)
         log_amx("Virhe haettaessa servereita: %s",error)
         dbi_free_result(Res)
-        dbi_close(sql)
 
         new id_str[3]
         num_to_str(id, id_str, 2)
@@ -271,7 +290,6 @@ public redirectPlayer(id) {
         log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa. Sitten monotan.")
         // Ei servereiet‰? Monota sitten
         dbi_free_result(Res)
-        dbi_close(sql)
 
         new id_str[3]
         num_to_str(id, id_str, 2)
@@ -280,35 +298,81 @@ public redirectPlayer(id) {
         return
     }
 
-    new redirName[32], redirAddr[32], redirPort[5]
+    new redirName[32], redirSrv[32], redirPort[6]
     while( dbi_nextrow(Res) > 0 ) {
         dbi_result(Res, "name", redirName, 31)
-        dbi_result(Res, "publicaddress", redirAddr, 31)
-        dbi_result(Res, "port", redirPort, 31)
+        dbi_result(Res, "addr", redirSrv, 31)
+        dbi_result(Res, "port", redirPort, 6)
+
+        #if defined NOISY
+            log_amx("Loytyi serveri %s; %s:%s",redirName,redirSrv,redirPort)
+        #endif
 
         dbi_free_result(Res)
     }
+
+    #if defined NOISY
+        log_amx("ohjataan serverille %s:%s",redirSrv,redirPort)
+    #endif
 
     client_print(id,print_console,"======================================================")
     client_print(id,print_console," Tama serveri on pelaajalimitissa")
     client_print(id,print_console," Sinut ohjataan toiselle serverille:")
     client_print(id,print_console," > %s",redirName)
-    client_print(id,print_console," > %s:%s",redirAddr,redirPort)
+    client_print(id,print_console," > %s:%s",redirSrv,redirPort)
     client_print(id,print_console,"======================================================")
 
-    client_cmd(id,"echo;disconnect; connect %s:%s",redirAddr,redirPort)
+    client_cmd(id,"echo;disconnect; connect %s:%s",redirSrv,redirPort)
 
     // Varmistetaan viela etta h‰ipyy
+    /*
     new id_str[3]
     num_to_str(id, id_str, 2)
     set_task(5.0, "kickPlayer",0,id_str)
+    */
 }
 
 public kickPlayer(id_str[3]) {
     new player_id
     player_id = str_to_num(id_str)
     new userid = get_user_userid(player_id)
+    #if defined NOISY
+        log_amx("Potkitaan idx:%d, #%d",player_id, userid)
+    #endif
     server_cmd("kick #%d Serveri ei vastaanota pelaajia enempaa",userid)
     return PLUGIN_CONTINUE
 }
 
+public announcePlayer( pId ) {
+
+    /*
+    new pId
+    pId = str_to_num(id_str)
+
+    #if defined NOISY
+        log_amx("announcePlayerille passattiin arvot s:%s d:%d", id_str, pId)
+    #endif
+    */
+
+    // TODO: Miksei toimi?
+    // Tarkista viel‰kˆ pelaaja on linjoilla
+
+    if ( !is_user_connected(pId) && !is_user_connecting(pId) ) {
+        new cntd, cnntng
+        cntd = is_user_connected(pId)
+        cnntng = is_user_connecting(pId)
+        #if defined NOISY
+            log_amx("Pelaaja idx:%d ei ollut enaan yhdistynyt: connected:%d connecting:%d",pId,cntd,cnntng)
+        #endif
+        return PLUGIN_CONTINUE
+    }
+
+    new pName[32]
+    get_user_name(pId, pName, 31)
+
+    client_print(0,print_chat," * %s %s liittyy peliin", statukset[aristokraatit[pId]], pName)
+    #if defined NOISY
+        log_amx("%s (idx:%d) %s liittyy peliin", statukset[aristokraatit[pId]],pId, pName)
+    #endif
+    return PLUGIN_CONTINUE
+}

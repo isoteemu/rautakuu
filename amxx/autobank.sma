@@ -118,14 +118,14 @@ public client_disconnect(id) {
     if(result == RESULT_FAILED)
     {
         dbi_free_result(result)
-        new Result:inres = dbi_query(sql, "INSERT INTO `bank` ( `sid` , `amount` ) VALUES ( '%s', '%s' )", sid, curmoney)
+        new Result:inres = dbi_query(sql, "INSERT INTO `bank` ( `sid` , `amount` ) VALUES ( '%s', '%d' )", sid, curmoney)
         if(inres == RESULT_FAILED) {
             dbi_error(sql,error,127)
             log_amx("Virhe luotaessa lopetuksen yhteydessa pankkitilia: %s",error)
         }
         dbi_free_result(inres)
     } else {
-        new Result:upres = dbi_query(sql, "UPDATE `bank` SET `amount` = `amount`+'%s' WHERE `sid` = '%s'", curmoney, sid)
+        new Result:upres = dbi_query(sql, "UPDATE `bank` SET `amount` = `amount`+'%d' WHERE `sid` = '%s'", curmoney, sid)
         if(upres == RESULT_FAILED) {
             dbi_error(sql,error,127)
             log_amx("Virhe paivitettaessa lopetuksen yhteydessa pankkitilia: %s",error)

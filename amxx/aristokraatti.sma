@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.1.3"
+new Version[] = "0.1.4"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -216,7 +216,6 @@ public monotaPingein ( aristoLevel ) {
     new playerCount, i
     new bigPing = 0
     new myPing, myLoss, bigPingOwner, pingMultiply
-    new bool:toKick = false
 
     get_players(Players, playerCount)
 
@@ -232,27 +231,37 @@ public monotaPingein ( aristoLevel ) {
             continue
         }
         else {
-            // Haetaan Pingi
-            get_user_ping(Players[i], myPing, myLoss)
+            if (is_user_bot(Players[i])) {
+                myPing = 1000
+            }
+            else {
+                // Haetaan Pingi
+                get_user_ping(Players[i], myPing, myLoss)
+            }
 
             // Lisätään levelOffset*100 pingiin
             if( aristokraatit[i] > 0 ) {
                 pingMultiply = (aristoLevel-aristokraatit[i])*100
             }
             else {
-                pingMultiply = aristoLevel*100;
+                pingMultiply = (aristoLevel*100);
             }
-            myPing = myPing+pingMultiply
+
+            myPing = (myPing+pingMultiply)
 
             if ( myPing > bigPing ) {
-                toKick = true
                 bigPingOwner = Players[i]
+                // +1 jotta pingi aina >1
+                bigPing = (myPing+1)
+                #if defined NOISY
+                    log_amx("Uusi suurin pingi: %d (idx:%d) (loop #%d)",bigPing,bigPingOwner,i)
+                #endif
             }
         }
     }
 
     // Onko ketään potkittavaa?
-    if ( bigPingOwner && toKick == true ) {
+    if ( bigPing > 0 && bigPingOwner ) {
 
         #if defined NOISY
             new pName[32]

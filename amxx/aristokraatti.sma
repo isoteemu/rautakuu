@@ -270,10 +270,10 @@ public monotaPingein ( aristoLevel ) {
 }
 
 public redirectPlayer(id) {
-    new myIP
-    myIP = get_cvar_num("ip")
+    new myIP[16]
+    get_cvar_string("ip",myIP,15)
 
-    new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%d' ORDER BY RAND() LIMIT 0, 1", myIP)
+    new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
 
     if (Res == RESULT_FAILED) {
         dbi_error(sql,error,127)

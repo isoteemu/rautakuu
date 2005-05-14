@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.1.4"
+new Version[] = "0.1.9"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -168,6 +168,8 @@ public isKnownPlayer(id) {
     // On perkele köyhän miehen hax hax hax.
     // Liian tiukka lauseiden pituudesta niin täytyy erillisillä hauilla tehä
 
+
+    // Aristokraatti haku
     new Result:Res = dbi_query(sql,"SELECT '3' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
 
     if (Res == RESULT_FAILED) {
@@ -186,6 +188,7 @@ public isKnownPlayer(id) {
         }
     }
 
+    // TOP3 haku
     new Result:Res2 = dbi_query(sql,"SELECT '2' AS status FROM hlstats_PlayerUniqueIds LEFT JOIN hlstats_Players ON hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE `skill`>=( SELECT skill FROM hlstats_Players ORDER BY skill DESC LIMIT 3,1) AND `hideranking`=0 AND `uniqueId`='%s'",userauthid)
 
     if (Res2 == RESULT_FAILED) {
@@ -197,16 +200,32 @@ public isKnownPlayer(id) {
         dbi_free_result(Res2)
     }
     else {
-        while( dbi_nextrow(Res) > 0 ) {
+        while( dbi_nextrow(Res2) > 0 ) {
             // Pelaaja on statuskraatti
             dbi_free_result(Res2)
             return 2
         }
     }
 
-    /**
-     * TODO: Rekisteröityneille level 1 access
-     */
+    // Rekisteröityneiden haku
+    new Result:Res3 = dbi_query(sql,"SELECT '1' AS status FROM drupal_steamids WHERE `steamid` LIKE '%s'",userauthid)
+    if (Res3 == RESULT_FAILED) {
+        dbi_error(sql,error,127)
+        log_amx("Ei voitu ladata rekisteroityneita: %s",error)
+        dbi_free_result(Res3)
+    }
+    else if (Res3 == RESULT_NONE) {
+        dbi_free_result(Res3)
+    }
+    else {
+        while( dbi_nextrow(Res3) > 0 ) {
+            // Pelaaja on statuskraatti
+            dbi_free_result(Res3)
+            return 1
+        }
+    }
+
+
     // Pelaaja on n00bi
     return 0
 }

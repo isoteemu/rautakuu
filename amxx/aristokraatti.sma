@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.1.9"
+new Version[] = "0.2.0-rc1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -243,14 +243,23 @@ public monotaPingein ( aristoLevel ) {
             continue
         }
         else if (access(Players[i],ADMIN_RESERVATION)) {
+            log_amx("ADMIN_RESERVATION idx:%d", Players[i]);
             continue
         }
-        else if ( aristokraatit[i] >= aristoLevel ) {
+        else if ( aristokraatit[Players[i]] >= aristoLevel ) {
             // Hypätään saman tasoisten tai korkearvoisempien yli
+            #if defined NOISY
+                new aName[32]
+                get_user_name(bigPingOwner,aName,31)
+
+                log_amx("Passataan korkearvoisempi %s (%d > %d)", aName, aristokraatit[Players[i]], aristoLevel)
+            #endif
+
             continue
         }
         else {
             if (is_user_bot(Players[i])) {
+                bigPingOwner = Players[i]
                 myPing = 1000
             }
             else {
@@ -259,11 +268,17 @@ public monotaPingein ( aristoLevel ) {
             }
 
             // Lisätään levelOffset*100 pingiin
-            if( aristokraatit[i] > 0 ) {
-                pingMultiply = (aristoLevel-aristokraatit[i])*100
+            if( aristokraatit[Players[i]] > 0 ) {
+                pingMultiply = (aristoLevel-aristokraatit[Players[i]])*100
+                #if defined NOISY
+                    log_amx("pingMultiply: ( %d - %d ) * 100 = %d",aristoLevel,aristokraatit[Players[i]], pingMultiply)
+                #endif
             }
             else {
                 pingMultiply = (aristoLevel*100);
+                #if defined NOISY
+                    log_amx("pingMultiply: %d  * 100 = ",aristoLevel,pingMultiply)
+                #endif
             }
 
             myPing = (myPing+pingMultiply)
@@ -285,7 +300,7 @@ public monotaPingein ( aristoLevel ) {
         #if defined NOISY
             new pName[32]
             get_user_name(bigPingOwner,pName,31)
-            log_amx("Pelaaja %s statuksella %s monotetaan pingilla %d", pName, statukset[aristokraatit[bigPingOwner]], bigPing)
+            log_amx("Pelaaja %s statuksella %s monotetaan fantasioidulla pingilla %d", pName, statukset[aristokraatit[bigPingOwner]], bigPing)
         #endif
 
         redirectPlayer(bigPingOwner)

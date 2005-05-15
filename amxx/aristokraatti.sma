@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.2.0-rc1"
+new Version[] = "0.2.0-rc2"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -82,15 +82,7 @@ public client_authorized(id) {
 
     if(is_user_bot(id)) return PLUGIN_HANDLED
 
-    new name[32]
-    get_user_name(id, name, 31)
-
-    new isAristokraatti = isKnownPlayer(id)
-
-    // Lis‰t‰‰n reserver flagi (b) jos aristokraatti
-    if ( isAristokraatti >= 1 ) {
-        aristokraatit[id] = isAristokraatti;
-    }
+    aristokraatit[id] = isKnownPlayer(id)
 
     new maxplayers = get_maxplayers()
     new players = get_playersnum( 1 )
@@ -100,12 +92,12 @@ public client_authorized(id) {
         new bool:allowIn = true
         if ( limit == players ) {
             allowIn = false
-            if ( isAristokraatti >= 1 ) {
+            if ( aristokraatit[id] >= 1 ) {
                 // Etsit‰‰n monotettava
-                new monotettu = monotaPingein(isAristokraatti)
+                new monotettu = monotaPingein(aristokraatit[id])
 
                 if ( monotettu >= 1 ) {
-                    log_amx("Monotettu pelaajaa pingilla: %d", monotettu)
+                    log_amx("Monotettu pelaajaa scorella: %d", monotettu)
                     allowIn = true
                 } else {
                     client_print(id,print_console,"Ei ketaan monotettavaa :(")
@@ -113,8 +105,6 @@ public client_authorized(id) {
             }
         }
 
-        /* Jos pelaaja p‰‰stet‰‰n sis‰‰n, viiv‰styt‰ sekunnilla ilmoitusta.
-         * Viiv‰stetty ilmoitus tarkistaa onko pelaaja sis‰ll‰. */
         if (allowIn == false) {
             #if defined NOISY
                 new pName[32]
@@ -232,27 +222,31 @@ public isKnownPlayer(id) {
 
 public monotaPingein ( aristoLevel ) {
     new Players[32]
-    new playerCount, i
+    new playerCount, i, id
     new bigPing = 0
     new myPing, myLoss, bigPingOwner, pingMultiply
+
+    #if defined NOISY
+        new aName[32]
+    #endif
 
     get_players(Players, playerCount)
 
     for (i=0; i<playerCount; i++) {
+        id=Players[i]
         if ( !is_user_connected(Players[i]) && !is_user_connecting(Players[i]) ) {
             continue
         }
-        else if (access(Players[i],ADMIN_RESERVATION)) {
-            log_amx("ADMIN_RESERVATION idx:%d", Players[i]);
+        else if (access(id,ADMIN_RESERVATION)) {
+            log_amx("ADMIN_RESERVATION (idx:%d)", id);
             continue
         }
-        else if ( aristokraatit[Players[i]] >= aristoLevel ) {
+        else if ( aristokraatit[id] >= aristoLevel ) {
             // Hyp‰t‰‰n saman tasoisten tai korkearvoisempien yli
-            #if defined NOISY
-                new aName[32]
-                get_user_name(bigPingOwner,aName,31)
 
-                log_amx("Passataan korkearvoisempi %s (%d > %d)", aName, aristokraatit[Players[i]], aristoLevel)
+            #if defined NOISY
+                get_user_name(id,aName,31)
+                log_amx("Passataan korkearvoisempi %s (%d >= %d)", aName, aristokraatit[id], aristoLevel)
             #endif
 
             continue
@@ -264,31 +258,32 @@ public monotaPingein ( aristoLevel ) {
             }
             else {
                 // Haetaan Pingi
-                get_user_ping(Players[i], myPing, myLoss)
+                get_user_ping(id, myPing, myLoss)
             }
 
             // Lis‰t‰‰n levelOffset*100 pingiin
-            if( aristokraatit[Players[i]] > 0 ) {
-                pingMultiply = (aristoLevel-aristokraatit[Players[i]])*100
+            if( aristokraatit[id] > 0 ) {
+                pingMultiply = ((aristoLevel-aristokraatit[id])*100)
                 #if defined NOISY
-                    log_amx("pingMultiply: ( %d - %d ) * 100 = %d",aristoLevel,aristokraatit[Players[i]], pingMultiply)
+                    log_amx("pingMultiply: ( %d - %d ) * 100 = %d",aristoLevel,aristokraatit[id],pingMultiply)
                 #endif
             }
             else {
                 pingMultiply = (aristoLevel*100);
-                #if defined NOISY
-                    log_amx("pingMultiply: %d  * 100 = ",aristoLevel,pingMultiply)
-                #endif
             }
 
+            #if defined NOISY
+                get_user_name(bigPingOwner,aName,31)
+                log_amx("ping: %d (name:%s) (idx:%d) (alevel:%d) (loop #%d)",myPing,aName,id,aristokraatit[id],i)
+            #endif
             myPing = (myPing+pingMultiply)
 
             if ( myPing > bigPing ) {
-                bigPingOwner = Players[i]
+                bigPingOwner = id
                 // +1 jotta pingi aina >1
                 bigPing = (myPing+1)
                 #if defined NOISY
-                    log_amx("Uusi suurin pingi: %d (idx:%d) (loop #%d)",bigPing,bigPingOwner,i)
+                    log_amx("Uusi suurin pingi: %s: %d (idx:%d) (loop #%d)",aName,bigPing,bigPingOwner,i)
                 #endif
             }
         }
@@ -298,9 +293,8 @@ public monotaPingein ( aristoLevel ) {
     if ( bigPing > 0 && bigPingOwner ) {
 
         #if defined NOISY
-            new pName[32]
-            get_user_name(bigPingOwner,pName,31)
-            log_amx("Pelaaja %s statuksella %s monotetaan fantasioidulla pingilla %d", pName, statukset[aristokraatit[bigPingOwner]], bigPing)
+            get_user_name(bigPingOwner,aName,31)
+            log_amx("Pelaaja %s statuksella %s scorella %d", aName, statukset[aristokraatit[bigPingOwner]], bigPing)
         #endif
 
         redirectPlayer(bigPingOwner)
@@ -413,7 +407,7 @@ public announcePlayer( pId ) {
     new pName[32]
     get_user_name(pId, pName, 31)
 
-    client_print(0,print_chat," * %s %s liittyy peliin", statukset[aristokraatit[pId]], pName)
+    client_print(0,print_chat,"* %s %s liittyy peliin", statukset[aristokraatit[pId]], pName)
     #if defined NOISY
         log_amx("%s (idx:%d) %s liittyy peliin", statukset[aristokraatit[pId]],pId, pName)
     #endif

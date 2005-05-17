@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.2.0-rc2"
+new Version[] = "0.3.0"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -50,6 +50,7 @@ public plugin_init() {
     server_cmd("localinfo rq_aristokraatti_version %s", Version) // For Statsme/AMX Welcome
 
     register_cvar("amx_reservation","1")
+    register_cvar("amx_rq_redircount","3")
 
     #if defined HIDE_RESERVEDSLOTS
         set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
@@ -223,6 +224,10 @@ public isKnownPlayer(id) {
 public monotaPingein ( aristoLevel ) {
     new Players[32]
     new playerCount, i, id
+
+    new redirCountStr[3]
+    new redirCount = 0
+
     new bigPing = 0
     new myPing, myLoss, bigPingOwner, pingMultiply
 
@@ -297,7 +302,35 @@ public monotaPingein ( aristoLevel ) {
             log_amx("Pelaaja %s statuksella %s scorella %d", aName, statukset[aristokraatit[bigPingOwner]], bigPing)
         #endif
 
-        redirectPlayer(bigPingOwner)
+        // Hae monestikko pelaaja on jo uudelleenohjattu
+        get_user_info(bigPingOwner, "redirCount", redirCountStr, 2)
+        redirCount = str_to_num(redirCountStr)
+
+        // Jos ohjattu useammin kuin amx_rq_redircount, resetoi
+        if( redirCount > get_cvar_num("amx_rq_redircount") )  {
+            redirCount = 1
+        } else {
+            redirCount = (redirCount+1)
+        }
+
+        #if defined NOISY
+            log_amx("Pelaaja %s uusi redirCount %d", aName, redirCount)
+        #endif
+
+        // Asetetaan pelaajan muuttuja
+        client_cmd(bigPingOwner, "setinfo rq_redircount %d", redirCount)
+
+        if((redirCount-1) == get_cvar_num("amx_rq_redircount")) {
+            #if defined NOISY
+                log_amx("Potkitaan pelaaja %s (idx:%d) redirCountilla %d", aName, bigPingOwner, (redirCount-1))
+            #endif
+
+            new userid = get_user_userid(bigPingOwner)
+            server_cmd("kick #%d Yritetty yhdistaa %d kertaa, ja joka kerta varattua tuuttas. Yrita pian uudestaan",userid,(redirCount-1))
+        } else {
+            redirectPlayer(bigPingOwner)
+        }
+
         return bigPing
     }
     else {

@@ -38,23 +38,23 @@ new error[128]
 
 new aristokraatit[32] = 0
 
-new statukset[4][] = {"n00bi", "Pelaaja", "Statuskraatti", "Aristokraatti"}
+new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.3.0"
+new Version[] = "0.3.1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
     register_cvar("rq_aristokraatti_version", Version, FCVAR_SERVER|FCVAR_SPONLY) // For GameSpy/HLSW and such
     server_cmd("localinfo rq_aristokraatti_version %s", Version) // For Statsme/AMX Welcome
 
-    register_cvar("amx_reservation","1")
+    register_cvar("amx_reservation","0")
     register_cvar("amx_rq_redircount","3")
 
-    #if defined HIDE_RESERVEDSLOTS
-        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
-    #endif
+    //#if defined HIDE_RESERVEDSLOTS
+    set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
+    //#endif
 
     // Hieman aikaa että asetukset etc ehditään lukea
     set_task(0.1,"sqlInit")
@@ -116,7 +116,8 @@ public client_authorized(id) {
         }
     }
     else {
-        log_amx("Ei vapaita paikkoja serverilla")
+        log_amx("Serverilla enempi pelaajia kuin vapaita slotteja")
+        redirectPlayer(id)
     }
     return PLUGIN_HANDLED
 }
@@ -138,7 +139,7 @@ public client_disconnect(id)
     if(is_user_bot(id)) return PLUGIN_HANDLED
 
     if( aristokraatit[id] >= 1 ) {
-        log_amx("Poistetaan aristokraatti merkinta idx:%d", id);
+        log_amx("Resetoidaan aristokraatti merkinta idx:%d", id);
         aristokraatit[id] = 0
     }
     return PLUGIN_HANDLED
@@ -226,7 +227,7 @@ public monotaPingein ( aristoLevel ) {
     new playerCount, i, id
 
     new redirCountStr[3]
-    new redirCount = 0
+    new redirCount = 0, newRedirCount = 0
 
     new bigPing = 0
     new myPing, myLoss, bigPingOwner, pingMultiply
@@ -307,27 +308,31 @@ public monotaPingein ( aristoLevel ) {
         redirCount = str_to_num(redirCountStr)
 
         // Jos ohjattu useammin kuin amx_rq_redircount, resetoi
-        if( redirCount > get_cvar_num("amx_rq_redircount") )  {
-            redirCount = 1
+        if( redirCount >= get_cvar_num("amx_rq_redircount") )  {
+            newRedirCount = 0
         } else {
-            redirCount = (redirCount+1)
+            newRedirCount = redirCount+1
         }
 
         #if defined NOISY
-            log_amx("Pelaaja %s uusi redirCount %d", aName, redirCount)
+            log_amx("Pelaaja %s newRedirCount %d (vanha:%d)", aName, newRedirCount,redirCount)
         #endif
 
         // Asetetaan pelaajan muuttuja
-        client_cmd(bigPingOwner, "setinfo rq_redircount %d", redirCount)
+        client_cmd(bigPingOwner, "setinfo rq_redircount %d", newRedirCount)
 
-        if((redirCount-1) == get_cvar_num("amx_rq_redircount")) {
+        if(redirCount == get_cvar_num("amx_rq_redircount")) {
+
             #if defined NOISY
-                log_amx("Potkitaan pelaaja %s (idx:%d) redirCountilla %d", aName, bigPingOwner, (redirCount-1))
+                log_amx("Potkitaan pelaaja %s (idx:%d) redirCountilla %d (new:%d)", aName, bigPingOwner, redirCount,newRedirCount)
             #endif
 
             new userid = get_user_userid(bigPingOwner)
             server_cmd("kick #%d Yritetty yhdistaa %d kertaa, ja joka kerta varattua tuuttas. Yrita pian uudestaan",userid,(redirCount-1))
         } else {
+            #if defined NOISY
+                log_amx("pelaaja %s (idx:%d) redirCount %d (new:%d) vs. amx_rq_redircount %d", aName, bigPingOwner, redirCount,newRedirCount, get_cvar_num("amx_rq_redircount"))
+            #endif
             redirectPlayer(bigPingOwner)
         }
 

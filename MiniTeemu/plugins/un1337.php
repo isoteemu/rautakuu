@@ -31,7 +31,7 @@ $byes = array(
 
 foreach($teinix as $str) {
     if (stristr($plugin->line->msg, $str)) {
-        $bye=$byes[array_rand[$byes]];
+        $bye=$byes[array_rand($byes)];
         irc::trace("Teinixiä havaittu:{$str} in {$plugin->line->msg}");
         $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä. $bye");
     }

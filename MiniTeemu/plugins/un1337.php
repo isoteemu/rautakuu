@@ -36,5 +36,5 @@ foreach($teinix as $str) {
         $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä. $bye");
     }
 }
-TNT - Six Feet Under - Graveyard Classics
+
 ?>

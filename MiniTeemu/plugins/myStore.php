@@ -19,7 +19,7 @@ if( $init==true ) {
 
 if(!isset($db)) {
     irc::trace("Yhdistetään tietokantaan");
-    $db = DB::Connect("");
+    $db = DB::Connect("mysql://miniteemu:a24cdcf4903642@localhost/rautakuuirc");
     if(DB::IsError($db)) {
         $plugin->irc->message("Virhe yhdistettäessä tietokantaan, ".$db->getMessage());
         unset($plugin->irc->irc_data->triggers->plugins['myStore']);

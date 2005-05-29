@@ -13,13 +13,28 @@ $teinix = array(
     'lol',
     'itq',
     'stfu',
+    'rofl',
+);
+
+$byes = array(
+    'Näkemiin',
+    'Ixudzan',
+    'Ciao',
+    'Farewell',
+    'Adiau^',
+    'Hyvästi',
+    'Au revoir',
+    'Bonne journée',
+    'Auf Wiedersehen',
+    'Wiedersehen',
 );
 
 foreach($teinix as $str) {
     if (stristr($plugin->line->msg, $str)) {
+        $bye=$byes[array_rand[$byes]];
         irc::trace("Teinixiä havaittu:{$str} in {$plugin->line->msg}");
-        $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä havaittu. Terveiset Chevyltä.");
+        $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä. $bye");
     }
 }
-
+TNT - Six Feet Under - Graveyard Classics
 ?>

@@ -18,7 +18,7 @@ $teinix = array(
 foreach($teinix as $str) {
     if (stristr($plugin->line->msg, $str)) {
         irc::trace("Teinixiä havaittu:{$str} in {$plugin->line->msg}");
-        $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick}: Teinixiä havaittu. Terveiset Chevyltä.");
+        $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä havaittu. Terveiset Chevyltä.");
     }
 }
 

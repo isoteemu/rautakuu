@@ -1,4 +1,4 @@
-#define SQLON 0 // 1 = Use SQL | 0 = Use file
+#define SQLON 1 // 1 = Use SQL | 0 = Use file
 
 #include <amxmodx>
 #include <amxmisc>
@@ -23,7 +23,7 @@ new bankfees = 0
 
 public plugin_init()
 {
-	register_plugin("AMX Bank","1.5-rq","twistedeuphoria")
+	register_plugin("AMX Bank","1.5.1","twistedeuphoria")
 	register_concmd("bank_create","bank_create",ADMIN_USER,"<opening amount> :Create a new bank account.")
 	register_concmd("bank_close","bank_close",ADMIN_CVAR,"Close the AMX Bank.")
 	register_concmd("bank_open","bank_open",ADMIN_CVAR,"Open the AMX Bank for business.")
@@ -37,7 +37,7 @@ public plugin_init()
 	register_cvar("bank_min_opening","1000")
 	register_cvar("bank_state","1")
 	register_cvar("bank_min_players","2")
-	register_cvar("bank_restrict","0") // 0 = All user can use the bank 1 = Only users defined in file or SQL
+	register_cvar("bank_restrict","1") // 0 = All user can use the bank 1 = Only users defined in file or SQL
 	register_cvar("bank_interest_rounds","15")
 	register_cvar("bank_interest_rate","0.01")
 	register_cvar("bank_fees_base","100")  //Base bank fee in $
@@ -52,7 +52,7 @@ public plugin_init()
 
 	register_logevent("giveinterest",2,"0=World triggered","1=Round_Start")
 	#if SQLON
-		set_task(3.0,"sqlinit")
+		set_task(5.0,"sqlinit")
 	#else
 		new directory[201]
 		get_configsdir(directory,200)
@@ -499,11 +499,19 @@ public client_putinserver(id)
 			new sid[35]
 			get_user_authid(id,sid,34)
 			#if SQLON
-				result = dbi_query(dbc,"SELECT * FROM `drupal_steamids` WHERE steamid = '%s'",sid)
-				if(result == RESULT_NONE)
+				result = dbi_query(dbc,"SELECT * FROM drupal_steamids WHERE steamid='%s'",sid)
+				if(result == RESULT_NONE) {
+                    log_amx("Ei rekisteroitynyt, ei pankkia")
 					canuse[id] = false
-				else
+				} else {
+                    if( result == RESULT_FAILED ) {
+                        new error[128]
+                        dbi_error(dbc, error,127)
+                        log_amx("DB error: %s", error);
+                    }
 					canuse[id] = true
+
+                }
 				dbi_free_result(result)
 			#else
 				new retstr[35],a,i
@@ -742,20 +750,20 @@ public bank_close(id,level,cid)
 public sqlinit()
 {
 	#if SQLON
-		new error[32],sqlhostname[35],sqluser[35],sqlpass[35],sqldbname[35]
+		new error[128],sqlhostname[35],sqluser[35],sqlpass[35],sqldbname[35]
 		get_cvar_string("rq_sql_host",sqlhostname,34)
 		get_cvar_string("rq_sql_user",sqluser,34)
 		get_cvar_string("rq_sql_pass",sqlpass,34)
 		get_cvar_string("rq_sql_db",sqldbname,34)
-		dbc = dbi_connect(sqlhostname,sqluser,sqlpass,sqldbname,error,31)
+		dbc = dbi_connect(sqlhostname,sqluser,sqlpass,sqldbname,error,127)
 		if(dbc == SQL_FAILED)
 		{
-			server_print("Could not connect.")
+			server_print("Could not connect: %s",error)
 			return PLUGIN_HANDLED
 		}
 
-		//result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `bank` (`sid` VARCHAR(35), `amount` BIGINT(20))")
-		//dbi_free_result(result)
+		result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `bank` (`sid` VARCHAR(35), `amount` BIGINT(20))")
+		dbi_free_result(result)
 		//result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `drupal_steamids` (`steamid` VARCHAR(35))")
 		//dbi_free_result(result)
 

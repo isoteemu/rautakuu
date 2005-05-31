@@ -243,6 +243,10 @@ public monotaPingein ( aristoLevel ) {
         if ( !is_user_connected(Players[i]) && !is_user_connecting(Players[i]) ) {
             continue
         }
+        else if (id == 0) {
+            // Serveri iha ite
+            continue
+        }
         else if (access(id,ADMIN_RESERVATION)) {
             log_amx("ADMIN_RESERVATION (idx:%d)", id);
             continue

@@ -40,6 +40,7 @@ switch( $plugin->line->code ) {
     case "JOIN" :
         $msg = "";
         break;
+    case "NICK" :
     case "PART" :
     case "QUIT" :
     case "KICK" :

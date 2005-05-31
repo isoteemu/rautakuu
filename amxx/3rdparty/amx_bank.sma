@@ -44,10 +44,10 @@ public plugin_init()
 	register_cvar("bank_fees_increase","10") //Added to the base fee for each transaction in a round
 
     // Rautakuu mysli
-    register_cvar("rq_sql_host",get_cvar_string("amx_sql_host"))
-    register_cvar("rq_sql_user",get_cvar_string("amx_sql_user"))
-    register_cvar("rq_sql_pass",get_cvar_string("amx_sql_pass"))
-    register_cvar("rq_sql_db",get_cvar_string("amx_sql_db"))
+    register_cvar("rq_sql_host","rautakuu.org")
+    register_cvar("rq_sql_user","user")
+    register_cvar("rq_sql_pass","p4ssw0rd")
+    register_cvar("rq_sql_db","hlds")
     // /Rautakuu mysli
 
 	register_logevent("giveinterest",2,"0=World triggered","1=Round_Start")

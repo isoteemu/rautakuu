@@ -159,9 +159,7 @@ public checkcamping(){
             else
                 campmeter[id] += (camptolerancedefending-standarddeviation)/get_cvar_num("anticamping_camptime")
         }
-        if (campmeter[id] < 80 ) {
-            emit_sound(id,CHAN_VOICE,"misc/heart.wav", 0.0, ATTN_NORM, SND_STOP, PITCH_NORM)
-        }
+
         if (campmeter[id] < 0) {
             campmeter[id] = 0
         } else if (campmeter[id]>100) {

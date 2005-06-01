@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.3.1"
+new Version[] = "0.3.2"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -52,9 +52,9 @@ public plugin_init() {
     register_cvar("amx_reservation","0")
     register_cvar("amx_rq_redircount","3")
 
-    //#if defined HIDE_RESERVEDSLOTS
-    set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
-    //#endif
+    #if defined HIDE_RESERVEDSLOTS
+        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
+    #endif
 
     // Hieman aikaa ett‰ asetukset etc ehdit‰‰n lukea
     set_task(0.1,"sqlInit")
@@ -323,7 +323,7 @@ public isMaxRedirs(id) {
     #endif
 
     // Hae monestikko pelaaja on jo uudelleenohjattu
-    get_user_info(id, "redirCount", redirCountStr, 2)
+    get_user_info(id, "rq_redircount", redirCountStr, 2)
     redirCount = str_to_num(redirCountStr)
 
     // Jos ohjattu useammin kuin amx_rq_redircount, resetoi

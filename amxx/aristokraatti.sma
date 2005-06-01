@@ -226,9 +226,6 @@ public monotaPingein ( aristoLevel ) {
     new Players[32]
     new playerCount, i, id
 
-    new redirCountStr[3]
-    new redirCount = 0, newRedirCount = 0
-
     new bigPing = 0
     new myPing, myLoss, bigPingOwner, pingMultiply
 
@@ -306,39 +303,7 @@ public monotaPingein ( aristoLevel ) {
             get_user_name(bigPingOwner,aName,31)
             log_amx("Pelaaja %s statuksella %s scorella %d", aName, statukset[aristokraatit[bigPingOwner]], bigPing)
         #endif
-
-        // Hae monestikko pelaaja on jo uudelleenohjattu
-        get_user_info(bigPingOwner, "redirCount", redirCountStr, 2)
-        redirCount = str_to_num(redirCountStr)
-
-        // Jos ohjattu useammin kuin amx_rq_redircount, resetoi
-        if( redirCount >= get_cvar_num("amx_rq_redircount") )  {
-            newRedirCount = 0
-        } else {
-            newRedirCount = redirCount+1
-        }
-
-        #if defined NOISY
-            log_amx("Pelaaja %s newRedirCount %d (vanha:%d)", aName, newRedirCount,redirCount)
-        #endif
-
-        // Asetetaan pelaajan muuttuja
-        client_cmd(bigPingOwner, "setinfo rq_redircount %d", newRedirCount)
-
-        if(redirCount == get_cvar_num("amx_rq_redircount")) {
-
-            #if defined NOISY
-                log_amx("Potkitaan pelaaja %s (idx:%d) redirCountilla %d (new:%d)", aName, bigPingOwner, redirCount,newRedirCount)
-            #endif
-
-            new userid = get_user_userid(bigPingOwner)
-            server_cmd("kick #%d Yritetty yhdistaa %d kertaa, ja joka kerta varattua tuuttas. Yrita pian uudestaan",userid,(redirCount-1))
-        } else {
-            #if defined NOISY
-                log_amx("pelaaja %s (idx:%d) redirCount %d (new:%d) vs. amx_rq_redircount %d", aName, bigPingOwner, redirCount,newRedirCount, get_cvar_num("amx_rq_redircount"))
-            #endif
-            redirectPlayer(bigPingOwner)
-        }
+        redirectPlayer(bigPingOwner)
 
         return bigPing
     }
@@ -348,67 +313,115 @@ public monotaPingein ( aristoLevel ) {
     return 0
 }
 
-public redirectPlayer(id) {
-    new myIP[16]
-    get_cvar_string("ip",myIP,15)
+public isMaxRedirs(id) {
+    new redirCountStr[3]
+    new redirCount = 0, newRedirCount = 0
 
-    new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
+    #if defined NOISY
+        new aName[32]
+        get_user_name(id,aName,31)
+    #endif
 
-    if (Res == RESULT_FAILED) {
-        dbi_error(sql,error,127)
-        log_amx("Virhe haettaessa servereita: %s",error)
-        dbi_free_result(Res)
+    // Hae monestikko pelaaja on jo uudelleenohjattu
+    get_user_info(id, "redirCount", redirCountStr, 2)
+    redirCount = str_to_num(redirCountStr)
 
-        new id_str[3]
-        num_to_str(id, id_str, 2)
-        kickPlayer(id_str)
-
-        return
-    }
-    else if (Res == RESULT_NONE) {
-        log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa. Sitten monotan.")
-        // Ei servereietä? Monota sitten
-        dbi_free_result(Res)
-
-        new id_str[3]
-        num_to_str(id, id_str, 2)
-        kickPlayer(id_str)
-
-        return
-    }
-
-    new redirName[32], redirSrv[32], redirPort[6]
-    while( dbi_nextrow(Res) > 0 ) {
-        dbi_result(Res, "name", redirName, 31)
-        dbi_result(Res, "addr", redirSrv, 31)
-        dbi_result(Res, "port", redirPort, 6)
-
-        #if defined NOISY
-            log_amx("Loytyi serveri %s; %s:%s",redirName,redirSrv,redirPort)
-        #endif
-
-        dbi_free_result(Res)
+    // Jos ohjattu useammin kuin amx_rq_redircount, resetoi
+    if( redirCount >= get_cvar_num("amx_rq_redircount") )  {
+        newRedirCount = 0
+    } else {
+        newRedirCount = redirCount+1
     }
 
     #if defined NOISY
-        log_amx("ohjataan serverille %s:%s",redirSrv,redirPort)
+        log_amx("Pelaaja %s newRedirCount %d (vanha:%d)", aName, newRedirCount,redirCount)
     #endif
 
-    client_print(id,print_console,"======================================================")
-    client_print(id,print_console," Tama serveri on pelaajalimitissa")
-    client_print(id,print_console," Sinut ohjataan toiselle serverille:")
-    client_print(id,print_console," > %s",redirName)
-    client_print(id,print_console," > %s:%s",redirSrv,redirPort)
-    client_print(id,print_console,"======================================================")
+    // Asetetaan pelaajan redircount
+    client_cmd(id, "setinfo rq_redircount %d", newRedirCount)
 
-    client_cmd(id,"echo;disconnect; connect %s:%s",redirSrv,redirPort)
+    #if defined NOISY
+        log_amx("Pelaaja %s (idx:%d) redirCountilla %d (new:%d)", aName, id, redirCount,newRedirCount)
+    #endif
 
-    // Varmistetaan viela etta häipyy
-    /*
-    new id_str[3]
-    num_to_str(id, id_str, 2)
-    set_task(5.0, "kickPlayer",0,id_str)
-    */
+    if(redirCount >= get_cvar_num("amx_rq_redircount")) {
+        new userid = get_user_userid(id)
+        server_cmd("kick #%d Yritetty yhdistaa %d kertaa, mutta serverit taynna. Yrita pian uudestaan",userid,redirCount)
+        return 1
+    }
+    return 0
+
+}
+
+public redirectPlayer(id) {
+
+    if (isMaxRedirs(id)) {
+        // Pelaajan redirCount täynnä, lopeta suoritus
+        return PLUGIN_HANDLED
+    } else {
+
+        new myIP[16]
+        get_cvar_string("ip",myIP,15)
+
+        new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
+
+        if (Res == RESULT_FAILED) {
+            dbi_error(sql,error,127)
+            log_amx("Virhe haettaessa servereita: %s",error)
+            dbi_free_result(Res)
+
+            new id_str[3]
+            num_to_str(id, id_str, 2)
+            kickPlayer(id_str)
+
+            return PLUGIN_HANDLED
+        }
+        else if (Res == RESULT_NONE) {
+            log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa. Sitten monotan.")
+            // Ei servereietä? Monota sitten
+            dbi_free_result(Res)
+
+            new id_str[3]
+            num_to_str(id, id_str, 2)
+            kickPlayer(id_str)
+
+            return PLUGIN_HANDLED
+        }
+
+        new redirName[32], redirSrv[32], redirPort[6]
+        while( dbi_nextrow(Res) > 0 ) {
+            dbi_result(Res, "name", redirName, 31)
+            dbi_result(Res, "addr", redirSrv, 31)
+            dbi_result(Res, "port", redirPort, 6)
+
+            #if defined NOISY
+                log_amx("Loytyi serveri %s; %s:%s",redirName,redirSrv,redirPort)
+            #endif
+
+            dbi_free_result(Res)
+        }
+
+        #if defined NOISY
+            log_amx("ohjataan serverille %s:%s",redirSrv,redirPort)
+        #endif
+
+        client_print(id,print_console,"======================================================")
+        client_print(id,print_console," Serveri %s on pelaajalimitissa", myIP)
+        client_print(id,print_console," Sinut ohjataan toiselle serverille:")
+        client_print(id,print_console," > %s",redirName)
+        client_print(id,print_console," > %s:%s",redirSrv,redirPort)
+        client_print(id,print_console,"======================================================")
+
+        client_cmd(id,"echo;disconnect; connect %s:%s",redirSrv,redirPort)
+
+        // Varmistetaan viela etta häipyy
+        /*
+        new id_str[3]
+        num_to_str(id, id_str, 2)
+        set_task(5.0, "kickPlayer",0,id_str)
+        */
+    }
+    return PLUGIN_CONTINUE
 }
 
 public kickPlayer(id_str[3]) {

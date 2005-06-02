@@ -499,7 +499,7 @@ public client_putinserver(id)
 			new sid[35]
 			get_user_authid(id,sid,34)
 			#if SQLON
-				result = dbi_query(dbc,"SELECT * FROM drupal_steamids WHERE steamid='%s'",sid)
+				result = dbi_query(dbc,"SELECT * FROM drupal_steamids WHERE steamid LIKE '%s'",sid)
 				if(result == RESULT_NONE) {
                     log_amx("Ei rekisteroitynyt, ei pankkia")
 					canuse[id] = false
@@ -762,8 +762,8 @@ public sqlinit()
 			return PLUGIN_HANDLED
 		}
 
-		result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `bank` (`sid` VARCHAR(35), `amount` BIGINT(20))")
-		dbi_free_result(result)
+		//result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `bank` (`sid` VARCHAR(35), `amount` BIGINT(20))")
+		//dbi_free_result(result)
 		//result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `drupal_steamids` (`steamid` VARCHAR(35))")
 		//dbi_free_result(result)
 

@@ -1,4 +1,7 @@
 <?php
+
+static $db;
+
 if( $init==true ) {
     $plugin->addRule('code', "TOPIC");
 

@@ -44,6 +44,7 @@ switch( $plugin->line->code ) {
     case "PART" :
     case "QUIT" :
     case "KICK" :
+    case "TOPIC" :
         break;
     default :
         irc::trace("Ei tallenneta toimitoa: {$plugin->line->code}");

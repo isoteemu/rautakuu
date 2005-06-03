@@ -501,16 +501,17 @@ public client_putinserver(id)
 			#if SQLON
 				result = dbi_query(dbc,"SELECT * FROM drupal_steamids WHERE steamid LIKE '%s'",sid)
 				if(result == RESULT_NONE) {
-                    log_amx("Ei rekisteroitynyt, ei pankkia")
+                    log_amx("Ei rekisteroitynyt, ei pankkia (sid:%s)", sid)
 					canuse[id] = false
 				} else {
                     if( result == RESULT_FAILED ) {
                         new error[128]
                         dbi_error(dbc, error,127)
                         log_amx("DB error: %s", error);
+                        canuse[id] = false
+                    } else {
+					   canuse[id] = true
                     }
-					canuse[id] = true
-
                 }
 				dbi_free_result(result)
 			#else

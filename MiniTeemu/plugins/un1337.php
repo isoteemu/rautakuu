@@ -14,6 +14,7 @@ $teinix = array(
     'itq',
     'stfu',
     'rofl',
+    'munq',
 );
 
 $byes = array(

@@ -1,7 +1,7 @@
 <?php
 
 if( $init==true ) {
-    $plugin->addRule('code' = 'PRIVMSG');
+    $plugin->addRule('code', 'PRIVMSG');
     return;
 }
 

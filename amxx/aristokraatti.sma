@@ -29,7 +29,7 @@
 #include <amxmisc>
 #include <dbi>
 
-//#define HIDE_RESERVEDSLOTS
+#define HIDE_RESERVEDSLOTS
 
 #define NOISY
 
@@ -42,7 +42,7 @@ new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.3.2"
+new Version[] = "0.3.3"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -53,7 +53,7 @@ public plugin_init() {
     register_cvar("amx_rq_redircount","3")
 
     #if defined HIDE_RESERVEDSLOTS
-        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation") )
+        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - (get_cvar_num("amx_reservation")-1) )
     #endif
 
     // Hieman aikaa ett‰ asetukset etc ehdit‰‰n lukea

@@ -328,7 +328,7 @@ public isMaxRedirs(id) {
 
     // Jos ohjattu useammin kuin amx_rq_redircount, resetoi
     if( redirCount >= get_cvar_num("amx_rq_redircount") )  {
-        newRedirCount = 0
+        newRedirCount = 1
     } else {
         newRedirCount = redirCount+1
     }
@@ -346,7 +346,7 @@ public isMaxRedirs(id) {
 
     if(redirCount >= get_cvar_num("amx_rq_redircount")) {
         new userid = get_user_userid(id)
-        server_cmd("kick #%d Yritetty yhdistaa %d kertaa, mutta serverit taynna. Yrita pian uudestaan",userid,redirCount)
+        server_cmd("kick #%d Serverit taynna. Yrita pian uudestaan.",userid,redirCount)
         return 1
     }
     return 0

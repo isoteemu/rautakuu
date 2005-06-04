@@ -8,18 +8,21 @@ if( $init==true ) {
     // DB connection
     include_once("DB.php");
     $db = DB::Connect("mysql://miniteemu:a24cdcf4903642@localhost/drupal");
-    if (PEAR::isError($db)) {
+    if(DB::IsError($db)) {
         irc::trace("DB Error: ".$db->getMessage());
     }
-    $db = false;
 }
 
-if( $db == false ) return;
+if(DB::IsError($db)) {
+    irc::trace("Virhe tietokantayhteydessä, ei voi syncata topicia");
+    return;
+}
 
-$ser = serialize($plugin->line->msg);
-$res =& $db->query("UPDATE `variable` SET `value`='{$ser}' WHERE `name` = 'site_slogan'");
+$sql = sprintf("UPDATE `variable` SET `value`='%s' WHERE `name` = 'site_slogan'", serialize($plugin->line->msg));
 
-if( PEAR::isError($res) ) {
+$res =& $db->query($sql);
+
+if( DB::IsError($res) ) {
     irc::trace("DB Error: ".$res->getMessage());
 }
 

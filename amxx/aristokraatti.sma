@@ -53,7 +53,9 @@ public plugin_init() {
     register_cvar("amx_rq_redircount","3")
 
     #if defined HIDE_RESERVEDSLOTS
-        set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - (get_cvar_num("amx_reservation")-1) )
+        if (get_cvar_num("amx_reservation") >= 2) {
+            set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - (get_cvar_num("amx_reservation")+1) )
+        }
     #endif
 
     // Hieman aikaa ett‰ asetukset etc ehdit‰‰n lukea

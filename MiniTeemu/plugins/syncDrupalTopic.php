@@ -18,7 +18,12 @@ if(DB::IsError($db)) {
     return;
 }
 
-$sql = sprintf("UPDATE `variable` SET `value`='%s' WHERE `name` = 'site_slogan'", serialize($plugin->line->msg));
+$topic = mb_convert_encoding($plugin->line->msg, "utf-8", "iso-8859-1");
+if (substr($topic, 0, 21) == "Rautakuu [dot] org ||") {
+    $topic = substr($topic, 22);
+}
+
+$sql = sprintf("UPDATE `variable` SET `value`='%s' WHERE `name` = 'site_slogan'", serialize($topic));
 
 $res =& $db->query($sql);
 

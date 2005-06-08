@@ -49,7 +49,7 @@ new Sql:sql
 new Sql:rqSql
 new merror[128]
 
-new amxbans_version[10] = "amxx_4.0-rq"
+new amxbans_version[13] = "amxx_4.0-rq"
 new ban_motd[4096] = "Sinut on bannittu. Syy: %s. Kesto: %s. SteamIDsi: %s."
 new Float:kick_delay=10.0
 
@@ -202,7 +202,7 @@ public sql_ban(adminid,player,ban_type[],player_steamid[], player_ip[], player_n
 }
 
 public amx_ban(id) {
-	if (!(get_user_flags(id)&ADMIN_KICK)) {
+	if (!(get_user_flags(id)&ADMIN_BAN)) {
 		client_print(id,print_console,"[AMXX] %L",LANG_SERVER,"NO_ACCESS_TO_CMD")
 		return PLUGIN_HANDLED
 	}
@@ -268,7 +268,7 @@ public amx_ban(id) {
 }
 
 public amx_banip(id) {
-	if (!(get_user_flags(id)&ADMIN_KICK)) {
+	if (!(get_user_flags(id)&ADMIN_BAN)) {
 		client_print(id,print_console,"[AMXX] %L",LANG_SERVER,"NO_ACCESS_TO_CMD")
 		return PLUGIN_HANDLED
 	}
@@ -334,7 +334,7 @@ public amx_banip(id) {
 }
 
 public amx_find(id) {
-	if (!(get_user_flags(id)&ADMIN_KICK)) {
+	if (!(get_user_flags(id)&ADMIN_BAN)) {
 		client_print(id,print_console,"[AMXX] %L",LANG_PLAYER,"NO_ACCESS_TO_CMD")
 		return PLUGIN_HANDLED
 	}
@@ -480,24 +480,24 @@ public client_authorized(id) {
 				format(time_msg,32,"%i minutes",ban_left)
 			}
 
-			client_cmd(id, "echo ^"[AMXX] You have been banned by admin %s from this server.^"", admin_nick)
+			client_cmd(id, "echo ^"[AMXX] Sinut on banninut %s.^"", admin_nick)
 
 			if (ban_length_int==0) {
-				client_cmd(id, "echo ^"[AMXX] You have banned permanently. ^"")
+				client_cmd(id, "echo ^"[AMXX] Olet bannittu pysyvasti. ^"")
 			} else {
-				client_cmd(id, "echo ^"[AMXX] Remaining %s. ^"", time_msg)
+				client_cmd(id, "echo ^"[AMXX] Bannia jaljella %s. ^"", time_msg)
 			}
 
-			client_cmd(id, "echo ^"[AMXX] Reason %s. ^"", ban_reason)
-			client_cmd(id, "echo ^"[AMXX] Your nick: %s. Your steamid: %s. ^"", player_nick, authid)
-			client_cmd(id, "echo ^"[AMXX] Your IP is %s. ^"", plip)
+			client_cmd(id, "echo ^"[AMXX] Syy:  %s. ^"", ban_reason)
+			client_cmd(id, "echo ^"[AMXX] Nick: %s. Your steamid: %s. ^"", player_nick, authid)
+			client_cmd(id, "echo ^"[AMXX] IP:   %s. ^"", plip)
 
 			new id_str[3]
 			num_to_str(id,id_str,3)
 			set_task(1.0,"delayed_kick",0,id_str,3)
 			return PLUGIN_HANDLED
 		} else {
-			client_cmd(id, "echo ^"[AMXX] You were been banned at least once, dont let it happen again!.^"")
+			client_cmd(id, "echo ^"[AMXX] Sinut oli bannittu. Ala anna sen tapahtua uudestaan!^"")
 
 			new unban_created = get_systime(0)
 

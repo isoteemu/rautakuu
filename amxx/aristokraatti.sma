@@ -510,24 +510,13 @@ public cdstatuscheck(id) {
         else {
             // Pelaajalla ei C-D:ta
             aristokraatit[id] = -1
+            prefixNoCDName(id)
         }
     }
 }
 
 public client_infochanged(id) {
-    if ( get_cvar_num("amx_prefixnocd") == 1 && aristokraatit[id] == -1 ) {
-        new name[9]
-        get_user_name(id, name,8)
-        if(!equal(name,"[No C-D]")) {
-            client_print(id,print_console,"Nimen vaihto ilman [No C-D] prefixia, prefixoidaan")
-            new oldName[21], newName[32]
-            get_user_name(id, oldName, 20)
-            format(newName, 31, "[No C-D]%s", oldName)
-            #if defined NOISY
-                log_amx("Pelaajaa %s (idx:%d) yritti vaihtaa nickiaa, vaikkei C-Dta. prefixoidaan nick", oldName, id)
-            #endif
-        }
-    }
+    prefixNoCDName(id)
 }
 
 // Pyytaa joka roundin restartissa C-Dta tarkistamaan pelaajan.
@@ -547,5 +536,20 @@ public roundstart() {
     }
 }
 
+public prefixNoCDName(id) {
+    if ( get_cvar_num("amx_prefixnocd") == 1 && aristokraatit[id] == -1 ) {
+        new name[9]
+        get_user_name(id, name,8)
+        if(!equal(name,"[No C-D]")) {
+            client_print(id,print_console,"Nimen vaihto ilman [No C-D] prefixia, prefixoidaan")
+            new oldName[21], newName[32]
+            get_user_name(id, oldName, 20)
+            format(newName, 31, "[No C-D]%s", oldName)
+            #if defined NOISY
+                log_amx("Pelaajaa %s (idx:%d) yritti vaihtaa nickiaa, vaikkei C-Dta. prefixoidaan nick", oldName, id)
+            #endif
+        }
+    }
+}
 
 #endif

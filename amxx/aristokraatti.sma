@@ -576,6 +576,8 @@ public prefixNoCDName(id) {
             #if defined NOISY
                 log_amx("Pelaajaa %s (idx:%d) yritti vaihtaa nickiaa, vaikkei C-Dta. prefixoidaan nick", oldName, id)
             #endif
+            set_user_info(id, "name", newName)
+
         }
     }
 }

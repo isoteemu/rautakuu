@@ -49,7 +49,7 @@ new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 // This is for translating userids to indexes.
 #if defined CHEATIN_DEATH
-    new userids[33]
+    new userids[33] = 0
 #endif
 
 new Author[] = "Rautakuu [dot] org"
@@ -543,7 +543,9 @@ public cdstatuscheck(id) {
 }
 
 public client_infochanged(id) {
-    prefixNoCDName(id)
+    if(is_user_connected(id) && !is_user_connecting(id)) {
+        prefixNoCDName(id)
+    }
 }
 
 // Pyytaa joka roundin restartissa C-Dta tarkistamaan pelaajan.

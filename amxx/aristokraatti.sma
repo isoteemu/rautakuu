@@ -29,9 +29,15 @@
 #include <amxmisc>
 #include <dbi>
 
+// If more than 1 reserved slot, show only one extraslot.
+// Less whine from players "why can't i connect"
 #define HIDE_EXRTARESERVEDSLOTS
 
+// Debuggin
 #define NOISY
+
+// Use Cheating-Death
+#define CHEATIN_DEATH
 
 new Sql:sql
 new error[128]
@@ -42,19 +48,26 @@ new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.4.0"
+new Version[] = "0.5.0"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
     register_cvar("rq_aristokraatti_version", Version, FCVAR_SERVER|FCVAR_SPONLY) // For GameSpy/HLSW and such
     server_cmd("localinfo rq_aristokraatti_version %s", Version) // For Statsme/AMX Welcome
 
-    register_cvar("amx_reservation","0")
+    register_cvar("amx_reservation","1")
     register_cvar("amx_rq_redircount","3")
+
+    #if defined CHEATIN_DEATH
+        // Prefix names with [No C-D]
+        register_cvar("amx_prefixnocd","1")
+        register_srvcmd("cdstatuscheck","cdstatuscheck")
+        register_logevent("roundstart",2,"1=Round_Start")
+    #endif
 
     #if defined HIDE_EXRTARESERVEDSLOTS
         if (get_cvar_num("amx_reservation") >= 2) {
-            set_cvar_num( "sv_visiblemaxplayers" , get_maxplayers() - get_cvar_num("amx_reservation")+1 )
+            set_cvar_num("sv_visiblemaxplayers", get_maxplayers() - get_cvar_num("amx_reservation")+1 )
         }
     #endif
 
@@ -138,12 +151,7 @@ public client_putinserver(id) {
 
 public client_disconnect(id)
 {
-    if(is_user_bot(id)) return PLUGIN_HANDLED
-
-    if( aristokraatit[id] >= 1 ) {
-        log_amx("Resetoidaan aristokraatti merkinta idx:%d", id);
-        aristokraatit[id] = 0
-    }
+    aristokraatit[id] = 0
     return PLUGIN_HANDLED
 }
 
@@ -379,7 +387,7 @@ public redirectPlayer(id) {
             return PLUGIN_HANDLED
         }
         else if (Res == RESULT_NONE) {
-            log_amx("Ei muita servereita? Vahan turhaa sitten minua kayttaa. Sitten monotan.")
+            log_amx("Ei muita servereita? Sitten monotan.")
             // Ei servereietä? Monota sitten
             dbi_free_result(Res)
 
@@ -470,3 +478,74 @@ public announcePlayer( pId ) {
     #endif
     return PLUGIN_CONTINUE
 }
+
+//
+// CHEATIN-DEATH specified
+//
+
+#if defined CHEATIN_DEATH
+
+public cdstatuscheck(id) {
+    new argS[32], uidS[4], statS[4], uid, stat
+
+    read_argv(0,argS,31)
+    read_argv(1,uidS, 3)
+    read_argv(2,statS,3)
+
+    uid  = str_to_num(uidS)
+    stat = str_to_num(statS)
+
+    id = get_user_userid(uid)
+
+    // Ei tarkasteta vippeja tai parempia
+    if(aristokraatit[id] <= 0) {
+
+        #if defined NOISY
+            log_amx("%s (id:%d) (pid:%d) C-D check result: %d",statukset[0], id, uid, stat)
+        #endif
+
+        if(stat == 0) {
+            aristokraatit[id] = 0
+        }
+        else {
+            // Pelaajalla ei C-D:ta
+            aristokraatit[id] = -1
+        }
+    }
+}
+
+public client_infochanged(id) {
+    if ( get_cvar_num("amx_prefixnocd") == 1 && aristokraatit[id] == -1 ) {
+        new name[9]
+        get_user_name(id, name,8)
+        if(!equal(name,"[No C-D]")) {
+            client_print(id,print_console,"Nimen vaihto ilman [No C-D] prefixia, prefixoidaan")
+            new oldName[21], newName[32]
+            get_user_name(id, oldName, 20)
+            format(newName, 31, "[No C-D]%s", oldName)
+            #if defined NOISY
+                log_amx("Pelaajaa %s (idx:%d) yritti vaihtaa nickiaa, vaikkei C-Dta. prefixoidaan nick", oldName, id)
+            #endif
+        }
+    }
+}
+
+// Pyytaa joka roundin restartissa C-Dta tarkistamaan pelaajan.
+public roundstart() {
+    new Players[32]
+    new playerCount = 0, i = 0
+    new pid
+
+    get_players(Players,playerCount)
+
+    for (i=0; i<playerCount; i++) {
+        if(aristokraatit[Players[i]] == -1) {
+            pid = get_user_userid(Players[i])
+            // Pyydetaan C-Dta tarkistaamaan
+            server_cmd("cdstatus cdstatuscheck ^"%d^"",pid)
+        }
+    }
+}
+
+
+#endif

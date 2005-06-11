@@ -39,12 +39,18 @@
 // Use Cheating-Death
 #define CHEATIN_DEATH
 
+
+
 new Sql:sql
 new error[128]
 
-new aristokraatit[32] = 0
-
+new aristokraatit[33] = 0
 new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
+
+// This is for translating userids to indexes.
+#if defined CHEATIN_DEATH
+    new userids[33]
+#endif
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
@@ -227,6 +233,16 @@ public isKnownPlayer(id) {
         }
     }
 
+    #if defined CHEATIN_DEATH
+        new pid
+        pid = get_user_userid(id)
+
+        // reverse mappia varten
+        userids[id] = pid
+
+        // Pyydetaan C-Dta tarkistaamaan
+        server_cmd("cdstatus cdstatuscheck ^"%d^"",pid)
+    #endif
 
     // Pelaaja on n00bi
     return 0
@@ -485,7 +501,18 @@ public announcePlayer( pId ) {
 
 #if defined CHEATIN_DEATH
 
+getidfromuserid(userid) {
+    for(new i=0;i<sizeof(userids);++i) {
+        if(userids[i] == userid)
+        {
+            return i
+        }
+    }
+    return 1
+}
+
 public cdstatuscheck(id) {
+
     new argS[32], uidS[4], statS[4], uid, stat
 
     read_argv(0,argS,31)
@@ -495,7 +522,7 @@ public cdstatuscheck(id) {
     uid  = str_to_num(uidS)
     stat = str_to_num(statS)
 
-    id = get_user_userid(uid)
+    id = getidfromuserid(uid)
 
     // Ei tarkasteta vippeja tai parempia
     if(aristokraatit[id] <= 0) {
@@ -528,8 +555,9 @@ public roundstart() {
     get_players(Players,playerCount)
 
     for (i=0; i<playerCount; i++) {
-        if(aristokraatit[Players[i]] == -1) {
+        if(aristokraatit[Players[i]] <= 0) {
             pid = get_user_userid(Players[i])
+
             // Pyydetaan C-Dta tarkistaamaan
             server_cmd("cdstatus cdstatuscheck ^"%d^"",pid)
         }

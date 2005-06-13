@@ -493,7 +493,7 @@ public roundstart() {
             new nName[9]
             get_user_name(Players[i], nName, 8)
             if(equali(nName, "[No C-D]")) {
-                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", id)
+                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", Players[i])
                 // hanskaa
                 cdstatuscheck(Players[i])
             }

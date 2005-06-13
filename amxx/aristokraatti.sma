@@ -47,7 +47,7 @@ new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.5.0"
+new Version[] = "0.5.1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -490,9 +490,10 @@ public roundstart() {
 
     for (i=0; i<playerCount; i++) {
         if(aristokraatit[Players[i]] <= 0) {
-            new nName[8]
-            get_user_name(Players[i], nName, 7)
+            new nName[9]
+            get_user_name(Players[i], nName, 8)
             if(equali(nName, "[No C-D]")) {
+                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", id)
                 // hanskaa
                 cdstatuscheck(Players[i])
             }

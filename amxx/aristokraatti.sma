@@ -44,12 +44,12 @@
 new Sql:sql
 new error[128]
 
-new aristokraatit[33] = 0
+new aristokraatit[32] = 0
 new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
 
 // This is for translating userids to indexes.
 #if defined CHEATIN_DEATH
-    new userids[33] = 0
+    new userids[32] = 0
 #endif
 
 new Author[] = "Rautakuu [dot] org"
@@ -534,10 +534,27 @@ public cdstatuscheck(id) {
         if(stat == 0) {
             aristokraatit[id] = 0
         }
-        else {
+        else if(stat == 1) {
             // Pelaajalla ei C-D:ta
             aristokraatit[id] = -1
             prefixNoCDName(id)
+            client_print(id,print_console,"Asenna Cheating-Death: http://www.unitedadmins.com/cdeath.php")
+            client_print(id,print_console,"(Linux kayttajat, #rautakuu @ QuakeNET)")
+        }
+        else if(stat == 2) {
+            // Pelaajalla vanha C-D
+            aristokraatit[id] = -1
+            prefixNoCDName(id)
+            client_print(id,print_console,"Paivita Cheatin-Death: http://www.unitedadmins.com/cdeath.php")
+        }
+        else if(stat == 255) {
+            #if defined NOISY
+                log_amx("Pelaajaa (id:%d) (pid:%d) Ei C-D loytanyt", id, uid, stat)
+            #endif
+        }
+        else {
+            // luultavasti C-D tarkistus ei ole viela valmis.
+            aristokraatit[id] = -1
         }
     }
 }

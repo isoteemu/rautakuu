@@ -39,18 +39,11 @@
 // Use Cheating-Death
 #define CHEATIN_DEATH
 
-
-
 new Sql:sql
 new error[128]
 
 new aristokraatit[32] = 0
 new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
-
-// This is for translating userids to indexes.
-#if defined CHEATIN_DEATH
-    new userids[32] = 0
-#endif
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
@@ -65,9 +58,6 @@ public plugin_init() {
     register_cvar("amx_rq_redircount","3")
 
     #if defined CHEATIN_DEATH
-        // Prefix names with [No C-D]
-        register_cvar("amx_prefixnocd","1")
-        register_srvcmd("cdstatuscheck","cdstatuscheck")
         register_logevent("roundstart",2,"1=Round_Start")
     #endif
 
@@ -232,17 +222,6 @@ public isKnownPlayer(id) {
             return 1
         }
     }
-
-    #if defined CHEATIN_DEATH
-        new pid
-        pid = get_user_userid(id)
-
-        // reverse mappia varten
-        userids[id] = pid
-
-        // Pyydetaan C-Dta tarkistaamaan
-        server_cmd("cdstatus cdstatuscheck ^"%d^"",pid)
-    #endif
 
     // Pelaaja on n00bi
     return 0
@@ -501,104 +480,63 @@ public announcePlayer( pId ) {
 
 #if defined CHEATIN_DEATH
 
-getidfromuserid(userid) {
-    for(new i=0;i<sizeof(userids);++i) {
-        if(userids[i] == userid)
-        {
-            return i
-        }
-    }
-    return 1
-}
-
-public cdstatuscheck(id) {
-
-    new argS[32], uidS[4], statS[4], uid, stat
-
-    read_argv(0,argS,31)
-    read_argv(1,uidS, 3)
-    read_argv(2,statS,3)
-
-    uid  = str_to_num(uidS)
-    stat = str_to_num(statS)
-
-    id = getidfromuserid(uid)
-
-    // Ei tarkasteta vippeja tai parempia
-    if(aristokraatit[id] <= 0) {
-
-        #if defined NOISY
-            log_amx("%s (id:%d) (pid:%d) C-D check result: %d",statukset[0], id, uid, stat)
-        #endif
-
-        if(stat == 0) {
-            aristokraatit[id] = 0
-        }
-        else if(stat == 1) {
-            // Pelaajalla ei C-D:ta
-            aristokraatit[id] = -1
-            prefixNoCDName(id)
-            client_print(id,print_console,"Asenna Cheating-Death: http://www.unitedadmins.com/cdeath.php")
-            client_print(id,print_console,"(Linux kayttajat, #rautakuu @ QuakeNET)")
-        }
-        else if(stat == 2) {
-            // Pelaajalla vanha C-D
-            aristokraatit[id] = -1
-            prefixNoCDName(id)
-            client_print(id,print_console,"Paivita Cheatin-Death: http://www.unitedadmins.com/cdeath.php")
-        }
-        else if(stat == 255) {
-            #if defined NOISY
-                log_amx("Pelaajaa (id:%d) (pid:%d) Ei C-D loytanyt", id, uid, stat)
-            #endif
-        }
-        else {
-            // luultavasti C-D tarkistus ei ole viela valmis.
-            aristokraatit[id] = -1
-        }
-    }
-}
-
-public client_infochanged(id) {
-    if(is_user_connected(id) && !is_user_connecting(id)) {
-        prefixNoCDName(id)
-    }
-}
 
 // Pyytaa joka roundin restartissa C-Dta tarkistamaan pelaajan.
 public roundstart() {
     new Players[32]
     new playerCount = 0, i = 0
-    new pid
 
     get_players(Players,playerCount)
 
     for (i=0; i<playerCount; i++) {
         if(aristokraatit[Players[i]] <= 0) {
-            pid = get_user_userid(Players[i])
-
-            // Pyydetaan C-Dta tarkistaamaan
-            server_cmd("cdstatus cdstatuscheck ^"%d^"",pid)
+            new nName[8]
+            get_user_name(Players[i], nName, 7)
+            if(equali(nName, "[No C-D]")) {
+                // hanskaa
+                cdstatuscheck(Players[i])
+            }
         }
     }
 }
 
-public prefixNoCDName(id) {
-    if ( get_cvar_num("amx_prefixnocd") == 1 && aristokraatit[id] == -1 ) {
-        new name[9]
-        get_user_name(id, name,8)
-        if(!equal(name,"[No C-D]")) {
-            client_print(id,print_console,"Nimen vaihto ilman [No C-D] prefixia, prefixoidaan")
-            new oldName[21], newName[32]
-            get_user_name(id, oldName, 20)
-            format(newName, 31, "[No C-D]%s", oldName)
-            #if defined NOISY
-                log_amx("Pelaajaa %s (idx:%d) yritti vaihtaa nickiaa, vaikkei C-Dta. prefixoidaan nick", oldName, id)
-            #endif
-            set_user_info(id, "name", newName)
+public cdstatuscheck(id) {
 
-        }
+    // Ei tarkasteta vippeja tai parempia
+    if(aristokraatit[id] <= 0) {
+
+        // Pelaajalla ei C-D:ta
+
+        client_print(id,print_console,"[No C-D] =============================================")
+        client_print(id,print_console," Asenna/Paivita Cheating-Death:")
+        client_print(id,print_console,"     http://www.unitedadmins.com/cdeath.php")
+        client_print(id,print_console," (Linux-hihhulit: #rautakuu @ QuakeNET)")
+        client_print(id,print_console,"[No C-D] =============================================")
+
+        new msg[1201], aname[32]
+        get_user_name(id,aname,31)
+
+        format(msg, 1200,"<html><head><title>No C-D</title></head><body bgcolor=black color=green>")
+        format(msg, 1200,"%s [No C-D] =============================================<br />", msg)
+        format(msg, 1200,"%s <strong>Hjuva tjoveri %s</strong><br />", msg, aname)
+        format(msg, 1200,"%s <p>Asenna/p&auml;ivita Cheating-Death:<br />", msg)
+        format(msg, 1200,"%s  <a href=http://www.unitedadmins.com/cdeath.php>http://www.unitedadmins.com/cdeath.php</a><br />", msg)
+        format(msg, 1200,"%s  </p><p>(Linux-hihhulit: #rautakuu @ QuakeNET)</p>", msg)
+        format(msg, 1200,"%s [No C-D] =============================================", msg)
+        format(msg, 1200,"%s </body></html>", msg)
+        show_motd(id, msg, "No C-D")
+
+        new id_str[3]
+        num_to_str(id,id_str,3)
+        set_task(6.0,"delayNoCDKick",1,id_str,3)
     }
+}
+
+public delayNoCDKick(id_str[]) {
+    new player_id = str_to_num(id_str)
+    new userid = get_user_userid(player_id)
+    server_cmd("kick #%d Tarkista Cheating-Death",userid)
+    return PLUGIN_CONTINUE
 }
 
 #endif

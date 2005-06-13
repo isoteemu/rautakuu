@@ -527,9 +527,11 @@ public cdstatuscheck(id) {
         format(msg, 1200,"%s </body></html>", msg)
         show_motd(id, msg, "No C-D")
 
+        client_print(0,print_chat,"* Pelaaja %s potkitaan puuttuvan C-Dn takia." aname)
+
         new id_str[3]
         num_to_str(id,id_str,3)
-        set_task(6.0,"delayNoCDKick",1,id_str,3)
+        set_task(15.0,"delayNoCDKick",1,id_str,3)
     }
 }
 

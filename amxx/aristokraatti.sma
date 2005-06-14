@@ -57,10 +57,6 @@ public plugin_init() {
     register_cvar("amx_reservation","1")
     register_cvar("amx_rq_redircount","3")
 
-    #if defined CHEATIN_DEATH
-        register_logevent("roundstart",2,"0=World triggered", "1=Round_Start")
-    #endif
-
     #if defined HIDE_EXRTARESERVEDSLOTS
         if (get_cvar_num("amx_reservation") >= 2) {
             set_cvar_num("sv_visiblemaxplayers", get_maxplayers() - get_cvar_num("amx_reservation")+1 )
@@ -479,25 +475,16 @@ public announcePlayer( pId ) {
 
 #if defined CHEATIN_DEATH
 
-
-// Pyytaa joka roundin restartissa C-Dta tarkistamaan pelaajan.
-public roundstart() {
-    new Players[32]
-    new playerCount = 0, i = 0
-
-    get_players(Players,playerCount)
-
-    for (i=0; i<playerCount; i++) {
-        if(aristokraatit[Players[i]] <= 0) {
-            new nName[9]
-            get_user_name(Players[i], nName, 8)
-            if(equali(nName, "[No C-D]") || equali(nName, "[Old C-D")) {
-                #if defined NOISY
-                    log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", Players[i])
-                #endif
-                // hanskaa
-                cdstatuscheck(Players[i])
-            }
+public client_infochanged(id) {
+    if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
+        new nName[9]
+        get_user_name(id, nName, 8)
+        if(equali(nName, "[No C-D]") || equali(nName, "[Old C-D")) {
+            #if defined NOISY
+                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix",id)
+            #endif
+            // hanskaa
+            cdstatuscheck(id)
         }
     }
 }
@@ -521,7 +508,7 @@ public cdstatuscheck(id) {
         format(msg, 1200,"<html><head><title>No C-D</title></head><body bgcolor=black color=green>")
         format(msg, 1200,"%s [No C-D] =============================================<br />", msg)
         format(msg, 1200,"%s <strong>Hjuva tjoveri %s</strong><br />", msg, aname)
-        format(msg, 1200,"%s <p>Asenna/p&auml;ivita Cheating-Death:<br />", msg)
+        format(msg, 1200,"%s <p>Asenna/p&auml;ivit&auml; Cheating-Death:<br />", msg)
         format(msg, 1200,"%s  <a href=http://www.unitedadmins.com/cdeath.php>http://www.unitedadmins.com/cdeath.php</a><br />", msg)
         format(msg, 1200,"%s  </p><p>(Linux-hihhulit: #rautakuu @ QuakeNET)</p>", msg)
         format(msg, 1200,"%s [No C-D] =============================================", msg)

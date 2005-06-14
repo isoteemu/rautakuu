@@ -58,7 +58,7 @@ public plugin_init() {
     register_cvar("amx_rq_redircount","3")
 
     #if defined CHEATIN_DEATH
-        register_logevent("roundstart",2,"0=Round_Start")
+        register_logevent("roundstart",2,"0=World triggered", "1=Round_Start")
     #endif
 
     #if defined HIDE_EXRTARESERVEDSLOTS

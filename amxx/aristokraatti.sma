@@ -58,7 +58,7 @@ public plugin_init() {
     register_cvar("amx_rq_redircount","3")
 
     #if defined CHEATIN_DEATH
-        register_logevent("roundstart",2,"1=Round_Start")
+        register_logevent("roundstart",2,"0=Round_Start")
     #endif
 
     #if defined HIDE_EXRTARESERVEDSLOTS
@@ -67,7 +67,7 @@ public plugin_init() {
         }
     #endif
 
-    // Hieman aikaa että asetukset etc ehditään lukea
+    // Hieman aikaa ettï¿½asetukset etc ehditï¿½n lukea
     set_task(0.1,"sqlInit")
 }
 
@@ -105,7 +105,7 @@ public client_authorized(id) {
         if ( limit == players ) {
             allowIn = false
             if ( aristokraatit[id] >= 1 ) {
-                // Etsitään monotettava
+                // Etsitï¿½n monotettava
                 new monotettu = monotaPingein(aristokraatit[id])
 
                 if ( monotettu >= 1 ) {
@@ -163,9 +163,8 @@ public isKnownPlayer(id) {
     new userauthid[32]
     get_user_authid(id,userauthid,31)
 
-    // On perkele köyhän miehen hax hax hax.
-    // Liian tiukka lauseiden pituudesta niin täytyy erillisillä hauilla tehä
-
+    // On perkele kï¿½hï¿½ miehen hax hax hax.
+    // Liian tiukka lauseiden pituudesta niin tï¿½tyy erillisillï¿½hauilla tehï¿½
 
     // Aristokraatti haku
     new Result:Res = dbi_query(sql,"SELECT '3' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
@@ -205,7 +204,7 @@ public isKnownPlayer(id) {
         }
     }
 
-    // Rekisteröityneiden haku
+    // Rekisterï¿½tyneiden haku
     new Result:Res3 = dbi_query(sql,"SELECT '1' AS status FROM drupal_steamids WHERE `steamid` LIKE '%s'",userauthid)
     if (Res3 == RESULT_FAILED) {
         dbi_error(sql,error,127)
@@ -254,7 +253,7 @@ public monotaPingein ( aristoLevel ) {
             continue
         }
         else if ( aristokraatit[id] >= aristoLevel ) {
-            // Hypätään saman tasoisten tai korkearvoisempien yli
+            // Hypï¿½ï¿½n saman tasoisten tai korkearvoisempien yli
 
             #if defined NOISY
                 get_user_name(id,aName,31)
@@ -273,7 +272,7 @@ public monotaPingein ( aristoLevel ) {
                 get_user_ping(id, myPing, myLoss)
             }
 
-            // Lisätään levelOffset*100 pingiin
+            // Lisï¿½ï¿½n levelOffset*100 pingiin
             if( aristokraatit[id] > 0 ) {
                 pingMultiply = ((aristoLevel-aristokraatit[id])*100)
                 #if defined NOISY
@@ -301,7 +300,7 @@ public monotaPingein ( aristoLevel ) {
         }
     }
 
-    // Onko ketään potkittavaa?
+    // Onko ketï¿½n potkittavaa?
     if ( bigPing > 0 && bigPingOwner ) {
 
         #if defined NOISY
@@ -361,7 +360,7 @@ public isMaxRedirs(id) {
 public redirectPlayer(id) {
 
     if (isMaxRedirs(id)) {
-        // Pelaajan redirCount täynnä, lopeta suoritus
+        // Pelaajan redirCount tï¿½nnï¿½ lopeta suoritus
         return PLUGIN_HANDLED
     } else {
 
@@ -383,7 +382,7 @@ public redirectPlayer(id) {
         }
         else if (Res == RESULT_NONE) {
             log_amx("Ei muita servereita? Sitten monotan.")
-            // Ei servereietä? Monota sitten
+            // Ei servereietï¿½ Monota sitten
             dbi_free_result(Res)
 
             new id_str[3]
@@ -419,7 +418,7 @@ public redirectPlayer(id) {
 
         client_cmd(id,"echo;disconnect; connect %s:%s",redirSrv,redirPort)
 
-        // Varmistetaan viela etta häipyy
+        // Varmistetaan viela etta hï¿½pyy
         /*
         new id_str[3]
         num_to_str(id, id_str, 2)
@@ -452,7 +451,7 @@ public announcePlayer( pId ) {
     */
 
     // TODO: Miksei toimi?
-    // Tarkista vieläkö pelaaja on linjoilla
+    // Tarkista vielï¿½ï¿½pelaaja on linjoilla
 
     if ( !is_user_connected(pId) && !is_user_connecting(pId) ) {
         new cntd, cnntng
@@ -492,8 +491,10 @@ public roundstart() {
         if(aristokraatit[Players[i]] <= 0) {
             new nName[9]
             get_user_name(Players[i], nName, 8)
-            if(equali(nName, "[No C-D]")) {
-                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", Players[i])
+            if(equali(nName, "[No C-D]") || equali(nName, "[Old C-D")) {
+                #if defined NOISY
+                    log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix", Players[i])
+                #endif
                 // hanskaa
                 cdstatuscheck(Players[i])
             }

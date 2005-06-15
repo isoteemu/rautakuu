@@ -130,15 +130,20 @@ public client_authorized(id) {
 }
 
 public client_putinserver(id) {
-        /*
+    new pName[32]
+    get_user_name(id, pName, 31)
+
+    client_print(0,print_chat,"* %s %s liittyy peliin", statukset[aristokraatit[id]], pName)
+    #if defined NOISY
+        log_amx("%s (idx:%d) %s liittyy peliin", statukset[aristokraatit[id]],id, pName)
+    #endif
+
+    #if defined CHEATIN_DEATH
+        // Scheudle C-D check in 3 min.
         new id_str[3]
-        num_to_str(id, id_str, 2)
-        #if defined NOISY
-            log_amx("Passaan arvot announcePlayerille s:%s d:%d", id_str, id)
-        #endif
-        set_task(1.0, "announcePlayer",1,id_str)
-        */
-        announcePlayer(id)
+        num_to_str(id,id_str,3)
+        set_task(120.0,"csstatuscheckchr",2,id_str,3)
+    #endif
 }
 
 public client_disconnect(id)
@@ -435,40 +440,6 @@ public kickPlayer(id_str[3]) {
     return PLUGIN_CONTINUE
 }
 
-public announcePlayer( pId ) {
-
-    /*
-    new pId
-    pId = str_to_num(id_str)
-
-    #if defined NOISY
-        log_amx("announcePlayerille passattiin arvot s:%s d:%d", id_str, pId)
-    #endif
-    */
-
-    // TODO: Miksei toimi?
-    // Tarkista viel��pelaaja on linjoilla
-
-    if ( !is_user_connected(pId) && !is_user_connecting(pId) ) {
-        new cntd, cnntng
-        cntd = is_user_connected(pId)
-        cnntng = is_user_connecting(pId)
-        #if defined NOISY
-            log_amx("Pelaaja idx:%d ei ollut enaan yhdistynyt: connected:%d connecting:%d",pId,cntd,cnntng)
-        #endif
-        return PLUGIN_CONTINUE
-    }
-
-    new pName[32]
-    get_user_name(pId, pName, 31)
-
-    client_print(0,print_chat,"* %s %s liittyy peliin", statukset[aristokraatit[pId]], pName)
-    #if defined NOISY
-        log_amx("%s (idx:%d) %s liittyy peliin", statukset[aristokraatit[pId]],pId, pName)
-    #endif
-    return PLUGIN_CONTINUE
-}
-
 //
 // CHEATIN-DEATH specified
 //
@@ -476,6 +447,20 @@ public announcePlayer( pId ) {
 #if defined CHEATIN_DEATH
 
 public client_infochanged(id) {
+    cdstatuscheck(id)
+}
+
+/**
+ * liittymä set_taskille
+ */
+public csstatuscheckchr(id_str[]) {
+    new id = str_to_num(id_str)
+    cdstatuscheck(id)
+}
+
+public cdstatuscheck(id) {
+
+    // Ei tarkasteta vippeja tai parempia
     if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
         new nName[9]
         get_user_name(id, nName, 8)
@@ -483,43 +468,33 @@ public client_infochanged(id) {
             #if defined NOISY
                 log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix",id)
             #endif
-            // hanskaa
-            cdstatuscheck(id)
+            // Pelaajalla ei C-D:ta
+        
+            client_print(id,print_console,"[No C-D] =============================================")
+            client_print(id,print_console," Asenna/Paivita Cheating-Death:")
+            client_print(id,print_console,"     http://www.unitedadmins.com/cdeath.php")
+            client_print(id,print_console," (Linux-hihhulit: #rautakuu @ QuakeNET)")
+            client_print(id,print_console,"[No C-D] =============================================")
+        
+            new msg[1201], aname[32]
+            get_user_name(id,aname,31)
+        
+            format(msg, 1200,"<html><head><title>No C-D</title></head><body bgcolor=black color=green>")
+            format(msg, 1200,"%s [No C-D] =============================================<br />", msg)
+            format(msg, 1200,"%s <strong>Hjuva tjoveri %s</strong><br />", msg, aname)
+            format(msg, 1200,"%s <p>Asenna/p&auml;ivit&auml; Cheating-Death:<br />", msg)
+            format(msg, 1200,"%s  <a href=http://www.unitedadmins.com/cdeath.php>http://www.unitedadmins.com/cdeath.php</a><br />", msg)
+            format(msg, 1200,"%s  </p><p>(Linux-hihhulit: #rautakuu @ QuakeNET)</p>", msg)
+            format(msg, 1200,"%s [No C-D] =============================================", msg)
+            format(msg, 1200,"%s </body></html>", msg)
+            show_motd(id, msg, "No C-D")
+        
+            client_print(0,print_chat,"* Pelaaja %s potkitaan puuttuvan C-Dn takia.", aname)
+        
+            new id_str[3]
+            num_to_str(id,id_str,3)
+            set_task(15.0,"delayNoCDKick",1,id_str,3)
         }
-    }
-}
-
-public cdstatuscheck(id) {
-
-    // Ei tarkasteta vippeja tai parempia
-    if(aristokraatit[id] <= 0) {
-
-        // Pelaajalla ei C-D:ta
-
-        client_print(id,print_console,"[No C-D] =============================================")
-        client_print(id,print_console," Asenna/Paivita Cheating-Death:")
-        client_print(id,print_console,"     http://www.unitedadmins.com/cdeath.php")
-        client_print(id,print_console," (Linux-hihhulit: #rautakuu @ QuakeNET)")
-        client_print(id,print_console,"[No C-D] =============================================")
-
-        new msg[1201], aname[32]
-        get_user_name(id,aname,31)
-
-        format(msg, 1200,"<html><head><title>No C-D</title></head><body bgcolor=black color=green>")
-        format(msg, 1200,"%s [No C-D] =============================================<br />", msg)
-        format(msg, 1200,"%s <strong>Hjuva tjoveri %s</strong><br />", msg, aname)
-        format(msg, 1200,"%s <p>Asenna/p&auml;ivit&auml; Cheating-Death:<br />", msg)
-        format(msg, 1200,"%s  <a href=http://www.unitedadmins.com/cdeath.php>http://www.unitedadmins.com/cdeath.php</a><br />", msg)
-        format(msg, 1200,"%s  </p><p>(Linux-hihhulit: #rautakuu @ QuakeNET)</p>", msg)
-        format(msg, 1200,"%s [No C-D] =============================================", msg)
-        format(msg, 1200,"%s </body></html>", msg)
-        show_motd(id, msg, "No C-D")
-
-        client_print(0,print_chat,"* Pelaaja %s potkitaan puuttuvan C-Dn takia.", aname)
-
-        new id_str[3]
-        num_to_str(id,id_str,3)
-        set_task(15.0,"delayNoCDKick",1,id_str,3)
     }
 }
 

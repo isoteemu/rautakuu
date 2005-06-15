@@ -446,9 +446,11 @@ public kickPlayer(id_str[3]) {
 
 #if defined CHEATIN_DEATH
 
+/*
 public client_infochanged(id) {
     cdstatuscheck(id)
 }
+*/
 
 /**
  * liittymä set_taskille
@@ -463,7 +465,8 @@ public cdstatuscheck(id) {
     // Ei tarkasteta vippeja tai parempia
     if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
         new nName[9]
-        get_user_name(id, nName, 8)
+        // get_user_name palauttaa aina userin laittamana nimen
+        get_user_info(id, "name", nName,8)
         if(equali(nName, "[No C-D]") || equali(nName, "[Old C-D")) {
             #if defined NOISY
                 log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix",id)

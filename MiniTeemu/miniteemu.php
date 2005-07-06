@@ -185,6 +185,9 @@ class irc_data_line {
         $this->ident   = substr($exs[0], $poe+1, ($poa-$poe)-1);
         $this->channel = $exs[2];
 
+        // WHOIS kertoo nelj‰nten‰ parametrin‰ nickin
+        if(empty($this->nick) && isset($exs[3])) $this->nick = $exs[3];
+
         $this->msg     = trim(substr($this->data, $poc+1));
     }
 
@@ -474,7 +477,8 @@ class irc_trigger_plugin {
     /**
      * @var $rules Laukaisuun johtavat s‰‰nnˆt
      */
-    var $rules = array();
+    var $rules = array("expire" => 0,
+                       "break"  => false);
 
     /**
      * @var $_lamdadriver plugin koodin functio
@@ -539,6 +543,16 @@ class irc_trigger_plugin {
     function &setLine(&$line) {
         $this->line =& $line;
     }
+
+    /**
+     * Asettaa pluginin expiroitumaan
+     */
+    function expire($time=null) {
+        if($time === null) {
+            // asetetaan aika menneisyydest‰.
+            $this->addRule("expire", time()-1);
+        }
+    }
 }
 
 /**
@@ -557,10 +571,34 @@ class irc_trigger_plugins {
 
     var $line;
 
+    /**
+     * Pluginit poistettavaksi
+     */
+    var $pluginsToRemoval = array();
+
     function irc_trigger_plugins(&$irc) {
         $this->irc =& $irc;
         $this->pluginDir = dirname(__FILE__)."/plugins";
         $this->scanPlugins();
+    }
+
+    function newPlugin($code, $name=null) {
+        if($name===null) {
+            $name = "pseudoPlugin";
+        }
+        if(isset($this->plugins[$name])) {
+            irc::trace("Plugin nimell‰ $name on jo, annetaan uusi nimi");
+            $i=0;
+            $namebase = $name."_";
+            $name = $namebase.$i;
+            while(isset($this->plugins[$name])) {
+                $i++;
+                $name=$namebase.$i;
+            }
+        }
+        $this->plugins[$name] =& new irc_trigger_plugin($this->irc, $code);
+        irc::trace("Uusi plugin {$name} luotu");
+        return $name;
     }
 
     function scanPlugins() {
@@ -619,6 +657,36 @@ class irc_trigger_plugins {
         $this->line =& $line;
     }
 
+    function removePlugin($plugin) {
+        if(!isset($this->plugins[$plugin])) {
+            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei lˆydy");
+            return false;
+        } elseif ( in_array($plugin, $this->pluginsToRemoval)) {
+            irc::trace("Ei voida poistaa pluginia; Plugin {$plugin} lis‰tty jo poistettavaksi");
+            return false;
+        } else {
+            $this->pluginsToRemoval[] = $plugin;
+            return true;
+        }
+    }
+
+    function unregisterPlugin($plugin) {
+        if(!isset($this->plugins[$plugin])) {
+            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei lˆydy");
+            return false;
+        }
+        unset($this->plugins[$plugin]);
+        return true;
+    }
+
+    function _unregisterScheudledPlugins() {
+        foreach($this->pluginsToRemoval as $key => $plugin) {
+            irc::trace("Poistetaan plugin {$plugin}:{$key}");
+            $this->unregisterPlugin($plugin);
+            unset($this->pluginsToRemoval[$key]);
+        }
+    }
+
     /**
      * K‰y plugin stackin l‰pi ja suorittaa soveliaat pluginit;
      */
@@ -627,6 +695,9 @@ class irc_trigger_plugins {
             $this->triggerLine(&$line);
         }
 
+        // Poistetaan wanhat pluginit ensin...
+        $this->_unregisterScheudledPlugins();
+
         foreach($this->plugins as $pluginName => $plugin) {
             $validPlugin = true;
 
@@ -634,6 +705,13 @@ class irc_trigger_plugins {
             $rules = $this->plugins[$pluginName]->getRules();
             foreach( $rules as $key => $param ) {
                 if( $key == "break" ) continue;
+
+                if( $key == "expire" && $param > 0 && $param < time() ) {
+                    irc::trace("Pluginin {$pluginName} expire t‰ynn‰");
+                    $this->removePlugin($pluginName);
+                    $validPlugin = false;
+                    break;
+                } elseif( $key == "expire" ) continue;
 
                 // Vertailee onko prefix t‰sm‰‰v‰
                 if( $key == "prefix" ) {

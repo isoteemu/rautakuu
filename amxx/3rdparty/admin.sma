@@ -157,7 +157,7 @@ public adminSql() {
   get_cvar_string("rq_sql_user",user,31)
   get_cvar_string("rq_sql_pass",pass,31)
   get_cvar_string("rq_sql_db",db,31)
-  get_cvar_string("rq_sql_table",table,31)
+  get_cvar_string("amx_sql_table",table,31)
 
   new Sql:sql = dbi_connect(host,user,pass,db,error,127)
   if (sql <= SQL_FAILED) {
@@ -173,7 +173,7 @@ public adminSql() {
   }
 
 
-  new Result:Res = dbi_query(sql,"SELECT `username`,`password`,`access`, 'a' AS `flags` FROM `%s`",table)
+  new Result:Res = dbi_query(sql,"SELECT `username` AS `auth`,`password`,`access`, 'a' AS `flags` FROM `%s`",table)
 
   if (Res == RESULT_FAILED) {
     dbi_error(sql,error,127)

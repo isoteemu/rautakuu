@@ -60,8 +60,10 @@ class irc_data {
 
         while( count( $lines ) > 0 ) {
             $this->lines[$this->i] =& new irc_data_line( array_shift($lines) );
-            // Line ei ollut hyväksyttävä. Pudotetaan se.
+
             if(!$this->lines[$this->i]->valid()) {
+                // Line ei ollut hyväksyttävä. Pudotetaan se.
+                irc::trace("Pudotetaan rivi {$this->i}. Ei valid()");
                 unset($this->lines[$this->i]);
                 continue;
             }
@@ -69,11 +71,7 @@ class irc_data {
             $this->i++;
         }
 
-        // Huono koodi. Parempi cleanup tapa täytyy tehdä.
-        if(($offrows = $this->numLines()) > 500 ) {
-            irc::trace("Yli 500 rivin määrä täyttynyt.");
-            $this->lines = array_slice($this->lines, $offrows-500);
-        }
+        // cleanup tapa täytyy tehdä.
     }
 
     function numLines() {
@@ -156,6 +154,8 @@ class irc_data_line {
         if( $line === null ) $line = $this->data;
         if(!empty( $this->valid )) return $this->valid;
         if( substr($line,0,6) == "PING :" ) {
+            $this->valid = true;
+        } elseif( substr( $line, 0, 7 ) == "ERROR :" ) {
             $this->valid = true;
         } elseif( substr( $line, 0, 1 ) == ":" ) {
             $this->valid = true;

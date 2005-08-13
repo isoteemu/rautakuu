@@ -17,6 +17,14 @@ function timer() {
     return $secs[0].".".substr($secs[1], 0, 2);
 }
 
+/**
+ * Kuinka monta riviä voi containerissa olla kerrallaan säilössä.
+ */
+define("IRC_DATA_LINES_MAX_COUNT", 500);
+/**
+ * Kuinka monta riviä poistetaan kerralla kun containerissa on IRC_DATA_LINES_MAX_COUNT riviä.
+ */
+define("IRC_DATA_LINES_RM_COUNT", 250);
 
 class irc_data {
 
@@ -59,6 +67,12 @@ class irc_data {
         $lines = explode("\n", $this->data );
 
         while( count( $lines ) > 0 ) {
+
+            // sanity check
+            if(isset($this->lines[$this->i])){
+                irc::trace("Rivi {$this->i} on jo olemassa. O'ou.");
+            }
+
             $this->lines[$this->i] =& new irc_data_line( array_shift($lines) );
 
             if(!$this->lines[$this->i]->valid()) {
@@ -69,6 +83,13 @@ class irc_data {
             }
 
             $this->i++;
+        }
+
+        if($this->i >= IRC_DATA_LINES_MAX_COUNT) {
+            irc::trace("Cleanup. Saavutettu ".IRC_DATA_LINES_MAX_COUNT." rivin määrä");
+
+            $this->lines = array_slice($this->lines, IRC_DATA_LINES_RM_COUNT);
+            ksort($this->lines);
         }
 
         // cleanup tapa täytyy tehdä.

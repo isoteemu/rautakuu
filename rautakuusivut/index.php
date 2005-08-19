@@ -5,7 +5,10 @@ require_once("config.inc.php");
 include_once("DB.php");
 include_once("Text/Wiki.php");
 
+session_start();
+
 // Asetetaan suomen locale
+putenv("LANG", "fi_FI.utf8");
 setlocale(LC_ALL, "fi_FI.utf8");
 mb_internal_encoding("utf-8");
 
@@ -42,6 +45,23 @@ if( file_exists( "pages/".$page.".inc")) {
     include("pages/".$page.".inc");
     $title = " :: $page";
 } else {
+
+    // Jos sivu alkaa "Priv", vaadi autentikointi
+    if(substr($page,0,4) == "Priv") {
+        $user = addslashes($_SERVER['PHP_AUTH_PW']);
+        $uidRes = $cdb->query("
+            SELECT `password`
+            FROM `accountuser`
+            WHERE `username` LIKE '{$user}'");
+
+    }
+
+    /*
+    header('WWW-Authenticate: Basic realm="Suojattu nick"');
+    header('HTTP/1.0 401 Unauthorized');
+    echo "<strong><font color=\"red\">Suojattu nick. Viestiä ei lähetetty.</font></strong>";
+    */
+
     // Hae wiki sivu
     $pres = &$db->query("SELECT `page_text`, `change_author`, `version_created`  FROM `wicked_pages` WHERE 1 AND `page_name` = '".addslashes($page)."'");
 
@@ -69,14 +89,23 @@ if( file_exists( "pages/".$page.".inc")) {
         $content .= $wiki->transform($rtxt[0], 'Xhtml');
         // Muutetaan UTF-8 koodiksi
         $content = mb_convert_encoding($content, "utf-8", "iso-8859-1");
-        $content .= "<p>&nbsp;</p><p>".strftime( "%c", $rtxt[2] )."/<a href=\"mailto:".$rtxt[1]."@rautakuu.org\">".$rtxt[1]."</p>";
+        $content .= "<p>&nbsp;</p><p>".strftime( "%c", $rtxt[2] )."/<a href=\"mailto:".$rtxt[1]."@rautakuu.org\">".$rtxt[1]."</a></p>";
     } else {
         $notfound = true;
     }
 }
 
+if( isset($wiki) ) {
+    $linkit =& $wiki->getTokens(array("Wikilink","Url","Freelink"));
+
+}
+
 if( isset($lmtime)) Header("Last-Modified: ".$lmtime);
-if( $notfound == true ) header("Status: 404 Not Found");
+if( $notfound == true ) {
+    header("Status: 404 Not Found");
+} else {
+    include_once("inc/forum.inc.php");
+}
 
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
@@ -89,12 +118,22 @@ body {margin: 0px; padding: 0px; background-color: white;}
 #m {font-family: verdana; font-size: 10px; padding-top: 0px}
 #o {background-image: url('http://rautakuu.org/rautakuu/splash.jpg'); background-repeat:no-repeat; font-family: verdana; font-size: 10pt; padding-top: 200px; color: #000000;}
 #l {background-image: url('http://rautakuu.org/rautakuu/nimeton_1.jpg'); background-repeat:no-repeat; font-family: verdana; font-size: 10pt; padding-top: 200px; color: #000000;}
-#i {font-family: verdana; font-size: 10px; padding-top: 0px; color: #FF3C12; width: 407px;}
+#i, #i table {font-family: verdana; font-size: 10px; padding-top: 0px; color: #FF3C12; width: 407px;}
 a:link #m, a:visited #m, a:active #m {text-decoration: none; color: #B72000;}
 a:hover #m {text-decoration: underline; color: #7b7b7b;}
 a:link, a:visited, a:active {text-decoration: none; color: #545454;}
 a:hover {text-decoration: none; color: #7A7A7A;}
 .header {background-image: url('http://rautakuu.org/rautakuu/header.jpg'); background-repeat:no-repeat; font-family: verdana; font-size: 12px; padding-left: 20px; color: #FF3C12; height:19px;}
+
+input, textarea {
+    border-color:#FF3C12;
+    border-style:solid;
+    border-width:1px;
+    color:#545454;
+    font-family:verdana;
+    font-size:10px;
+    visibility:inherit;
+}
 
 </style>
     <base href="http://rautakuu.org/rautakuu/">
@@ -117,7 +156,7 @@ a:hover {text-decoration: none; color: #7A7A7A;}
     <tr>
       <td id="o" valign="top">
         <p align="center">
-        <a href="http://rautakuu.org/rautakuu/" style="color: #000000;">Rautakuu [dot] org</a></p>
+        <a href="http://rautakuu.org/rautakuu/index.php/AllPages" style="color: #000000;">Rautakuu [dot] org</a></p>
       </td>
       <td id="l" valign="top" width="407" height="221" align="left">[
           <a href="https://horde.rautakuu.org" title="Siirry sähköpostiin">Horde</a> |
@@ -130,14 +169,23 @@ a:hover {text-decoration: none; color: #7A7A7A;}
     </tr>
     <tr>
       <td valign="top"><img src="nimeton_3.jpg" width="312" alt="" border="0"  height="245">
+          <p>&nbsp;</p>'
           <p>
+<?php
+if(isset($linkit)) {
+    foreach($linkit as $key => $val ) {
+        echo "$key, $val<br>"
+    }
+}
+?>
+          </p>
               <p align="center">
 <?php
 
 if(isset($_SERVER['HTTP_USER_AGENT']) &&
     preg_match('/msie.*.(win)/i',$_SERVER['HTTP_USER_AGENT']) &&
     !preg_match('/opera/i',$_SERVER['HTTP_USER_AGENT'])) {
-    sleep(rand(1,5)/5);
+    sleep(rand(1,6)/3);
 
 ?>
                   <script type="text/javascript"><!--
@@ -164,7 +212,11 @@ if(isset($_SERVER['HTTP_USER_AGENT']) &&
       <td valign="top" id="i">
 <?php
 
-if($notfound == true) echo '
+if($notfound == true) {
+    if(file_exists("pages/404.inc")) {
+        include_once("pages/404.inc");
+    } else {
+        $content .= '
 <p><strong>404: Sivua ei löytynyt.</strong></p>
 <p>
     Siirry:
@@ -174,12 +226,17 @@ if($notfound == true) echo '
     </blockquote>
 </p>
 ';
-
+    }
+}
 echo $content;
+
+if($notfound != true) {
+    echo '<p>';
+    echo $forum;
+    echo '</p>';
+}
 ?>
-<p>
-&nbsp;
-</p>
+
 <p>
     [
     <a href="https://horde.rautakuu.org" title="Siirry sähköpostiin">Horde</a> |
@@ -191,9 +248,13 @@ echo $content;
 &nbsp;
 </p>
 <p>
+[
 <!-- Creative Commons Lisenssi -->
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/1.0/fi/">Creative Commons</a>.
 <!-- /Creative Commons Lisenssi -->
+|
+<a href=http://Finnish-29996965986.SpamPoison.com>Taistele Spammia Vastaan</a>
+]
 </p>
 
 </td>
@@ -224,7 +285,6 @@ echo $content;
 </rdf:RDF>
 
 -->
-
 </body>
 </html>
 

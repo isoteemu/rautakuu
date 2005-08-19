@@ -8,6 +8,16 @@ include_once("DB.php");
 
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
+function rgb2html($tablo) {
+    //Vérification des bornes...
+    for($i=0;$i<=2;$i++) {
+        $tablo[$i]=bornes($tablo[$i],0,255);
+    }
+    //Le str_pad permet de remplir avec des 0
+    //parce que sinon rgb2html(Array(0,255,255)) retournerai #0ffff<=manque un 0 !
+    return "#".str_pad(dechex(($tablo[0]<<16)|($tablo[1]<<8)|$tablo[2]),6,"0",STR_PAD_LEFT);
+}
+
 function chooseColor($irc){
     switch($irc){
         case "0":$color=rgb2html(array(255, 255, 255));break;
@@ -169,7 +179,7 @@ function formatTime($time) {
 function getMessages($time=null) {
     static $DB;
     if(!isset($DB)) {
-        $DB = DB::Connect("");
+        $DB = DB::Connect("mysql://miniteemu:a24cdcf4903642@localhost/rautakuuirc");
     }
     if( $time == null ) {
         $sql = "

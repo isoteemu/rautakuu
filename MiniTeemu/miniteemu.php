@@ -85,14 +85,12 @@ class irc_data {
             $this->i++;
         }
 
-        if($this->i >= IRC_DATA_LINES_MAX_COUNT) {
+        if($this->numLines() >= IRC_DATA_LINES_MAX_COUNT) {
             irc::trace("Cleanup. Saavutettu ".IRC_DATA_LINES_MAX_COUNT." rivin määrä");
 
-            $this->lines = array_slice($this->lines, IRC_DATA_LINES_RM_COUNT);
+            $this->lines = array_slice($this->lines, 0-IRC_DATA_LINES_RM_COUNT);
             ksort($this->lines);
         }
-
-        // cleanup tapa täytyy tehdä.
     }
 
     function numLines() {
@@ -758,13 +756,5 @@ class irc_trigger_plugins {
         }
 
     }
-
 }
 
-$irc =& new irc();
-$GLOBALS['irc'] =& $irc;
-
-irc::trace("Yhdistetään...");
-$irc->connect();
-irc::trace("Kuunnellaan...");
-$irc->listen();

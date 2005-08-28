@@ -261,6 +261,9 @@ class irc {
     // Trace ajuri
     var $traceDrv   = IRC_TRACE_ECHO;
 
+    // viestibufferi
+    var $buffer     = array();
+
     /**
      * PHP5 constructori. Kutsuu PHP4 constructorin
      */
@@ -282,7 +285,7 @@ class irc {
         // Huuhdellaan välittömästi
         ob_implicit_flush(true);
 
-        // Ei aikarajaa
+        // Ei aikarajaa vielä
         @set_time_limit(0);
 
         // PHP4 __destructori emulaatio
@@ -302,12 +305,23 @@ class irc {
             $this->trace("Yhteyttä ei ole");
             return false;
         }
+        $this->buffer[] = $msg;
+    }
+
+    function _send($msg) {
         if(! fwrite($this->_connection, $msg."\r\n")) {
 
             $this->trace("Viestin lähetys epäonnistui \"{$msg}\"");
             return false;
         }
         $this->trace("Viesti lähetetty\n>> \"{$msg}\"");
+        return true;
+    }
+
+    function flushBuffer() {
+        if(count($this->buffer) < 1) return true;
+        $this->_send($this->buffer[0]);
+        array_shift($this->buffer);
         return true;
     }
 
@@ -369,8 +383,13 @@ class irc {
 
         // Niin kauan kuin me olemme yhteydessä, kuuntele.
         while( $this->_state() ) {
+
+            // Annetaan 2s aikaa silmukan ajoon.
+            set_time_limit(2);
             // Nukutaan hetki
             usleep( $this->_delay*1000 );
+
+            $this->flushBuffer();
 
             // Jos ei kirjauduttu, kirjaudu.
             if($this->loggedin == false) {

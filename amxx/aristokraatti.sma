@@ -60,6 +60,11 @@ public plugin_init() {
     register_cvar("amx_reservation","1")
     register_cvar("amx_rq_redircount","3")
 
+    register_cvar("amx_sql_host","127.0.0.1")
+    register_cvar("amx_sql_user","hlds")
+    register_cvar("amx_sql_pass","hlds")
+    register_cvar("amx_sql_db","hlds")
+
     new configsDir[64]
     get_configsdir(configsDir, 63)
     server_cmd("exec %s/sql.cfg", configsDir)

@@ -168,18 +168,8 @@ public client_connect(id) {
         client_print(id,print_console," #rautakuu @ QuakeNET)")
         client_print(id,print_console,"[/Suosisuomalaista] ==================================")
 
-        new msg[1201], aname[32]
-        get_user_name(id,aname,31)
-        format(msg, 1200,"<html><head><title>Only people from Finland is allowed to play here</title>")
-        format(msg, 1200,"%s<meta http-equiv=^"refresh^" content=^"0; URL=http://tao.rautakuu.org/node/53^" />",msg)
-        format(msg, 1200,"%s</head><body bgcolor=black color=green>",msg)
-        format(msg, 1200,"%s Only people from Finland is allowed to play here.",msg)
-        show_motd(id, msg, "Only people from Finland is allowed")
+        server_cmd("kick #%d Only people from Finland are allowed. Valitukset #rautakuu @ QuakeNET.",get_user_userid(id))
 
-        new id_str[3]
-        num_to_str(id,id_str,3)
-        set_task(15.0,"delaydKick",1,id_str,3)
-        return PLUGIN_CONTINUE
     }
     else if(g_Mode == 2 && IsConInArray(CC))
     {
@@ -188,18 +178,9 @@ public client_connect(id) {
             new Name[32]
             get_user_name(id,Name,31)
             client_print(0,print_chat,"%s was kicked because he is from %s",Name,CC)
-            return PLUGIN_HANDLED
     }
     return PLUGIN_HANDLED
 }
-
-public delaydKick(id_str[]) {
-    new player_id = str_to_num(id_str)
-    new userid = get_user_userid(player_id)
-    server_cmd("kick #%d Only people from Finland are allowed. Valitukset #rautakuu @ QuakeNET.",userid)
-    return PLUGIN_HANDLED
-}
-
 
 public plugin_end() {
         dbi_close(dbc)

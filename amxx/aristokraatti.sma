@@ -60,6 +60,10 @@ public plugin_init() {
     register_cvar("amx_reservation","1")
     register_cvar("amx_rq_redircount","3")
 
+    new configsDir[64]
+    get_configsdir(configsDir, 63)
+    server_cmd("exec %s/sql.cfg", configsDir)
+
     #if defined HIDE_EXRTARESERVEDSLOTS
         if (get_cvar_num("amx_reservation") >= 2) {
             set_cvar_num("sv_visiblemaxplayers", get_maxplayers() - get_cvar_num("amx_reservation")+1 )

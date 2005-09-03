@@ -1,4 +1,4 @@
-* Country kicker
+/* Country kicker
 
 About:
 This plugin is used if you only want ppl from spesfic countrys on your server, or wanna prevent ppl from a spesfic countrys from entering
@@ -66,10 +66,9 @@ public sqlInit() {
         get_cvar_string("amx_sql_user",sqluser,34)
         get_cvar_string("amx_sql_pass",sqlpass,34)
         get_cvar_string("amx_sql_db",sqldbname,34)
-        dbc = dbi_connect(sqlhostname,sqluser,sqlpass,sqldbname,error,127)
-        if(dbc == SQL_FAILED)
-        {
-            log_amx("Could not connect to DB. %s" error)
+        dbc = dbi_connect(sqlhostname,sqluser,sqlpass,sqldbname,error,126)
+        if(dbc == SQL_FAILED) {
+            log_amx("Could not connect to DB. %s", error)
             return PLUGIN_HANDLED
         }
         result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `amx_coutryKicker` (`ip` VARCHAR(35), PRIMARY KEY (`ip`)) ")
@@ -173,9 +172,9 @@ public client_connect(id) {
         new msg[1201], aname[32]
         get_user_name(id,aname,31)
         format(msg, 1200,"<html><head><title>Only people from Finland is allowed to play here</title>")
-        format(msg, 1200,"%s<meta http-equiv=^"refresh^" content=^"0; URL=http://tao.rautakuu.org/node/53" />^",msg)
+        format(msg, 1200,"%s<meta http-equiv=^"refresh^" content=^"0; URL=http://tao.rautakuu.org/node/53^" />",msg)
         format(msg, 1200,"%s</head><body bgcolor=black color=green>",msg)
-        format(msg, 1200,"%s Only people from Finland is allowed to play here.",msg")
+        format(msg, 1200,"%s Only people from Finland is allowed to play here.",msg)
         show_motd(id, msg, "Only people from Finland is allowed")
 
         new id_str[3]
@@ -192,9 +191,10 @@ public client_connect(id) {
             client_print(0,print_chat,"%s was kicked because he is from %s",Name,CC)
             return PLUGIN_HANDLED
     }
+    return PLUGIN_HANDLED
 }
 
-public delaydKick() {
+public delaydKick(id_str[]) {
     new player_id = str_to_num(id_str)
     new userid = get_user_userid(player_id)
     server_cmd("kick #%d Only people from Finland are allowed. Valitukset #rautakuu @ QuakeNET.",userid)

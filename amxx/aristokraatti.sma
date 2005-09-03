@@ -43,14 +43,14 @@ new Sql:dbc
 new dbcError[128]
 
 new aristokraatit[32] = 0
-new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
+new statukset[4][] = {"Alokas", "Kersantti", "Luuntnantti", "Kenraali"}
 
 // Lista vipin oikista
 new vipAdmins[] = "j"
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.5.2"
+new Version[] = "0.5.3"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -70,18 +70,26 @@ public plugin_init() {
     set_task(0.1,"sqlInit")
 }
 
+public plugin_modules() {
+   require_module("DBI")
+}
+
 public sqlInit() {
 
-    new host[64],user[32],pass[32],db[32]
+    new host[64],user[32],pass[32],db[32],dbType[7]
 
     get_cvar_string("amx_sql_host",host,63)
     get_cvar_string("amx_sql_user",user,31)
     get_cvar_string("amx_sql_pass",pass,31)
     get_cvar_string("amx_sql_db",db,31)
 
+    dbi_type(dbType, 6)
     dbc = dbi_connect(host,user,pass,db,dbcError,127)
     if (dbc <= SQL_FAILED) {
         log_amx("Ei tietokantayhteytta. Ongelmia tiedossa: %s",dbcError)
+        #if defined NOISY
+            log_amx("host,user,pass,db,dbcError: %s %s %s %s %s",host,user,pass,db,dbcError)
+        #endif
     }
 }
 

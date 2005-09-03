@@ -42,6 +42,7 @@
 #endif
 
 #define MAX_ADMINS 64
+#define PLUGINNAME	"AMX Mod X"
 
 new g_aPassword[MAX_ADMINS][32]
 new g_aName[MAX_ADMINS][32]
@@ -83,7 +84,8 @@ public plugin_init() {
   register_cvar("rq_sql_pass","")
   register_cvar("rq_sql_db","amx")
 
-  register_concmd("amx_reloadadmins","cmdReload",ADMIN_CFG)
+  register_concmd("amx_reloadadmins", "cmdReload", ADMIN_CFG)
+  register_concmd("amx_addadmin", "addadminfn", ADMIN_CFG, "<playername> <accessflags> [password] - automatically add specified player as an admin to users.ini")
 
   format( g_cmdLoopback, 15, "amxauth%c%c%c%c" ,
   	random_num('A','Z') , random_num('A','Z') ,random_num('A','Z'),random_num('A','Z')  )
@@ -110,6 +112,79 @@ public plugin_modules()
    require_module("DBI")
 }
 #endif
+
+public addadminfn(id, level, cid) {
+	if (!cmd_access(id, level, cid, 3))
+		return PLUGIN_HANDLED
+
+	new arg[33]
+	read_argv(1, arg, 32)
+	new player = cmd_target(id, arg, 10) // 2 = allow yourself (remove later?) 8 = no bots
+	if (!player)
+		return PLUGIN_HANDLED
+
+	new flags[64]
+	read_argv(2, flags, 63)
+
+	new password[64]
+	if (read_argc() == 4)
+		read_argv(3, password, 63)
+
+	new steamid[64]
+	get_user_authid(player, steamid, 63)
+
+	AddAdmin(id, steamid, flags, password)
+	cmdReload(id, ADMIN_CFG, 0)
+
+	new name[32]
+	get_user_info(player, "name", name, 31)
+	accessUser(player, name)
+
+	return PLUGIN_HANDLED
+}
+
+AddAdmin(id, steamid[], accessflags[], password[]) {
+	// Make sure that the users.ini file exists.
+	new configsDir[64]
+	get_configsdir(configsDir, 63)
+	format(configsDir, 63, "%s/users.ini", configsDir)
+
+	if (!file_exists(configsDir)) {
+		console_print(id, "[%s] File ^"%s^" doesn't exist.", PLUGINNAME, configsDir)
+		return
+	}
+
+	// Make sure steamid isn't already in file.
+	new line = 0, textline[256], len
+	const SIZE = 63
+	new line_steamid[SIZE + 1], line_password[SIZE + 1], line_accessflags[SIZE + 1], line_flags[SIZE + 1], parsedParams
+	// <name|ip|steamid> <password> <access flags> <account flags>
+	while ((line = read_file(configsDir, line, textline, 255, len))) {
+		if (len == 0 || equal(textline, ";", 1))
+			continue // comment line
+
+		parsedParams = parse(textline, line_steamid, SIZE, line_password, SIZE, line_accessflags, SIZE, line_flags, SIZE)
+		if (parsedParams != 4)
+			continue // Send warning/error?
+		if (containi(line_flags, "c") != -1 && equal(line_steamid, steamid)) {
+			console_print(id, "[%s] %s already exists!", PLUGINNAME, steamid)
+			return
+		}
+	}
+
+	// If we came here, steamid doesn't exist in users.ini. Add it.
+	// Find out what flags we need.
+	new flags[64] = "c" // Always use steamid
+	new flagslen = strlen(flags)
+	if (strlen(password) == 0)
+		flagslen += format(flags[flagslen], 63 - flagslen, "e") // add flag to not check password if password wasn't supplied
+	new linetoadd[512]
+	format(linetoadd, 511, "^"%s^" ^"%s^" ^"%s^" ^"%s^"", steamid, password, accessflags, flags)
+	console_print(id, "Adding:^n%s", linetoadd)
+
+	if (!write_file(configsDir, linetoadd))
+		console_print(id, "[%s] Failed writing to %s!", PLUGINNAME, configsDir)
+}
 
 public plugin_cfg() {
   new configFile[64],curMap[32]
@@ -152,11 +227,12 @@ loadSettings(szFilename[]) {
 
 #if defined USING_SQL
 public adminSql() {
-  new host[64],user[32],pass[32],db[32],table[32],error[128]
-  get_cvar_string("rq_sql_host",host,63)
-  get_cvar_string("rq_sql_user",user,31)
-  get_cvar_string("rq_sql_pass",pass,31)
-  get_cvar_string("rq_sql_db",db,31)
+  new host[64],user[32],pass[32],db[128],table[32],error[128],dbType[7]
+  dbi_type(dbType, 6)
+  get_cvar_string("amx_sql_host",host,63)
+  get_cvar_string("amx_sql_user",user,31)
+  get_cvar_string("amx_sql_pass",pass,31)
+  get_cvar_string("amx_sql_db", db, 127)
   get_cvar_string("amx_sql_table",table,31)
 
   new Sql:sql = dbi_connect(host,user,pass,db,error,127)
@@ -172,8 +248,18 @@ public adminSql() {
     return PLUGIN_HANDLED
   }
 
+  new Result:Res
+  if (equali(dbType,"sqlite")) {
+    if (!sqlite_table_exists(sql,table)) {
+      dbi_query(sql,"CREATE TABLE %s ( auth TEXT NOT NULL DEFAULT '', password TEXT NOT NULL DEFAULT '', access TEXT NOT NULL DEFAULT '', flags TEXT NOT NULL DEFAULT '' )",table)
+    }
 
-  new Result:Res = dbi_query(sql,"SELECT `username` AS `auth`,`password`,`access`, 'a' AS `flags` FROM `%s`",table)
+    Res = dbi_query(sql,"SELECT auth, password, access, flags FROM %s",table)
+  }
+  else {
+    dbi_query(sql,"CREATE TABLE IF NOT EXISTS `%s` ( `auth` VARCHAR( 32 ) NOT NULL, `password` VARCHAR( 32 ) NOT NULL, `access` VARCHAR( 32 ) NOT NULL, `flags` VARCHAR( 32 ) NOT NULL ) COMMENT = 'AMX Mod X Admins'",table)
+    Res = dbi_query(sql,"SELECT `username` AS `auth`,`password`,`access`, 'a' AS `flags` FROM `%s`",table)
+  }
 
   if (Res == RESULT_FAILED) {
     dbi_error(sql,error,127)

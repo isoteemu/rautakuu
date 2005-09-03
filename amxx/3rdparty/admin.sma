@@ -229,10 +229,10 @@ loadSettings(szFilename[]) {
 public adminSql() {
   new host[64],user[32],pass[32],db[128],table[32],error[128],dbType[7]
   dbi_type(dbType, 6)
-  get_cvar_string("amx_sql_host",host,63)
-  get_cvar_string("amx_sql_user",user,31)
-  get_cvar_string("amx_sql_pass",pass,31)
-  get_cvar_string("amx_sql_db", db, 127)
+  get_cvar_string("rq_sql_host",host,63)
+  get_cvar_string("rq_sql_user",user,31)
+  get_cvar_string("rq_sql_pass",pass,31)
+  get_cvar_string("rq_sql_db", db, 127)
   get_cvar_string("amx_sql_table",table,31)
 
   new Sql:sql = dbi_connect(host,user,pass,db,error,127)
@@ -451,7 +451,7 @@ public client_infochanged(id) {
 }
 
 public ackSignal(id) {
-  server_cmd("kick #%d %s", get_user_userid(id), id, "Nick on varattu" )
+  server_cmd("kick #%d ^"%L^"", get_user_userid(id), id, "NO_ENTRY" )
 }
 
 public client_authorized(id)

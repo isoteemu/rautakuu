@@ -39,8 +39,8 @@
 // Use Cheating-Death
 #define CHEATIN_DEATH
 
-new Sql:sql
-new error[128]
+new Sql:dbc
+new dbcError[128]
 
 new aristokraatit[32] = 0
 new statukset[4][] = {"n00bi", "V.I.P", "Statuskraatti", "Aristokraatti"}
@@ -79,14 +79,14 @@ public sqlInit() {
     get_cvar_string("amx_sql_pass",pass,31)
     get_cvar_string("amx_sql_db",db,31)
 
-    sql = dbi_connect(host,user,pass,db,error,127)
-    if (sql <= SQL_FAILED) {
-        log_amx("Ei tietokantayhteytta. Ongelmia tiedossa: %s",error)
+    dbc = dbi_connect(host,user,pass,db,dbcError,127)
+    if (dbc <= SQL_FAILED) {
+        log_amx("Ei tietokantayhteytta. Ongelmia tiedossa: %s",dbcError)
     }
 }
 
 public plugin_end() {
-    dbi_close(sql)
+    dbi_close(dbc)
 }
 
 public client_authorized(id) {
@@ -162,8 +162,8 @@ public client_disconnect(id)
 
 public isKnownPlayer(id) {
 
-    if (sql <= SQL_FAILED) {
-        log_amx("Ei tietokantayhteytta. Ei voida tarkistaa aatelismia: %s", error)
+    if (dbc <= SQL_FAILED) {
+        log_amx("Ei tietokantayhteytta. Ei voida tarkistaa aatelismia: %s", dbcError)
         return 0
     }
 
@@ -175,11 +175,11 @@ public isKnownPlayer(id) {
     // Liian tiukka lauseiden pituudesta niin t�tyy erillisill�hauilla teh�
 
     // Aristokraatti haku
-    new Result:Res = dbi_query(sql,"SELECT '3' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
+    new Result:Res = dbi_query(dbc,"SELECT '3' AS status FROM hlstats_PlayerUniqueIds INNER JOIN aristokraatit ON aristokraatit.uniqueId=hlstats_PlayerUniqueIds.uniqueId LEFT JOIN hlstats_Players ON  hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE aristokraatit.uniqueId='%s'",userauthid)
 
     if (Res == RESULT_FAILED) {
-        dbi_error(sql,error,127)
-        log_amx("Ei voitu ladata aristokraatteja: %s",error)
+        dbi_error(dbc,dbcError,127)
+        log_amx("Ei voitu ladata aristokraatteja: %s",dbcError)
         dbi_free_result(Res)
     }
     else if (Res == RESULT_NONE) {
@@ -194,11 +194,11 @@ public isKnownPlayer(id) {
     }
 
     // TOP3 haku
-    new Result:Res2 = dbi_query(sql,"SELECT '2' AS status FROM hlstats_PlayerUniqueIds LEFT JOIN hlstats_Players ON hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE `skill`>=( SELECT skill FROM hlstats_Players ORDER BY skill DESC LIMIT 3,1) AND `hideranking`=0 AND `uniqueId`='%s'",userauthid)
+    new Result:Res2 = dbi_query(dbc,"SELECT '2' AS status FROM hlstats_PlayerUniqueIds LEFT JOIN hlstats_Players ON hlstats_Players.playerId=hlstats_PlayerUniqueIds.playerId  WHERE `skill`>=( SELECT skill FROM hlstats_Players ORDER BY skill DESC LIMIT 3,1) AND `hideranking`=0 AND `uniqueId`='%s'",userauthid)
 
     if (Res2 == RESULT_FAILED) {
-        dbi_error(sql,error,127)
-        log_amx("Ei voitu ladata statuskraatteja: %s",error)
+        dbi_error(dbc,dbcError,127)
+        log_amx("Ei voitu ladata statuskraatteja: %s",dbcError)
         dbi_free_result(Res2)
     }
     else if (Res2 == RESULT_NONE) {
@@ -213,10 +213,10 @@ public isKnownPlayer(id) {
     }
 
     // Rekister�tyneiden haku
-    new Result:Res3 = dbi_query(sql,"SELECT '1' AS status FROM drupal_steamids WHERE `steamid` LIKE '%s'",userauthid)
+    new Result:Res3 = dbi_query(dbc,"SELECT '1' AS status FROM drupal_steamids WHERE `steamid` LIKE '%s'",userauthid)
     if (Res3 == RESULT_FAILED) {
-        dbi_error(sql,error,127)
-        log_amx("Ei voitu ladata rekisteroityneita: %s",error)
+        dbi_error(dbc,dbcError,127)
+        log_amx("Ei voitu ladata rekisteroityneita: %s",dbcError)
         dbi_free_result(Res3)
     }
     else if (Res3 == RESULT_NONE) {
@@ -407,11 +407,11 @@ public redirectPlayer(id) {
         new myIP[16]
         get_cvar_string("ip",myIP,15)
 
-        new Result:Res = dbi_query(sql,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
+        new Result:Res = dbi_query(dbc,"SELECT `name`, `publicaddress` AS `addr`, `port` FROM `hlstats_Servers` WHERE `game` = 'cstrike' AND `publicaddress` != '%s' ORDER BY RAND() LIMIT 0, 1", myIP)
 
         if (Res == RESULT_FAILED) {
-            dbi_error(sql,error,127)
-            log_amx("Virhe haettaessa servereita: %s",error)
+            dbi_error(dbc,dbcError,127)
+            log_amx("Virhe haettaessa servereita: %s",dbcError)
             dbi_free_result(Res)
 
             new id_str[3]

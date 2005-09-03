@@ -71,8 +71,7 @@ public sqlInit() {
             log_amx("Could not connect to DB. %s", error)
             return PLUGIN_HANDLED
         }
-        result = dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `amx_coutryKicker` (`ip` VARCHAR(35), PRIMARY KEY (`ip`)) ")
-        dbi_free_result(result)
+        dbi_query(dbc,"CREATE TABLE IF NOT EXISTS `amx_coutryKicker` (`ip` VARCHAR(35), PRIMARY KEY (`ip`)) ")
     #endif // SQLON
     return 1
 }

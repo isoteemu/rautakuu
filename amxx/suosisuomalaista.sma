@@ -55,7 +55,7 @@ public plugin_init()
         register_cvar("sv_country","1")
 
     #if SQLON
-        sqlInit()
+        set_task(0.1,"sqlInit")
     #endif
 }
 

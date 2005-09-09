@@ -141,7 +141,11 @@ public client_authorized(id) {
             #endif
             redirectPlayer(id)
         } else if( aristokraatit[id] >= 1 ) {
-            if(!adminsExists()) {
+            if (get_user_flags(id) & ADMIN_CHAT) {
+                new pName[32]
+                get_user_name(id,pName,31)
+                log_amx("%s:lla %s on jo ADMIN_CHAT oikat",statukset[aristokraatit[id]],pName)
+            } else if(!adminsExists()) {
                 #if defined NOISY
                     log_amx("Ei admineita, annetaan %s:lle %s oikat", statukset[aristokraatit[id]], vipAdmins)
                 #endif
@@ -149,6 +153,13 @@ public client_authorized(id) {
                 new ivipAdmins = read_flags(vipAdmins)
                 set_user_flags(id,ivipAdmins)
             }
+
+        #if defined CHEATIN_DEATH
+        } else {
+            new id_str[3]
+            num_to_str(id,id_str,3)
+            set_task(120.0,"delayedCDCheck",2,id_str,3,"b")
+        #endif
         }
     }
     else {
@@ -167,11 +178,10 @@ public client_putinserver(id) {
         #endif
         set_task(1.0, "announcePlayer",1,id_str)
         */
-        announcePlayer(id)
+    announcePlayer(id)
 }
 
-public client_disconnect(id)
-{
+public client_disconnect(id) {
     aristokraatit[id] = 0
     return PLUGIN_HANDLED
 }
@@ -542,12 +552,18 @@ public client_infochanged(id) {
         get_user_name(id, nName, 8)
         if(equali(nName, "[No C-D]") || equali(nName, "[Old C-D")) {
             #if defined NOISY
-                log_amx("Pelaajan (idx:%d) nimesta loytyi [No C-D] prefix",id)
+                log_amx("Pelaajan (idx:%d) nimesta loytyi %s prefix",id,nName)
             #endif
             // hanskaa
             cdstatuscheck(id)
         }
     }
+}
+
+public delayedCDCheck(id_str[]) {
+    new player_id = str_to_num(id_str)
+    cdstatuscheck(player_id)
+    return PLUGIN_CONTINUE
 }
 
 public cdstatuscheck(id) {
@@ -588,7 +604,7 @@ public delayNoCDKick(id_str[]) {
     new player_id = str_to_num(id_str)
     new userid = get_user_userid(player_id)
     server_cmd("kick #%d Tarkista Cheating-Death",userid)
-    return PLUGIN_CONTINUE
+    return PLUGIN_HANDLED
 }
 
 #endif

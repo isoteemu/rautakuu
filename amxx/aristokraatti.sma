@@ -108,7 +108,7 @@ public plugin_end() {
 
 public client_authorized(id) {
 
-    if(is_user_bot(id)) return PLUGIN_HANDLED
+    if(is_user_bot(id) || is_user_hltv(id)) return PLUGIN_HANDLED
 
     aristokraatit[id] = isKnownPlayer(id)
 
@@ -330,7 +330,12 @@ public monotaPingein ( aristoLevel ) {
             continue
         }
         else {
-            if (is_user_bot(Players[i])) {
+            if (is_user_hltv(Players[i])) {
+                #if defined NOISY
+                    log_amx("HLTV, skipataan")
+                #endif
+                continue
+            } else if (is_user_bot(Players[i])) {
                 bigPingOwner = Players[i]
                 myPing = 1000
             }
@@ -547,6 +552,7 @@ public announcePlayer( pId ) {
 #if defined CHEATIN_DEATH
 
 public client_infochanged(id) {
+    if(is_user_hltv(id) || is_user_bot(id)) return PLUGIN_HANDLED
     if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
         new nName[9]
         get_user_name(id, nName, 8)
@@ -558,6 +564,7 @@ public client_infochanged(id) {
             cdstatuscheck(id)
         }
     }
+    return PLUGIN_CONTINUE
 }
 
 public delayedCDCheck(id_str[]) {
@@ -567,6 +574,8 @@ public delayedCDCheck(id_str[]) {
 }
 
 public cdstatuscheck(id) {
+
+    if(is_user_hltv(id) || is_user_bot(id)) return PLUGIN_HANDLED
 
     // Ei tarkasteta vippeja tai parempia
     if(aristokraatit[id] <= 0) {
@@ -598,6 +607,7 @@ public cdstatuscheck(id) {
         num_to_str(id,id_str,3)
         set_task(15.0,"delayNoCDKick",1,id_str,3)
     }
+    return PLUGIN_HANDLED
 }
 
 public delayNoCDKick(id_str[]) {

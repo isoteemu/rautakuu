@@ -50,7 +50,7 @@ new vipAdmins[] = "j"
 
 new Author[] = "Rautakuu [dot] org"
 new Plugin[] = "RQ_Aristokraatti"
-new Version[] = "0.5.3"
+new Version[] = "0.5.3.1"
 
 public plugin_init() {
     register_plugin(Plugin, Version, Author)
@@ -556,12 +556,12 @@ public client_infochanged(id) {
 }
 
 public delayedCDCheck(id_str[]) {
-    new player_id = str_to_num(id_str)
-    cdstatuscheck(player_id)
+    new id = str_to_num(id_str)
+    cdstatuscheck(id)
     return PLUGIN_CONTINUE
 }
 
-public cstatuscheck(id) {
+public cdstatuscheck(id) {
     if(is_user_hltv(id) || is_user_bot(id)) return PLUGIN_HANDLED
     if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
         new nName[9]
@@ -592,14 +592,16 @@ public cdstatusfail(id) {
         client_print(id,print_console," (Linux-hihhulit: #rautakuu @ QuakeNET)")
         client_print(id,print_console,"[No C-D] =============================================")
 
-        new msg[1201], aname[32]
+        new msg[1201], aname[32], cdver[9]
         get_user_name(id,aname,31)
+	get_cvar_string("cdcurrentupdate",cdver,8)
 
         format(msg, 1200,"<html><head><title>No C-D</title></head><body bgcolor=black color=green>")
         format(msg, 1200,"%s [No C-D] =============================================<br />", msg)
         format(msg, 1200,"%s <strong>Hjuva tjoveri %s</strong><br />", msg, aname)
         format(msg, 1200,"%s <p>Asenna/p&auml;ivit&auml; Cheating-Death:<br />", msg)
         format(msg, 1200,"%s  <a href=http://www.unitedadmins.com/cdeath.php>http://www.unitedadmins.com/cdeath.php</a><br />", msg)
+	format(msg, 1200,"%s Tarvittava versio: %s<br />", msg, cdver)
         format(msg, 1200,"%s  </p><p>(Linux-hihhulit: #rautakuu @ QuakeNET)</p>", msg)
         format(msg, 1200,"%s [No C-D] =============================================", msg)
         format(msg, 1200,"%s </body></html>", msg)

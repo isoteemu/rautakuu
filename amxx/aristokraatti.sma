@@ -552,6 +552,16 @@ public announcePlayer( pId ) {
 #if defined CHEATIN_DEATH
 
 public client_infochanged(id) {
+    cstatuscheck(id)
+}
+
+public delayedCDCheck(id_str[]) {
+    new player_id = str_to_num(id_str)
+    cdstatuscheck(player_id)
+    return PLUGIN_CONTINUE
+}
+
+public cstatuscheck(id) {
     if(is_user_hltv(id) || is_user_bot(id)) return PLUGIN_HANDLED
     if(aristokraatit[id] <= 0 && is_user_connected(id) && !is_user_connecting(id)) {
         new nName[9]
@@ -561,19 +571,13 @@ public client_infochanged(id) {
                 log_amx("Pelaajan (idx:%d) nimesta loytyi %s prefix",id,nName)
             #endif
             // hanskaa
-            cdstatuscheck(id)
+            cdstatusfail(id)
         }
     }
     return PLUGIN_CONTINUE
 }
 
-public delayedCDCheck(id_str[]) {
-    new player_id = str_to_num(id_str)
-    cdstatuscheck(player_id)
-    return PLUGIN_CONTINUE
-}
-
-public cdstatuscheck(id) {
+public cdstatusfail(id) {
 
     if(is_user_hltv(id) || is_user_bot(id)) return PLUGIN_HANDLED
 

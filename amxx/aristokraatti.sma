@@ -552,7 +552,7 @@ public announcePlayer( pId ) {
 #if defined CHEATIN_DEATH
 
 public client_infochanged(id) {
-    cstatuscheck(id)
+    cdstatuscheck(id)
 }
 
 public delayedCDCheck(id_str[]) {

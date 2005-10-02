@@ -78,7 +78,7 @@ public client_connect(id) {
                 get_user_authid(id, sID, 50)
                 get_cvar_string("amx_retrymsg", reason, 127)
 
-                server_cmd("amx_ban 5 %s %s ^"%s^"", sID, reason)
+                server_cmd("amx_ban 5 %s ^"%s^"", sID, reason)
 			} else if (get_cvar_num("amx_retrykick")) {
 				new uID[1], reason[128]
 				uID[0] = get_user_userid(id)

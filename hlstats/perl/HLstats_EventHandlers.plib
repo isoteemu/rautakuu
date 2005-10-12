@@ -133,7 +133,7 @@ sub doEvent_Disconnect
             } else {
                 my $address = $player->get("address");
                 my $srvname = $g_servers{$s_addr}->{name};
-                my $query   = "INSERT INTO `amx_bans` (`player_ip`, `player_id`, `player_nick`, `admin_nick`, `ban_type`, `ban_reason`, `ban_created`, `ban_length`, `server_ip`, `server_name`) VALUES ('$address', '$playerUniqueId', '$playerName', '$srvname', 'v', 'VAC banned from secure server', NOW(), '0', '$s_addr', '$srvname')");
+                my $query   = "INSERT INTO `amx_bans` (`player_ip`, `player_id`, `player_nick`, `admin_nick`, `ban_type`, `ban_reason`, `ban_created`, `ban_length`, `server_ip`, `server_name`) VALUES ('$address', '$playerUniqueId', '$playerName', '$srvname', 'v', 'VAC banned from secure server', NOW(), '0', '$s_addr', '$srvname')";
                 &doQuery($query);
                 $desc = "BANNING VAC BANNED PLAYER [".$playerUniqueId.", ".$playerName."]: ";
             }

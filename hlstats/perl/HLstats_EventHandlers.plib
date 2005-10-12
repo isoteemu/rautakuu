@@ -126,7 +126,7 @@ sub doEvent_Disconnect
 		$desc = "(IGNORED) NOPLAYERINFO: ";
         if (($playerUniqueId ne "") && ($ev_properties eq "(reason \"VAC banned from secure server\")")) {
             $desc = "(IGNORED) VAC BANNED PLAYER [".$playerUniqueId."]: ";
-            my query    = "SELECT `bid` FROM amx_bans WHERE `ban_length` = 0 AND `player_id`='$playerUniqueId'";
+            my $query   = "SELECT `bid` FROM amx_bans WHERE `ban_length` = 0 AND `player_id`='$playerUniqueId'";
             my $result  = &doQuery($query);
             if ($result->rows >= 1) {
                 $desc = "VAC BANNED PLAYER [".$playerUniqueId.", ".$playerName."] ALREADY BANNED: ";

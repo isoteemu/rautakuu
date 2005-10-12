@@ -70,7 +70,6 @@ sub new
 		}
 	}
 	
-    $self->getAddress();
 	$self->updateDB();
 
 	&::printNotice("Created new player object " . $self->getInfoString());

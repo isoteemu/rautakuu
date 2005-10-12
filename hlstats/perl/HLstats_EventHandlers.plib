@@ -34,12 +34,12 @@ sub doEvent_Connect
 	
 	my $hostname;
 	my $hostgroup;
-	
-    # Set player Address
-    $player->set("address", $ipAddr);
 
 	if ($player)
 	{
+        # Set player Address
+        $player->set("address", $ipAddr);
+
 		$hostname = &resolveIp($ipAddr);
 		$hostgroup = "";
 		
@@ -139,7 +139,7 @@ sub doEvent_Disconnect
             }
         }
 	}
-
+	
 	return $desc . $playerstr . " disconnected";
 }
 
@@ -697,7 +697,7 @@ sub doEvent_Chat
 				playerId='" . $player->get("playerid") . "'
 		");
 		
-		&rcon("say -!- '$playerName' is now $hidedesc the rankings.");
+		&rcon("say '$playerName' is now $hidedesc the rankings.");
 	}
 	
 	return $playerstr . " $type \"$message\"";

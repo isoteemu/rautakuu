@@ -1,0 +1,355 @@
+#!/bin/bash
+export komento=${@}
+
+
+## Counter Serverit
+declare -a CSSERVERS
+#CSSERVERS[1]="trodfix.jsp.fi"
+CSSERVERS[0]="hopeakuu.rautakuu.org"
+
+function normal()   { echo -en "\033[0m"; }
+function bold()     { echo -en "\033[1m"; }
+function green()    { echo -en "\033[1;32m"; }
+function cyan()     { echo -en "\033[1;36m"; }
+function red()      { echo -en "\033[1;31m"; }
+
+INITING="false"
+export INITDONE=""
+
+VERSIO="0.0.2"
+
+PROGNAME="Teemun pelin valitsija v. $VERSIO"
+
+function valitsePeli {
+
+    # Julista arrayt
+    declare -a PELIT
+    declare -a NIMET
+
+    PELIT[0]="ut2004"
+    PELIT[1]="ut2003"
+    PELIT[2]="ut"
+    PELIT[3]="doom3"
+    PELIT[4]="cstrike"
+    PELIT[5]="armyops"
+    PELIT[6]="nwn"
+    PELIT[7]="uplink"
+    PELIT[8]="gta"
+    PELIT[9]="alienswarm"
+    PELIT[10]="airbuccaneers"
+    PELIT[11]="pathways"
+    PELIT[12]="et"
+    PELIT[13]="redorchestra"
+    PELIT[14]="deathball"
+    PELIT[15]="fragops"
+    PELIT[16]="damnation"
+    PELIT[17]="strikeforce"
+    PELIT[18]="cor"
+    PELIT[19]="domain2049"
+    PELIT[20]="piddly"
+    PELIT[21]="quake4"
+
+    NIMET[0]="Unreal Tournament 2004"
+    NIMET[1]="Unreal Tournament 2003"
+    NIMET[2]="Unreal Tournament"
+    NIMET[3]="Doom ]I["
+    NIMET[4]="Counter Strike"
+    NIMET[5]="America's Army"
+    NIMET[6]="Never Winter Nights"
+    NIMET[7]="Uplink"
+    NIMET[8]="Grand Theft Auto"
+    NIMET[9]="Alien Swarm: Infested (UT)"
+    NIMET[10]="Air Buccaneers (UT)"
+    NIMET[11]="Pathways Redux"
+    NIMET[12]="Enemy Territory"
+    NIMET[13]="Red Orchestra (UT)"
+    NIMET[14]="Death Ball (UT)"
+    NIMET[15]="Frag Ops (UT)"
+    NIMET[16]="Damnation (UT)"
+    NIMET[17]="Strike Force (UT)"
+    NIMET[18]="COR (UT)"
+    NIMET[19]="Domain 2049 (UT)"
+    NIMET[20]="Piddly's Chance (UT)"
+    NIMET[21]="Quake 4"
+
+    SELECTIONS=""
+    index=0
+    peli_count=${#PELIT[*]}
+    initDo "Etsitään pelejä"
+
+    game="false"
+    echo ""
+
+    if [ -n $DISPLAY ]; then
+        if [ $(which kdialog 2>/dev/null) ]; then
+            KPROGRESS=$(kdialog --icon package_games --title "$PROGNAME" --progressbar "Etsitään pelejä..." $peli_count )
+        fi
+    fi
+
+    while [ "$index" -lt "$peli_count" ]; do
+        echo -n "  "
+        initDo "Etsitään peliä ${NIMET[$index]}"
+
+        if [ -n $KPROGRESS ]; then
+            dcop $KPROGRESS setLabel "Etstsitään peliä ${NIMET[$index]}"
+            dcop $KPROGRESS setProgress $index
+        fi
+
+        # Etsitään steam
+        if [ "${PELIT[$index]}" = "cstrike" ]; then
+            STEAMAPP=$(find $HOME/.transgaming/ -type f -name STEAM.exe 2>/dev/null)
+            if [ -z "$STEAMAPP" ]; then
+                initDoFail
+            else
+                # Valitaan yhdistettävä serveri
+                CSINDX=0
+                let "CSINDX = $RANDOM % ${#CSSERVERS[*]}"
+                CSSERVER=${CSSERVERS[$CSINDX]}
+
+                # Steamin sijainti
+                SDIR=$(dirname "$STEAMAPP")
+                SAPP=$(basename "$STEAMAPP")
+
+                SELECTIONS="$SELECTIONS \"cd '$SDIR'; cedega '$SAPP' -- -applaunch 010:Counter-Strike -console +connect $CSSERVER\" \"${NIMET[$index]}\""
+                initDoSuccess
+                game=${PELIT[$index]}
+            fi
+        else
+            # etsitään peliä unix komennon perusteella
+            peli=$(which `echo ${PELIT[$index]} | awk -F' ' '{ printf $1 }'` 2>/dev/null)
+            if [ "$?" == "0" ]; then
+                initDoSuccess
+                SELECTIONS="$SELECTIONS \"${PELIT[$index]}\" \"${NIMET[$index]}\""
+                game=${NIMET[$index]}
+            else
+                initDoFail
+            fi
+        fi
+
+        ## Bashin i++
+        let "index = $index + 1"
+    done
+
+    if [ -n $KPROGRESS ]; then
+        dcop $KPROGRESS close
+    fi
+
+    if [ "$game" = "false" ]; then
+        bold; echo -n "   > "; cyan; echo -n "Pelejä ei löytynyt :( "
+        initDoFail
+        exit 2
+    fi
+
+    selectDialog $SELECTIONS
+
+    if [ $? -ne 0 ]; then
+        echo "Keskeytetään pyynnöstä"
+        exit
+    fi
+}
+
+function selectDialog {
+    if [ -z $DISPLAY ]; then
+        if [ $(which dialog 2>/dev/null) ]; then
+            consoleDialog ${@}
+        else
+            red; echo "Ei graaffista eikä dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
+        fi
+    elif [ $(which kdialog 2>/dev/null) ]; then
+        kdeDialog ${@}
+    else
+        if [ $(which dialog 2>/dev/null) ]; then
+            consoleDialog ${@}
+        else
+            red; echo "Ei kdialog eikä dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
+        fi
+    fi
+}
+
+function consoleDialog {
+    tempFile=`mktemp`
+    eval "$(which dialog) --title '$PROGNAME' --menu 'Valitse käynnistettävä peli' 0 0 0 ${@} 2> $tempFile"
+    unset dialog
+    export komento=`cat $tempFile`
+    rm $tempFile
+}
+
+function kdeDialog {
+    ret=`eval "$(which kdialog) --icon package_games --title '$PROGNAME' --menu 'Valitse käynnistettävä peli' ${@}"`
+    export komento=$ret
+}
+
+function initDo {
+    if [ "$INITING" != "false" ]; then
+        if [ $? == 0 ]; then
+            initDoSuccess
+        else
+            initDoFail
+        fi
+    fi
+    bold; green
+    echo -n " * "
+    cyan
+    echo -n "$1:"
+    normal
+    if [ -z $2 ]; then
+        INITING="false"
+    else
+        INITING=$2
+    fi
+}
+
+function initDoFail {
+    INITING="false"
+    red;
+    echo " [FAIL]"
+    normal;
+}
+
+function initDoSuccess {
+    if [ "$INITING" != "false" ]; then
+        export INITDONE="$INITDONE $INITING"
+    fi
+    INITING="false"
+    green
+    echo " [DONE]"
+    normal
+}
+
+function init {
+
+    # Disabloi taustakuva (sen vaihtuminen)
+    if dcop | grep -q "kdesktop"; then
+        initDo "Poistetaan taustakuva" "background"
+        dcop kdesktop KBackgroundIface setBackgroundEnabled false && initDoSuccess
+    fi
+
+    # Asetetaan Kopeten away viesti
+    if  dcop | grep -q "kopete"; then
+        initDo "Asetetaan kopeteen poissaolo" "kopete"
+        dcop kopete KopeteIface setAway 'Pelaamassa $game' && initDoSuccess
+    fi
+
+    # Ei KMailin päivityksiä
+    if  dcop | grep -q "kmail"; then
+        if [ "$(dcop kmail kmail-mainwindow#1 updatesEnabled)" = "true" ]; then
+            initDo "Estetään KMailin päivitykset" "kmail"
+            dcop kmail kmail-mainwindow#1 setUpdatesEnabled false && initDoSuccess
+        fi
+    fi
+
+    # Jos nvidianin näyttis, aseta antialising ja anisotropic textuurin filteröinti
+    if [ -d "/proc/driver/nvidia" ]; then
+        # Laita simppeli antialising päälle (2x Quincunx Multisampling)
+        initDo "Asetetaan antialising"
+        export __GL_FSAA_MODE=2 && initDoSuccess
+
+        # 4x anisotropic filtering
+        #initDo "Asetataan anisotropic filteröinti"
+        #export __GL_LOG_MAX_ANISO=2 && initDoSuccess
+
+        if [ $(which nvidia-settings 2>/dev/null) ]; then
+            initDo "nvidia coolbits (kellotus)"
+            nvidia-settings -a GPUOverclockingState=1 > /dev/null && initDoSuccess
+
+            # Tarkista, onko coolbits tuki. Jos on, kellotetaan.
+            if $(nvidia-settings -q GPU3DClockFreqs >/dev/null 2&>1); then
+                initDo "Kellotetaan näyttökorttia" "3DFreq"
+                if [ -z $FREQMULTIPLIER ]; then
+                    FREQMULTIPLIER=1.1
+                fi
+                FREQTWO=$(nvidia-settings -q GPU3DClockFreqs | head -n1 | sed 's/^.*: \([0-9]*\)\,\([0-9]*\)\.$/\1/');
+                FREQTHREE=$(nvidia-settings -q GPU3DClockFreqs | head -n1 | sed 's/^.*: \([0-9]*\)\,\([0-9]*\)\.$/\2/');
+
+                NFREQTWO=$(echo $FREQTWO $FREQMULTIPLIER | awk '{ printf("%.0f\n", $1 * $2); }')
+                NFREQTHREE=$(echo $FREQTHREE $FREQMULTIPLIER | awk '{ printf("%.0f\n", $1 * $2); }')
+
+                echo -n " x$FREQMULTIPLIER=$NFREQTWO,$NFREQTHREE"
+                nvidia-settings -a GPU3DClockFreqs=$NFREQTWO,$NFREQTHREE > /dev/null && initDoSuccess
+            fi
+
+            #initDo "Textuurien terävöitys"
+            #nvidia-settings -a TextureSharpen=1 > /dev/null && initDoSuccess
+        fi
+    fi
+
+    ## Näytön gamma
+    if [ $(which xgamma 2>/dev/null) ]; then
+        if [ -z $GAMMAMULTIPLIER ]; then
+            GAMMAMULTIPLIER=1.4
+        fi
+        # Tallennetaan vanhat gamma arvot
+        GAMMA=$(xgamma 2>&1)
+        GAMMAR=$(echo "$GAMMA" | sed -e 's/.*Red *\([0-9]*\.[0-9]*\).*/\1/')
+        GAMMAG=$(echo "$GAMMA" | sed -e 's/.*Green *\([0-9]*\.[0-9]*\).*/\1/')
+        GAMMAB=$(echo "$GAMMA" | sed -e 's/.*Blue *\([0-9]*\.[0-9]*\).*/\1/')
+        # Uudet gamma arvot
+
+        NGAMMAR=$(echo $GAMMAR $GAMMAMULTIPLIER | awk '{ printf("%.3f\n", $1 * $2); }')
+        NGAMMAG=$(echo $GAMMAG $GAMMAMULTIPLIER | awk '{ printf("%.3f\n", $1 * $2); }')
+        NGAMMAB=$(echo $GAMMAB $GAMMAMULTIPLIER | awk '{ printf("%.3f\n", $1 * $2); }')
+        initDo "Asetetaan uudet gamma arvot" "gamma"
+        xgamma -rgamma $NGAMMAR -ggamma $NGAMMAG -bgamma $NGAMMAB > /dev/null 2>&1 && initDoSuccess
+    fi
+
+    # Artsd:n suspendaus
+    if [ $(which artsshell 2>/dev/null) ]; then
+        artsshell status > /dev/null 2>&1
+        if [ $? == 0 ]; then
+            initDo "Yritetään vapauttaa äänilaite KDE:ltä"
+        fi
+        artsshell suspend > /dev/null 2>&1 && initDoSuccess
+    fi
+}
+
+function initEnd {
+    for PROG in $INITDONE; do
+        initDo "palautetaan $PROG"
+        if [ $PROG = "kopete" ]; then dcop kopete KopeteIface setAvailable; fi
+        if [ $PROG = "background" ]; then dcop kdesktop KBackgroundIface setBackgroundEnabled true; fi
+        if [ $PROG = "kmail" ]; then dcop kmail kmail-mainwindow#1 setUpdatesEnabled true; fi
+        if [ $PROG = "3DFreq" ]; then
+            echo -n " ($FREQTWO,$FREQTHREE)"
+            nvidia-settings -a GPU3DClockFreqs=$FREQTWO,$FREQTHREE > /dev/null
+        fi
+        if [ $PROG = "gamma" ]; then
+             xgamma -rgamma $GAMMAR -ggamma $GAMMAG -bgamma $GAMMAB > /dev/null 2>&1
+        fi
+        if [ $? == 0 ]; then
+            initDoSuccess
+        else
+            initDoFail
+        fi
+    done
+}
+
+bold; echo "$PROGNAME"; normal
+
+if [ -z "$komento" ]; then
+    valitsePeli
+fi
+
+if [ -z "$komento" ]; then
+    red; echo -n "Ei Komentoa!"; normal;
+    echo ""
+    exit 1
+fi
+
+#initDo "Tarkistetaan komentoa $komento"
+#if [ $(which `echo $komento | awk -F' ' '{ printf $1 }'` 2>/dev/null) ]; then
+#   initDoSuccess
+#else
+#   initDoFail
+#   exit 1
+#fi
+
+# Aja init, joka tekee taiat
+init
+
+echo "$komento"
+eval "$komento"
+
+# Palauta asetukset
+initEnd
+
+unset komento

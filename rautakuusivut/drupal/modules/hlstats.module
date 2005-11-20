@@ -1,0 +1,828 @@
+<?php
+
+function hlstats_help($section = 'admin/help#hlstats') {
+    $output = '';
+
+    switch ($section) {
+        case 'admin/modules#description':
+            $output = t('Hlstats stuffia, a\'la rautakuu.');
+            break;
+        case 'admin/settings/hlstats':
+        return t('Hlstatsin sivusto kohtaisia asetuksia.');
+    }
+    return $output;
+}
+
+/**
+* Implementation of hook_menu()
+*/
+
+function hlstats_menu($may_cache){
+  $items = array();
+  $items[] = array(
+    'path'     => 'admin/settings/hlstats/main',
+    'title'    => t('Hlstats settings'),
+    'callback' => 'hlstats_settings',
+    'access'   => user_access('administer Hlstats'),
+    'type'     => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10
+  );
+  $items[] = array(
+    'path'     => 'hlstats/server',
+    'title'    => t('Server'),
+    'callback' => 'hlstats_page',
+    'access'   => user_access('hlstats'),
+    'type'     => MENU_LOCAL_TASK,
+    'weight'   => -10
+  );
+  $items[] = array(
+    'path'     => 'hlstats/general',
+    'title'    => t('General'),
+    'callback' => 'hlstats_page',
+    'access'   => user_access('hlstats'),
+    'type'     => MENU_LOCAL_TASK,
+    'weight'   => -9
+  );
+  $items[] = array(
+    'path'     => 'hlstats/style',
+    'title'    => t('Style'),
+    'callback' => 'hlstats_page',
+    'access'   => user_access('hlstats'),
+    'type'     => MENU_LOCAL_TASK,
+    'weight'   => -8
+  );
+  $items[] = array(
+    'path'     => 'hlstats/status',
+    'title'    => t('Server Status'),
+    'callback' => 'hlstats_page',
+    'access'   => user_access('hlstats'),
+    'type'     => MENU_LOCAL_TASK,
+    'weight'   => -5
+  );
+  return $items;
+}
+
+function hlstats_perm() {
+  return array('administer Hlstats', 'hlstats', 'administer admins');
+}
+
+
+/**
+* hlstats_settings callback function
+*/
+function hlstats_settings(){
+  $output  = form_textfield(t('Hlstats url'), 'hlstats_url',
+    variable_get('hlstats_url', 'http://hlstats.rautakuu.org'), 20,80,
+    t('URL for hlstats.'));
+  $output .= form_textfield(t('Hlstats Includes Path'), 'hlstatsinc_path',
+    variable_get('hlstatsinc_path', '/var/www/hlstats/hlstatsinc'), 20,80,
+    t('Where on filesystem does hlstats includes locate?'));
+  return $output;
+}
+
+/**
+ * This will be invoked by the search module.
+ * Returns the Header, and array of items found, if any.
+ */
+function hlstats_search ($op = 'search',  $keys = null) {
+    switch ($op) {
+        case 'name':
+            return t('HLStλts');
+        case 'reset':
+            return;
+        case 'search' :
+            $msg = t("Pelaaja <i>%s%s</i> pelissä <i>%s</i> pisteeillä <i>%d</i>");
+            db_set_active('hlds');
+
+            $query = "
+                    SELECT
+                        hlstats_PlayerNames.playerId,
+                        hlstats_Players.lastName AS name,
+                        hlstats_Players.skill,
+                        hlstats_Players.fullName,
+                        hlstats_Games.name AS gamename
+                    FROM
+                        hlstats_PlayerNames
+                    LEFT JOIN hlstats_Players ON
+                        hlstats_Players.playerId = hlstats_PlayerNames.playerId
+                    LEFT JOIN hlstats_Games ON
+                        hlstats_Games.code = hlstats_Players.game
+                    WHERE
+                        hlstats_Games.hidden='0' AND
+                        (
+                            hlstats_PlayerNames.name LIKE '$keys' OR
+                            hlstats_PlayerNames.name LIKE '$keys%' OR
+                            hlstats_PlayerNames.name LIKE '%$keys%'
+                        )
+                    GROUP BY
+                        hlstats_PlayerNames.playerId";
+
+
+            $count = db_num_rows(db_query($query));
+            if ($count == 0) {
+                db_set_active('default');
+                return array();
+            }
+
+            $count_query = "SELECT $count";
+
+            // Do pager query
+            //$result = pager_query($query, 15, 0, $count_query, $arguments);
+            $result = db_query($query);
+
+            $results = array();
+            while ($item = db_fetch_array($result)) {
+                $link = "http://rautakuu.org/hlstats/hlstats.php/mode,playerinfo/player,".$item['playerId'];
+                $title = $item['name'];
+                $name = "";
+                if(!empty($item['fullName'])) $name = "(".$item['fullName'].") ";
+                $snippet = sprintf($msg, $item['name'],$name, $item['gamename'], $item['skill']);
+                $results[] = array("link"=>$link, "title" => $title, "snippet" => $snippet );
+            }
+
+            db_set_active('default');
+            return $results;
+
+    }
+}
+
+function hlstats_user($type, &$edit, &$user, $category = NULL) {
+
+    global $base_url;
+
+    switch ($type) {
+        case 'update':
+        case 'insert':
+            if(!empty($edit['access']) && user_access('administer admins')) {
+                $acl = "";
+                foreach($edit['access'] AS $attr ) {
+                    $acl .= $attr;
+                }
+                if(empty($acl)) $acl = "z";
+            }
+            if(!empty($edit['steamid'])) {
+                if(!isset($acl)) $acl = _hlstats_fetch_access($user->uid);
+                _hlstats_steamid_push($user->uid,$edit['steamid'],$acl);
+            }
+            break;
+
+        case 'form':
+            if($category == "server" ) {
+                $access = _hlstats_fetch_access($user->uid);
+                $data   = _hlstats_steamid_form($user->uid);
+                $data  .= _hlstats_admins_form($user->uid,$access,user_access('administer admins'));
+                return array(array('title' => sprintf('<a href="%s">Counter-Strike</a>',variable_get("hlstats_url", "http://rautakuu.org/hlstats/hlstats.php")), 'data' => $data, 'weight' => 4));
+            }
+            break;
+
+        case 'validate':
+            if(!empty($edit['steamid'])) {
+                $edit['steamid'] = trim($edit['steamid']);
+                if(substr(strtoupper($edit['steamid']),0,8) != "STEAM_0:") {
+                    form_set_error('steamid',t("SteamID ei vaikuttanut validilta. "));
+                } else {
+                    /**
+                     * TODO: tee linkki pelaajan sivulle
+                     */
+                    $steamExists = _hlstats_db(STEAMID_SEARCH, array($edit['steamid']));
+                    $checkDupe   = _hlstats_db(STEAMID_OWNER, array($edit['steamid']));
+                    $stealeruid  = db_result($checkDupe);
+                    if(db_num_rows($steamExists) < 1) {
+                        form_set_error('steamid',t("Rautakuun pelaajatietokannasta ei löytynyt kyseistä SteamIDtä. Joko kirjoitit SteamIDn väärin, tai et ole koskaan pelannut rautakuussa."));
+                    } elseif(db_num_rows($checkDupe) != 0 && $stealeruid != $user->uid) {
+                        $stealerpl  = db_result($steamExists);
+                        $stealerln  = variable_get("hlstats_url", "http://rautakuu.org/hlstats/hlstats.php").'?mode=playerinfo&amp;player='.$stealerpl;
+                        $stealer    = user_load(array("uid"=>$stealeruid));
+
+                        $stelerlink = $base_url."/user/".$stealeruid;
+                        $stealernm  = $stealer->name;
+
+                        form_set_error('steamid',sprintf(t("Kyseinen <a href=\"%s\">SteamID <sup>(%s)</sup></a> on jo rekisteröity pelaajalle <a href=\"%s\">%s</a>.<pre>%s</pre>"),$stealerln,$edit['steamid'],$stelerlink,$stealernm,print_r($stealer,1)));
+                    }
+                }
+            }
+            break;
+
+        case 'categories':
+            return hlstats_categories();
+            break;
+    }
+    return;
+}
+
+function hlstats_categories() {
+    return array(array('name' => "server", 'title' => "Counter-Strike", 'weight' =>4));
+}
+
+function _hlstats_steamid_form($uid) {
+    $steamid = db_result(_hlstats_db(STEAMID_GET, array($uid)));
+    if($steamid) {
+        $playerId = db_result(_hlstats_db(STEAMID_SEARCH,array($steamid)));
+        $playerln = '<a href="http://rautakuu.org/hlstats/index.php/mode,playerinfo/player,'.$playerId.'/">'.$steamid.'</a>';
+    } else {
+        $playerln = "STEAM_0:1:234567";
+    }
+    $output  = form_textfield(t("SteamID"), "steamid", $steamid, 40, 18, sprintf(t("Jos haluat etuilla Rautakuun Counter-Strike serverillä, laittamallä tähän SteamIDsi saat etulyöntiaseman tavallisia pulliaisia kohtaan serverin slottien jakamisessa. Jos et tiedä SteamIDtäsi, voit yrittää etsiä sitä Rautakuun <a href=\"http://rautakuu.org/hlstats\">HLstλtsista</a>. SteamID on muotoa %s"),$playerln));
+    return $output;
+}
+
+function _hlstats_admins_form($uid,$edit,$editable=false) {
+    //    form_checkbox($title, $name, $value = 1, $checked = FALSE, $description = NULL, $attributes = NULL, $required = FALSE)
+    //  form_checkboxes($title, $name, $values, $options, $description = NULL, $attributes = NULL, $required = FALSE)
+    if($editable!=true) $attributes = array('disabled' => 'disabled');
+
+    $checked = array();
+    foreach($edit AS $key => $val) {
+        if($val == 1) $checked[] = $key;
+    }
+
+    $options = array(
+        'a' => t("immunity (can't be kicked/baned/slayed/slaped and affected by other commmands)"),
+        'b' => t("reservation (can join on reserved slots)"),
+        'c' => t("amx_kick command"),
+        'd' => t("amx_ban and amx_unban commands"),
+        'e' => t("amx_slay and amx_slap commands"),
+        'f' => t("amx_map command"),
+        'g' => t("amx_cvar command (not all cvars will be available)"),
+        'h' => t("amx_cfg command"),
+        'i' => t("amx_chat and other chat commands"),
+        'j' => t("amx_vote and other vote commands"),
+        'k' => t("access to sv_password cvar (by amx_cvar command)"),
+        'l' => t("access to amx_rcon command and rcon_password cvar (by amx_cvar command"),
+        'u' => t("menu access"),
+        'z' => t("user (no admin)")
+    );
+    return form_checkboxes("Flags","access",$checked,$options,"Important: Do not use 'z' for admins.",$attributes,false);
+
+    /*
+    $header = array(
+        array('data' => t("Flag")),
+        array('data' => t("Purpose"))
+    );
+    $rows   = array();
+    $rows[] = array(
+        array('data' => form_checkboxes("a","access",1,$edit['a'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("immunity (can't be kicked/baned/slayed/slaped and affected by other commmands)")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("b","access",1,$edit['b'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("reservation (can join on reserved slots)")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("c","access",1,$edit['c'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_kick command")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("d","access",1,$edit['d'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_ban and amx_unban commands")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("e","access",1,$edit['e'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_slay and amx_slap commands")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("f","access",1,$edit['f'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_map command")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("g","access",1,$edit['g'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_cvar command (not all cvars will be available)")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("h","access",1,$edit['h'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_cfg command")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("i","access",1,$edit['i'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_chat and other chat commands")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("j","access",1,$edit['j'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("amx_vote and other vote commands")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("k","access",1,$edit['k'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("access to sv_password cvar (by amx_cvar command)")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("u","access",1,$edit['u'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("menu access")),
+    );
+    $rows[] = array(
+        array('data' => form_checkboxes("l","access",1,$edit['l'],null,$attributes,false), 'class' => 'title'),
+        array('data' => t("access to amx_rcon command and rcon_password cvar (by amx_cvar command)")),
+    );
+    return theme('table', $header, $rows);
+    */
+}
+
+function _hlstats_steamid_push($uid, $steamid, $access="z") {
+    if(is_array($access)) {
+        $str ="";
+        foreach($access AS $key => $val) {
+            if($val == 1) $str .= $key;
+        }
+        $access = $str;
+    }
+    if(empty($access)) $access = "z";
+
+    watchdog('hlstats', t("Henkilölle ID:%id päivitettiin SteamIDksi %steamid ja oikeuksiksi %acl", array("%id"=>$uid,"%steamid"=>$steamid,"%acl"=>$access)));
+
+    _hlstats_db(STEAMID_PUSH, array(
+        "steamid" => $steamid,
+        "uid"     => $uid,
+        "access"  => $access
+    ));
+}
+
+function hlstats_page() {
+    global $user;
+
+    $op = arg(1);
+
+    $edit = array();
+    if($_POST['edit']) $edit =& $_POST['edit'];
+    $hlstats = array_merge(_hlstats_fetch_options(),$edit);
+
+    drupal_set_title(sprintf(t("Hlstλts » %s"),UcFirst(t($op))));
+
+    switch($op) {
+        case "server" :
+            $hlstats = array_merge(_hlstats_fetch_server(),$hlstats);
+            if(isset($edit['address'])) {
+                if(_hlstats_validate_server($hlstats)) {
+                    _hlstats_save_server($hlstats,$user->uid);
+                }
+            }
+            echo theme("page",hlstats_form_server($hlstats));
+            break;
+        case "status" :
+            $hlstats = array_merge($hlstats,_hlstats_fetch_server());
+
+            // Katsotaan, suoritetaanko erikoisempi RCON komento
+            if(isset($edit['map'])) {
+                if(!$hlstats['rcon_password']) {
+                    drupal_set_message(t("Kartan vaihto pyydetty, mutta toiminto vaatii RCON salasanan."), "error");
+                } else {
+                    $rcon = "changelevel ".$edit['map'];
+                }
+            } elseif(!empty($edit['rcon'])) {
+                if(!$hlstats['rcon_password']) {
+                    drupal_set_message(t("RCON komento, mutta toiminto vaatii RCON salasanan."), "error");
+                } else {
+                    $rcon = $edit['rcon'];
+                }
+            } else {
+                $rcon = "status";
+            }
+            echo theme("page",hlstats_page_status($hlstats,$rcon));
+            break;
+        case "general" :
+            if(count($edit) > 0) _hlstats_save_options($edit, $user->uid);
+            echo theme("page",hlstats_form_general($hlstats));
+            break;
+        case "style" :
+            if(count($edit) > 0) _hlstats_save_options($edit, $user->uid);
+            echo theme("page",hlstats_form_style($hlstats));
+            break;
+        default :
+            echo theme("page",print_r($_POST,1));
+            break;
+    }
+}
+
+function hlstats_form_server($hlstats) {
+    global $user;
+    $uid =& $user->uid;
+
+    $gamesres = _hlstats_db(HLSTATS_GETGAMES);
+
+    while ($game = db_fetch_object($gamesres)) {
+        $games[$game->code] = $game->name;
+    }
+
+    if(empty($hlstats['address'])) $hlstats['address'] = $_SERVER['REMOTE_ADDR'];
+    if(empty($hlstats['port'])) $hlstats['port'] = "27015";
+
+    $output = "";
+
+    $server .= form_textfield(t("Serverin IP"), "address", $hlstats['address'], 40, 60, t("Serverin IP osoite. Jos ajat serveriä samalla koneella millä olet nyt, IP:si on %IP", array("%IP"=>$_SERVER['REMOTE_ADDR'])));
+    $server .= form_textfield(t("Serverin portti"), "port", $hlstats['port'], 40, 60, t("Serverin portti. Jollet tiedä vaihtaaneesi sitä, oletus on 27015"));
+    $server .= form_textfield(t("Serverin nimi"), "name", $hlstats['name'], 40, 60, t("Vapaa-valintainen nimi serverille"));
+    $server .= form_textfield(t("Status url"), "statusurl", $hlstats['statusurl'], 40, 60, t("Palvelimen statuksen URL."));
+    $server .= form_textfield(t("RCON salasana"), "rcon_password", $hlstats['rcon_password'], 40, 60, t("Palvelimen RCON salasana"));
+    $server .= form_select(t("Severin tyyppi"), "game", $hlstats['game'], $games, "Peliserverin tyyppi. Jos HL1 pohjainen, valitse perus. Jos HL2 (akai Source), valitse Source loppuinen");
+    $server .= form_submit(t("Submit"));
+    $output .= form_group(t("Server"),$server);
+
+    return form($output,"post", url("hlstats/server"));
+}
+
+function hlstats_form_general($hlstats) {
+    $adsense = "
+    <script type=\"text/javascript\">
+    <!--
+    google_ad_client = \"pub-3452268181804196\";
+    google_ad_width = 110;
+    google_ad_height = 32;
+    google_ad_format = \"110x32_as_rimg\";
+    google_cpa_choice = \"CAAQ0ZGazgEaCNfGe9Y_ARDqKPmNxXQ\";
+    //--></script>
+    <span style=\"float:right\"><script type=\"text/javascript\" src=\"http://pagead2.googlesyndication.com/pagead/show_ads.js\"></script></span>";
+
+    $yleiset = form_textfield(t("Site Name"), "sitename", $hlstats['sitename'], 40, 60, t("Sivustolle jokin nimi"));
+    $yleiset .= form_textfield(t("Site URL"), "siteurl", $hlstats['siteurl'], 40, 60, t("Sivuston osoite"));
+    $yleiset .= form_textfield(t("Contact URL"), "contact", $hlstats['contact'], 40, 60, t("Yhteyshenkilön osoite"));
+    $yleiset .= form_textfield(t("Adsense ID"), "google_ad_client", $hlstats['google_ad_client'], 40, 60, sprintf(t("Google Adsense ID. Jos sinulla on Googlen Adsense ID, voit ehkäpä tienata hieman taskurahaa mainosten avulla hlstatsissa. %s"),$adsense));
+    $yleiset .= form_submit(t("Submit"));
+    $output .= form_group(t("General"),$yleiset);
+
+    return form($output,"post", url("hlstats/general"));
+}
+
+function hlstats_form_style($hlstats) {
+
+    $body  = form_textfield(t("Background Image"), "", $hlstats['body_background'], 40, 60, t("Sivun taustakuva"));
+    $body .= form_textfield(t("Background color"), "", $hlstats['body_bgcolor'], 40, 60, t("Sivun taustaväri"));
+    $body .= form_textfield(t("Text color"), "", $hlstats['body_text'], 40, 60, t("Tekstin väri"));
+    $body .= form_textfield(t("Link color"), "", $hlstats['body_link'], 40, 60, t("Linkin väri"));
+    $body .= form_textfield(t("Visited link color"), "", $hlstats['body_vlink'], 40, 60, t("Vieraillun linkin väri"));
+    $body .= form_textfield(t("Active link color"), "", $hlstats['body_alink'], 40, 60, t("Aktiivisen linkin väri"));
+    $body .= form_textfield(t("Left/Right Margin"), "", $hlstats['body_leftmargin'], 40, 60, t("Marginaalia selaimen vasempaa ja oikeaan reunaan"));
+    $body .= form_textfield(t("Top/Bottom Margin"), "", $hlstats['body_topmargin'], 40, 60, t("Marginaalia selaimen ylä- ja alareunaan"));
+    $output .= form_group(t("Body Style"),$body);
+
+    $location  = form_textfield(t("Background Color"), "", $hlstats['location_bgcolor'], 40, 60, t("Sijaintipalkin taustaväri"));
+    $location .= form_textfield(t("Text Color"), "", $hlstats['location_text'], 40, 60, t("Sijaintipalkin tekstin väri"));
+    $location .= form_textfield(t("Link Color"), "", $hlstats['location_link'], 40, 60, t("Sijaintipalkin linkin väri"));
+    $output .= form_group(t("Location Bar Style"),$location);
+
+    $table  = form_textfield(t("Border Color"), "", $hlstats['table_border'], 40, 60, t("Taulukon reunan väri"));
+    $table .= form_textfield(t("Cell Background Color <sup>(1)</sup>"), "", $hlstats['table_bgcolor1'], 40, 60, t("Taulun jokaisen parittoman solun väri"));
+    $table .= form_textfield(t("Cell Background Color <sup>(2)</sup>"), "", $hlstats['table_bgcolor2'], 40, 60, t("Taulun jokaisen parillisen solun väri"));
+    $table .= form_textfield(t("Weapon Background Color"), "", $hlstats['table_wpnbgcolor'], 40, 60, t("Taulun asesolun taustaväri"));
+    $table .= form_textfield(t("Head Background Color"), "", $hlstats['table_head_bgcolor'], 40, 60, t("Taulun otsikkorivin taustaväri"));
+    $table .= form_textfield(t("Head Text Color"), "", $hlstats['table_head_text'], 40, 60, t("Taulun otsikkorivin tekstin väri"));
+    $output .= form_group(t("Table Style"),$table);
+
+    $font  = form_textfield(t("Normal Font Tag(s)"), "", $hlstats['font_normal'], 40, 60, t("Normaalin tekstin HTML tagi"));
+    $font .= form_textfield(t("Normal Font Closing Tag(s)"), "", $hlstats['fontend_normal'], 40, 60, t("Normaalin tekstin HTML lopetustagi"));
+    $font .= form_textfield(t("Small Font Tag(s)"), "", $hlstats['font_small'], 40, 60, t("Pienen tekstin HTML tagi"));
+    $font .= form_textfield(t("Small Font Closing Tag(s)"), "", $hlstats['fontend_small'], 40, 60, t("Pienen tekstin HTML lopetustagi"));
+    $font .= form_textfield(t("Title Font Tag(s)"), "", $hlstats['font_title'], 40, 60, t("Otsikko tekstin HTML tagi"));
+    $font .= form_textfield(t("Title Font Closing Tag(s)"), "", $hlstats['fontend_title'], 40, 60, t("Otsikko tekstin HTML lopetustagi"));
+    $output .= form_group(t("Font Style"),$font);
+    $output .= form_submit(t("Submit"));
+
+    return form($output,"post", url("hlstats/style"));
+}
+
+function hlstats_page_status($hlstats,$command) {
+    if(!isset($hlstats['address'])) {
+        drupal_set_message(t("Palvelimen osoitetta ei ole asetettu."),"error");
+        return;
+    }
+    if(!isset($hlstats['port'])) {
+        drupal_set_message(t("Palvelimen porttia ei ole asetettu."),"error");
+        return;
+    }
+    if(!($info = _hlstats_test_server($hlstats))) {
+        return;
+    }
+
+    $cmap = '<a href="'.variable_get("hlstats_url", "http://rautakuu.org/hlstats/hlstats.php").'?mode=mapinfo&amp;map='.$info['map'].'&amp;game='.$hlstats['game'].'">'.$info['map'].'</a>';
+
+    if(!empty($hlstats['rcon_password'])) {
+        if($rcon = _hlstats_test_server_rcon($hlstats,$command)) {
+            // Haetaan kartat
+            $res = _hlstats_db(HLSTATS_GET_MAPS,$hlstats['uid']);
+
+            if(db_num_rows($res) > 0) {
+                $maps = array();
+                while ($map = db_fetch_object($res)) {
+                    $maps[$map->map] = $map->map;
+                }
+                $mapsel  = form_select(t("Map"),"map",$info['map'],$maps);
+                $mapsel .= form_submit(t("Change"));
+                $cmap    = form($mapsel,"post", url("hlstats/status"));
+            }
+        }
+    }
+
+    drupal_set_title(t("Hlstλts » Server Status » %name", array("%name" => $hlstats['name'])));
+
+    $header = array(array('data' => t("Server Status"), 'colspan' => 2));
+    $rows   = array();
+    $rows[] = array(
+        array('data' => t("Address").":", 'class' => 'title'),
+        array('data' => $info['address']),
+    );
+    $rows[] = array(
+        array('data' => t("Game").":", 'class' => 'title'),
+        array('data' => $info['description']),
+    );
+    $rows[] = array(
+        array('data' => t("Server Type").":", 'class' => 'title'),
+        array('data' => $info['os'].', '.t($info['type'])),
+    );
+    $rows[] = array(
+        array('data' => t("Map").":", 'class' => 'title'),
+        array('data' => $cmap),
+    );
+    $rows[] = array(
+        array('data' => t("Password").":", 'class' => 'title'),
+        array('data' => t($info['password'])),
+    );
+    $rows[] = array(
+        array('data' => t("Players").":", 'class' => 'title'),
+        array('data' => $info['players'].'/'.$info['max']),
+    );
+    $rows[] = array(
+        array('data' => t("Valve Anti-Cheat").":", 'class' => 'title'),
+        array('data' => t($info['secure'])),
+    );
+
+    $serverInfo = theme('table', $header, $rows);
+
+    if($rcon !== false) {
+        $rform  = form_textfield(t("Rcon"), "rcon", $command, 40, 60, t("Suorita RCON komento"));
+        $rform .= form_submit(t("Execute"));
+        $rform  = form($rform,"post", url("hlstats/status"));
+        $serverInfo .= theme('box', t("Rcon: %command", array("%command"=>$command)), "<pre>".$rcon."</pre>".$rform);
+    }
+    return $serverInfo;
+
+}
+
+function &_hlstats_validate_server(&$hlstats) {
+    global $user;
+    // Validate IP
+    $hlstats['address'] = trim($hlstats['address']);
+    if(!_hlstats_validate_ip($hlstats['address'])) {
+        form_set_error("address",$hlstats['address']);
+        $ip = gethostbyname($hlstats['address']);
+        if(_hlstats_validate_ip($ip)) {
+            drupal_set_message(t("Saatanan paskapää, selvästi käskettiin antaa IP:nä osoite, mutta kuuntelitko? Eeeeet.... No onneksesi hanskaan tälläiset muutokset, ja muutin osoitteen IPksi"));
+            $hlstats['address'] = $ip;
+        } else {
+            form_set_error("address",t("Ei vaikuta validilta IP osoitteelta."));
+            return false;
+        }
+    }
+    settype($hlstats['port'],"int");
+    if(empty($hlstats['port'])) {
+        form_set_error("port",t("Vaivadu edes laittamaan oletusportti, 27015."));
+        return false;
+    }
+
+    $srvr = _hlstats_db(HLSTATS_CHECK_SERVER,array(
+        "address" => $hlstats['address'],
+        "port"    => $hlstats['port'],
+        "uid"     => $user->uid
+    ));
+
+    if(db_num_rows($srvr) > 0 ) {
+        $owner = db_result($srvr);
+        form_set_error("address",t("Serverin on jo ominut <a href=\"%href\">joku muu</a>.", array("%href"=>url("user/$owner"))));
+        return false;
+    }
+
+    $hlstats['statusurl'] = htmlspecialchars($hlstats['statusurl']);
+
+    if(!isset($hlstats['rcon_password'])) {
+        drupal_set_message("rcon_password",t("Rcon salasana ei ole pakollinen, mutta hlstatsin toiminnallisuus kärsii ilman sitä."));
+    } else {
+        if(!_hlstats_test_server_rcon($hlstats)) {
+            form_set_error("rcon_password",t("Serverin RCON salasanaa ei voitu vahvistaa. Tarkista RCON tai jätä kenttä tyhjäksi"));
+            return false;
+        }
+    }
+
+    if(!_hlstats_test_server($hlstats)) {
+        return false;
+    }
+    return true;
+}
+
+function _hlstats_validate_ip($ip) {
+    if(preg_match("/([\d]{1,3})\.([\d]{1,3})\.([\d]{1,3})\.([\d]{1,3})/",$ip)) return true;
+    return false;
+}
+
+function &_hlstats_test_server(&$server) {
+    if(!include_once(variable_get('hlstatsinc_path', '/var/www/hlstats/hlstatsinc').'/hlquery_funcs.inc')) {
+        // If can't include hlstats functios, silently discard
+        watchdog('hlstats', t("Could not get hlstats include file %file, which is required"),array("%file"=>"hlquery_funcs.inc"));
+        return false;
+    }elseif(!include_once(variable_get('hlstatsinc_path', '/var/www/hlstats/hlstatsinc').'/binary_funcs.inc')) {
+        // If can't include hlstats functios, silently discard
+        watchdog('hlstats', t("Could not get hlstats include file %file, which is required"),array("%file"=>"binary_funcs.inc"));
+        return false;
+    }
+    $source = db_fetch_array(_hlstats_db(HLSTATS_IS_SOURCE, array($server['game'])));
+    if($source['code'] == 1) {
+        // Source engine
+        if (!$server_details = Source_A2S_Info($server['address'], $server['port'])) {
+            form_set_error("address", t("Palvelimeen ei voitu muodostaa yhteyttä. Jos palvelin on päällä, tarkista palvelimen osoite ja portti. Jos ei, laita se päälle."));
+            return false;
+        }
+    } else {
+        // HL1 engine
+        if (!$server_details = HalfLife_Details($server['address'], $server['port'])) {
+            form_set_error("address", t("Palvelimeen ei voitu muodostaa yhteyttä. Jos palvelin on päällä, tarkista palvelimen osoite ja portti. Jos ei, laita se päälle."));
+            return false;
+        }
+    }
+
+    $server_details = Format_Info_Array($server_details);
+    if(empty($server['name'])) $server['name'] = $server_details['hostname'];
+    return $server_details;
+}
+
+function _hlstats_test_server_rcon($hlstats,$command="status") {
+    static $query_challenge;
+    if(!include_once(variable_get('hlstatsinc_path', '/var/www/hlstats/hlstatsinc').'/hlquery_funcs.inc')) {
+        // If can't include hlstats functios, silently discard
+        watchdog('hlstats', t("Could not get hlstats include file %file, which is required"),array("%file"=>"hlquery_funcs.inc"));
+        return false;
+    }elseif(!include_once(variable_get('hlstatsinc_path', '/var/www/hlstats/hlstatsinc').'/binary_funcs.inc')) {
+        // If can't include hlstats functios, silently discard
+        watchdog('hlstats', t("Could not get hlstats include file %file, which is required"),array("%file"=>"binary_funcs.inc"));
+        return false;
+    }
+    $source = db_fetch_array(_hlstats_db(HLSTATS_IS_SOURCE, array($hlstats['game'])));
+
+    if ($source['code'] == 1) {
+        $server_status = Source_Rcon($hlstats['address'], $hlstats['port'], $hlstats['rcon_password'], $command);
+    } else {
+        if(!isset($query_challenge)) {
+            $query_challenge = Source_A2S_GetChallenge($hlstats['address'], $hlstats['port']);
+        }
+        $server_status = HalfLife_Rcon($hlstats['address'], $hlstats['port'], $hlstats['rcon_password'], $command, $query_challenge);
+    }
+
+    if($server_status === false) {
+        return false;
+    } else {
+        return $server_status;
+    }
+}
+
+function _hlstats_fetch_options($uid=null) {
+    $hlstats = array();
+    if($uid===null) {
+        global $user;
+        $uid =& $user->uid;
+    }
+    $res = _hlstats_db(HLSTATS_FETCH_SETTINGS,array($uid));
+
+    while ($opt = db_fetch_object($res)) {
+        $hlstats[$opt->keyname] = $opt->value;
+    }
+
+    return $hlstats;
+}
+
+function _hlstats_fetch_server($uid=null) {
+    $hlstats = array();
+    if($uid===null) {
+        global $user;
+        $uid =& $user->uid;
+    }
+    $res = _hlstats_db(HLSTATS_FETCH_SERVER,array($uid));
+    $server = db_fetch_array($res);
+    if(!is_array($server)) return $hlstats;
+
+    foreach($server as $key => $val) {
+        $hlstats[$key] = $val;
+    }
+    return $hlstats;
+}
+
+function _hlstats_fetch_access($uid) {
+
+    $flags = array(
+        'a' => 0,
+        'b' => 0,
+        'c' => 0,
+        'd' => 0,
+        'e' => 0,
+        'f' => 0,
+        'g' => 0,
+        'h' => 0,
+        'i' => 0,
+        'j' => 0,
+        'k' => 0,
+        'l' => 0,
+        'u' => 0,
+        'z' => 0
+    );
+
+    $res = _hlstats_db(HLSTATS_ACCESS_FETCH,array($uid));
+    if(db_num_rows($res) >= 1 ) {
+        $uacl = preg_split('//', db_result($res), -1, PREG_SPLIT_NO_EMPTY);
+        if(is_array($uacl) && count($uacl) > 0) {
+            foreach($uacl AS $attr) {
+                if(isset($flags[$attr])) {
+                    $flags[$attr] = 1;
+                }
+            }
+        } else {
+            $flags['z'] = 1;
+        }
+    } else {
+        $flags['z'] = 1;
+    }
+    return $flags;
+}
+
+function _hlstats_save_options($edit,$uid) {
+    $replace = "";
+
+    // Get allowed setting values
+    $allowed = _hlstats_fetch_options();
+    foreach($edit AS $key => $val) {
+
+        if(isset($allowed[$key])) {
+            // Don't update fields that has not changed.
+            if($allowed[$key] == $val) continue;
+
+            _hlstats_db(HLSTATS_REPLACE_OPTIONS,array(
+                "value"   => addslashes($val),
+                "uid"     => $uid,
+                "keyname" => $key
+            ));
+        }
+    }
+}
+
+function _hlstats_save_server($edit,$uid) {
+    $replace  = "";
+
+    if(db_num_rows(_hlstats_db(HLSTATS_FETCH_SERVER,array($uid))) >= 1) {
+        $do = HLSTATS_UPDATE_SERVER;
+        if(isset($edit['serverId'])) $replace .= "`serverId` = '{$edit['serverId']}', ";
+    } else {
+        $do = HLSTATS_INSERT_SERVER;
+    }
+
+    $replace .= "`address` = '{$edit['address']}', `port` = '{$edit['port']}', `name` = '{$edit['name']}', `game` = '{$edit['game']}', `publicaddress` = '{$edit['address']}:{$edit['port']}', `statusurl` = '{$edit['statusurl']}', `rcon_password` = '{$edit['rcon_password']}'";
+    _hlstats_db($do,array(
+        "replace" => $replace,
+        "uid"     => $uid
+    ));
+}
+
+function &_hlstats_db($do, $params=array()) {
+    db_set_active('hlds');
+    switch($do) {
+        case HLSTATS_GETGAMES :
+            $res = db_query("SELECT `code`, `name` FROM {hlstats_Games} WHERE `hidden` = '0'");
+            break;
+        case HLSTATS_IS_SOURCE :
+            $res = db_query("SELECT `source` FROM {hlstats_Games} WHERE `code` = '{$params[0]}'");
+            break;
+        case HLSTATS_ACCESS_FETCH :
+            $res = db_query("SELECT access FROM {drupal_steamids} WHERE uid = '%d' ORDER BY `updated` DESC LIMIT 1", $params[0]);
+            break;
+        case STEAMID_GET :
+            $res = db_query("SELECT steamid FROM {drupal_steamids} WHERE uid = '%d' ORDER BY `updated` DESC LIMIT 1", $params[0]);
+            break;
+        case STEAMID_PUSH :
+            $res = db_query("INSERT INTO {drupal_steamids} (steamid, uid, access, updated) VALUES ('%s', '%d', '%s', NOW())",$params["steamid"], $params["uid"], $params['access']);
+            //db_query("FLUSH {drupal_steamids}");
+            break;
+        case STEAMID_SEARCH :
+            $res = db_query("SELECT playerId FROM hlstats_PlayerUniqueIds WHERE `uniqueId` LIKE '%s' LIMIT 1", $params[0]);
+            break;
+        case STEAMID_OWNER :
+            $res = db_query("SELECT uid FROM {drupal_steamids} WHERE steamid LIKE '%s' LIMIT 1", $params[0]);
+            break;
+        case HLSTATS_FETCH_SETTINGS :
+            $res = db_query("SELECT `keyname`, `value` FROM hlstats_Options WHERE `uid` = '%d' OR `uid`='0' GROUP BY `keyname`",$params[0] );
+            break;
+        case HLSTATS_FETCH_SERVER :
+            $res = db_query("SELECT * FROM hlstats_Servers WHERE `uid` = '%s'", $params[0]);
+            break;
+        case HLSTATS_REPLACE_OPTIONS :
+            $res = db_query("REPLACE `hlstats_Options` SET `value`='%s' WHERE `uid` = '%d' AND `keyname` = '%s'",$params['value'],$params['uid'],$params['keyname']);
+            break;
+        case HLSTATS_INSERT_SERVER :
+            $res = db_query("INSERT INTO `hlstats_Servers` SET ".$params["replace"].", `uid` = '%d'",$params['uid']);
+            break;
+        case HLSTATS_UPDATE_SERVER :
+            $res = db_query("UPDATE `hlstats_Servers` SET ".$params["replace"]." WHERE `uid` = '%d'",$params['uid']);
+            break;
+        case HLSTATS_CHECK_SERVER :
+            $res = db_query("SELECT `uid` FROM hlstats_Servers WHERE `address` = '%s' AND `port` = '%d' AND `uid` != '%d'", $params['address'], $params['port'], $params['uid']);
+            break;
+        case HLSTATS_GET_MAPS :
+            $res = db_query("SELECT map, COUNT(map) AS count FROM hlstats_Events_Frags LEFT JOIN hlstats_Players ON hlstats_Players.playerId = hlstats_Events_Frags.killerId LEFT JOIN hlstats_Servers ON hlstats_Events_Frags.serverId=hlstats_Servers.serverId WHERE hlstats_Events_Frags.map != '' AND hlstats_Servers.uid='%d' GROUP BY hlstats_Events_Frags.map ORDER BY count DESC", $params[0]);
+            break;
+        case HLSTATS_SQL_RAW :
+            $res = db_query($params[0]);
+            break;
+    }
+    db_set_active('default');
+    return $res;
+}

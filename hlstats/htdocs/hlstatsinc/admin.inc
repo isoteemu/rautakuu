@@ -20,6 +20,27 @@
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
 
+if(!defined("_HLSTATS")) die("Direct access denied.");
+
+// Do _not_ cache thease pages.
+$g_options['useCache'] = false;
+
+global $game;
+$resultGames = $db->query("
+    SELECT
+        code,
+        name
+    FROM
+        hlstats_Games
+    WHERE
+        hidden='0'
+    ORDER BY
+        name ASC
+    LIMIT 0,1
+");
+
+list($game) = $db->fetch_row($resultGames);
+
 	class Auth
 	{
 		var $ok = false;
@@ -91,7 +112,11 @@
 				$this->userdata = $db->fetch_array();
 				$db->free_result();
 
-				if (md5($this->password) == $this->userdata["password"])
+                $db->query("SELECT MD5('$this->password')");
+                list($authpass) = $db->fetch_row();
+                $db->free_result();
+
+                if ($authpass == $this->userdata["password"])
 				{
 					// The username and the password are OK
 

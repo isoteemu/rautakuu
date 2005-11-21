@@ -20,6 +20,8 @@
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
 
+    if(!defined("_HLSTATS")) die("Direct access denied.");
+
 	// Player Rankings
 
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
@@ -38,8 +40,8 @@
 	}
 
 	pageHeader(
-		array($gamename, "Pelaajien sijoitukset"),
-		array($gamename=>"%s?game=$game", "Player Rankings"=>"")
+		array($gamename, _("Player Rankings")),
+		array($gamename=>"%s?game=$game", _("Player Rankings")=>"")
 	);
 ?>
 
@@ -66,11 +68,11 @@
 			new TableColumn(
 				"lastName",
 				"Nimi",
-				"width=31&icon=player&link=" . urlencode("mode=playerinfo&amp;player=%k")
+				"width=31&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")
 			),
 			new TableColumn(
 				"skill",
-				"Pisteet",
+				_("Points"),
 				"width=11&align=right"
 			),
 			new TableColumn(
@@ -78,11 +80,11 @@
 					"Aktiivisuus",
 					"width=10&sort=no&type=bargraph"
 					),
-		        new TableColumn(
-				      "oldrank",
-				      "<span title=\"Viikon takainen sijoitus\">lr</span>",
-				      "width=5&align=right"
-				      ),
+            new TableColumn(
+                    "oldrank",
+                    "<span title=\"Viikon takainen sijoitus\">lr</span>",
+                    "width=5&align=right"
+                    ),
 			new TableColumn(
 				"kills",
 				"Tapot",
@@ -112,30 +114,34 @@
 
 	$result = $db->query("
 		SELECT
-			hlstats_Players.playerId,
-			hlstats_Players.lastName,
-			hlstats_Players.skill,
-			hlstats_Players.kills,
-			hlstats_Players.deaths,
-			IFNULL(kills/deaths, '-') AS kpd,
-                        IF(".MINACTIVITY." > (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))), ((100/".MINACTIVITY.") * (".MINACTIVITY." - (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))))), 0) as activity,
-                        hlstats_Old_Rank.rank AS oldrank
+            hlstats_Players.playerId,
+            hlstats_Players.lastName,
+            hlstats_Players.skill,
+            hlstats_Players.kills,
+            hlstats_Players.deaths,
+            hlstats_Events_Connects.ipAddress AS ip,
+            IFNULL(kills/deaths, '-') AS kpd,
+                IF(".MINACTIVITY." > (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))), ((100/".MINACTIVITY.") * (".MINACTIVITY." - (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))))), 0) as activity,
+                IFNULL(hlstats_Old_Rank.rank, '-') AS oldrank
 		FROM
 			hlstats_Players
-                RIGHT JOIN hlstats_Events_PlayerActions ON
-                        hlstats_Events_PlayerActions.playerId = hlstats_Players.playerId
-                LEFT JOIN hlstats_Old_Rank ON
-                        hlstats_Old_Rank.playerId = hlstats_Players.playerId
+        RIGHT JOIN hlstats_Events_PlayerActions ON
+            hlstats_Events_PlayerActions.playerId = hlstats_Players.playerId
+        LEFT JOIN hlstats_Old_Rank ON
+            hlstats_Old_Rank.playerId = hlstats_Players.playerId
+        INNER JOIN hlstats_Events_Connects ON
+            hlstats_Players.playerId = hlstats_Events_Connects.playerId
 		WHERE
 			hlstats_Players.game='$game'
 			AND hlstats_Players.hideranking=0
 			AND hlstats_Players.kills >= $minkills
-                GROUP BY
-                        hlstats_Players.playerId
+            GROUP BY
+                hlstats_Events_Connects.playerId
 		ORDER BY
 			$table->sort $table->sortorder,
 			$table->sort2 $table->sortorder,
-			lastName ASC
+			lastName ASC,
+            hlstats_Events_Connects.eventTime DESC
 		LIMIT $table->startitem,$table->numperpage
 	");
 

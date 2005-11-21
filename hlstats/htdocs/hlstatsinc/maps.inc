@@ -19,17 +19,18 @@
 	 * along with this program; if not, write to the Free Software
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
-	
-	
-	
+
+
+    if(!defined("_HLSTATS")) die("Direct access denied.");
+
 	// Map Statistics
-	
+
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
 	if ($db->num_rows() < 1) error("No such game '$game'.");
-	
+
 	list($gamename) = $db->fetch_row();
 	$db->free_result();
-	
+
 	pageHeader(
 		array($gamename, "Map Statistics"),
 		array($gamename=>"%s?game=$game", "Map Statistics"=>"")
@@ -69,7 +70,7 @@
 		"maps_sortorder",
 		"maps"
 	);
-	
+
 	$db->query("
 		SELECT
 			COUNT(*)
@@ -80,7 +81,7 @@
 		WHERE
 			hlstats_Players.game = '$game'
 	");
-	
+
 	list($totalkills) = $db->fetch_row();
 
 	$result = $db->query("

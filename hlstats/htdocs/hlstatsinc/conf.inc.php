@@ -13,7 +13,7 @@ define("DB_NAME", "hlds");
 define("DB_USER", "hlds");
 
 // DB_PASS - The password for DB_USER
-define("DB_PASS", "hlds");
+define("DB_PASS", "s3cr3t");
 
 // DB_ADDR - The address of the database server, in host:port format.
 //           (You might also try setting this to e.g. ":/tmp/mysql.sock" to
@@ -37,7 +37,7 @@ define("DB_PCONNECT", 0);
 
 // DELETEDAYS - How many days the Event History covers. Must match the value
 //              of DeleteDays in hlstats.conf.
-define("DELETEDAYS", 21);
+define("DELETEDAYS", 14);
 
 define("MINACTIVITY", 86400 * DELETEDAYS);
 
@@ -58,10 +58,10 @@ define("MODE", "Normal");
 //               "Windows"  - Any variant of Microsoft Windows.
 //            Most parts of HLstats should work on any platform, but this
 //            setting allows for some OS-specific workarounds etc.
-define("PLATFORM", "POSIX"); 
+define("PLATFORM", "POSIX");
 
 define("GEOIPDAT", dirname(__FILE__)."/../GeoIP.dat");
 
-define(CACHE_STORAGE_CLASS, 'mdb');
+define(CACHE_DIR, '/tmp/');
 
 ?>

@@ -19,24 +19,24 @@
 	 * along with this program; if not, write to the Free Software
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
-	
-	
+
+
 	// Search
-	
-	require(INCLUDE_PATH . "/search-class.inc");
-	
+
+	require_once(INCLUDE_PATH . "/search-class.inc");
+
 	pageHeader(
-		array("Search"),
-		array("Search"=>"")
+		array(_("Search")),
+		array(_("Search")=>"")
 	);
-	
+
 	$sr_query = strval($HTTP_GET_VARS["q"]);
 	$sr_type  = strval($HTTP_GET_VARS["st"])
 		or "player";
 	$sr_game  = strval($HTTP_GET_VARS["game"]);
-	
+
 	$search = new Search($sr_query, $sr_type, $sr_game);
-	
+
 	$search->drawForm(array("mode"=>"search"));
 	if ($sr_query || $sr_query == "0") $search->drawResults();
 ?>

@@ -19,7 +19,7 @@
 	 * along with this program; if not, write to the Free Software
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
-	 
+
 	if ($auth->userdata["acclevel"] < 80) die ("Access denied!");
 ?>
 
@@ -36,19 +36,20 @@
 			new PropertyPage_Property("email", "E-mail Address", "text"),
 			new PropertyPage_Property("homepage", "Homepage URL", "text"),
 			new PropertyPage_Property("icq", "ICQ Number", "text"),
+            new PropertyPage_Property("jabber", "Jabber account", "text"),
 			new PropertyPage_Property("hideranking", "Hide Ranking", "select", "0/No;1/Yes"),
 		))
 	));
-	
-	
+
+
 	if ($HTTP_POST_VARS)
 	{
 		$proppage->update();
 		message("success", "Profile updated successfully.");
 	}
-	
-	
-	
+
+
+
 	$result = $db->query("
 		SELECT
 			*
@@ -58,13 +59,13 @@
 			playerId='$id'
 	");
 	if ($db->num_rows() < 1) die("No player exists with ID #$id");
-	
+
 	$data = $db->fetch_array($result);
-	
+
 	echo $g_options["font_title"];
 	echo $data["lastName"];
 	echo $g_options["fontend_title"];
-	
+
 	echo $g_options["font_normal"];
 	echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 		. "<a href=\"" . $g_options["scripturl"] . "?mode=playerinfo&player=$id&" . strip_tags(SID) . "\">"

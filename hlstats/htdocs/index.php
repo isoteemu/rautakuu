@@ -1,1 +1,1 @@
-hlstats.php
+/var/www/hlstats/hlstats.php

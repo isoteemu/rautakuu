@@ -1,0 +1,68 @@
+<?php
+/**
+ * Adds user to drupal user database, if not in it.
+ * Updates drupal password, if needed
+ */
+
+function rautakuu_auth_init() {
+    global $user, $base_url;
+    $edit = $_POST['edit'];
+
+    if ($user->uid) {
+        //do nothing because user is already logged into Drupal
+        return;
+    } elseif ($edit['name'] && $edit['pass']) {
+
+        $uname =& $edit['name'];
+        $usql = "SELECT accountuser.password FROM users INNER JOIN accountuser ON accountuser.username=users.name WHERE accountuser.password IS NOT NULL AND users.mail LIKE '%@rautakuu.org' AND users.name='$uname'";
+        $acpwres = db_query($usql);
+
+        if ( db_num_rows($acpwres) >= 1 ) {
+            // Löytyi käyttäjä, Syncataan salasana.
+            $pass = db_result($acpwres);
+            //watchdog("user", "Synced password: $uname (Rautakuu)", l(t("edit user"), "admin/user/edit/$user->uid"));
+            //user_save($account, array('pass' => $pass));
+            db_query("UPDATE users SET pass='%s' WHERE 1 AND name='%s'", md5($pass), $uname);
+        } else {
+            // Tarkistetaan onko yleinen rautakuun käyttäjä
+            $ucres = db_query("SELECT password FROM accountuser WHERE username='{$uname}'");
+            if ( db_num_rows($ucres) >= 1 ) {
+
+                $ueres = db_query("SELECT init, pass FROM {users} WHERE name='{$uname}'");
+                $account = '';
+
+                if( db_num_rows($ueres) ) {
+                    $duser = db_fetch_object($ueres);
+                    if($duser->pass === md5($edit['pass'])) {
+                        // Salasanat täsmää, päivitetään tunnus
+                        $account = user_load(array('name'=>$edit['name']));
+                    } else {
+                        drupal_set_message("Tunnus on jo varattu. Tämä on vain varotoimenpide, mutta varmuuden vuoksi ihmisen täytyy varmistaa faktat. Ota yhteyttä lähimpään #rautakuu säätäjään.");
+                        watchdog("user", "tunnus jo varattu ei-rautakuu käyttäjälle: $uname", l(t("edit user"), "admin/user/edit/$uname"));
+                        return;
+                    }
+                }
+
+                // ... on. Lisätään drupaliin. ja annetaan lisärooliksi 4 (moderaattori)
+                $pass = db_result($ucres);
+                $user = user_save($account, array('name' => $uname, 'pass' => $pass, 'mail' => "$uname@rautakuu.org", 'init' => "$uname@rautakuu.org", 'status' => 1, 'roles' => array(_user_authenticated_id(),4)));
+                watchdog("user", "new user: $user->name (Rautakuu)", l(t("edit user"), "admin/user/edit/$user->uid"));
+                drupal_goto('user');
+            }
+        }
+    }
+}
+
+function rautakuu_auth_help($section) {
+  $output ="";
+
+  switch ($section) {
+    case 'admin/help#rautakuu_auth':
+      break;
+    case 'admin/modules#description':
+      $output .= "Lisää rautakuuhun rekisteröityneet käyttäjät drupaliin kirjautumisen ohessa";
+      break;
+  }
+
+  return $output;
+}

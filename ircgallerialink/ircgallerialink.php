@@ -7,8 +7,13 @@ $page    = "http://irc-galleria.net/channel.php?channel_id=686740";
 // Pisgin conf tiedosto. Sielt‰ luetaan user aliakset.
 $pisgcfg = "pisg.cfg";
 
+// Kuvakansio. Jos false, ei k‰sitell‰ kuvia.
+$kuvakansio = "kuvat";
+
 // Tunnistetiedot. Jos joskus scripti blokataan, vaihdat vain t‰h‰n jonkin toisen selaimen.
 $ie      = "Mozilla/4.0 (compatible; MSIE 5.0; Windows 98;)";
+
+$ircgalleriaview = "http://irc-galleria.net/view.php?nick=";
 
 //
 // KOODIOSA
@@ -69,6 +74,23 @@ function parseNicks($page) {
 }
 
 /**
+ * Tarkastaa, ett‰ sivulla on kuva
+ */
+function confirmImage( $page ) {
+    $page=str_replace("\n", "", $page);
+    if(preg_match('/<div.id="viewimage">.*<img[^>]*>.*<\/div>/mU', $page, $match)) return $match;
+    return false;
+}
+
+/**
+ * Get image src
+ */
+function grepImage($src) {
+    preg_match('/<img[^>]*src="([^"]*)"[^>]*>/', $src, $match);
+    return $match[1];
+}
+
+/**
  * Erottelee aliakset pisgin confista
  * @param  $pisgcfg  Pisgin conffin polku
  */
@@ -96,17 +118,22 @@ function readPisgCfg($pisgcfg) {
     return false;
 }
 
-// Jos curl extension on k‰ytett‰viss‰, k‰yt‰ sit‰
-// Jos ei, k‰yt‰ sit‰ mit‰ php sattuu k‰ytt‰m‰‰n.
-if ( extension_loaded("curl")) {
-    $http = fetchPageCurl($page);
-} else {
-    $http = fetchPageWrapper($page);
+function fetchPage($page) {
+    // Jos curl extension on k‰ytett‰viss‰, k‰yt‰ sit‰
+    // Jos ei, k‰yt‰ sit‰ mit‰ php sattuu k‰ytt‰m‰‰n.
+    if ( extension_loaded("curl")) {
+        $http = fetchPageCurl($page);
+    } else {
+        $http = fetchPageWrapper($page);
+    }
+    return $http;
 }
+
+$http = fetchPage($page);
 
 // Jos sivu ei vastaa irc-gallerian tyyli‰, panikoi.
 if ( confirmPage( $http ) ) {
-    die();
+    die("Ei oo irc gallerian sivu ei...");
 }
 
 // Lue pisgin conf <user> attribuuteista, ja etsi aliakset
@@ -138,5 +165,27 @@ foreach( $userNicks as $uid => $user ) {
         }
         echo '"';
     }
-    echo " link=\"http://irc-galleria.net/view.php?nick=".urlencode($userNicks[$uid])."\">\n";
+    echo " link=\"".$ircgalleriaview.urlencode($userNicks[$uid])."\"";
+
+    if($kuvakansio !== false ) {
+        if(!is_dir($kuvakansio)) {
+            mkdir($kuvakansio);
+        }
+        $kuvapage = fetchPage($ircgalleriaview.urlencode($userNicks[$uid]));
+        if($img = confirmImage($kuvapage)) {
+            $imgurl = grepImage($img[0]);
+            echo " bigpic=\"".$imgurl."\"";
+            $kuva = basename($imgurl);
+            if(file_exists($kuvakansio."/".$kuva)) {
+                echo " pic=\"".$kuvakansio."/".$kuva."\"";
+            } else {
+                exec('convert -scale 85x85 '.escapeshellarg($imgurl).' '.escapeshellarg($kuvakansio."/".$kuva));
+                if(file_exists($kuvakansio."/".$kuva)) {
+                    echo " pic=\"".$kuvakansio."/".$kuva."\"";
+                }
+            }
+        }
+    }
+
+    echo ">\n";
 }

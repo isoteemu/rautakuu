@@ -16,7 +16,7 @@ function red()      { echo -en "\033[1;31m"; }
 INITING="false"
 export INITDONE=""
 
-VERSIO="0.0.2"
+VERSIO="0.0.3"
 
 PROGNAME="Teemun pelin valitsija v. $VERSIO"
 
@@ -75,33 +75,33 @@ function valitsePeli {
     SELECTIONS=""
     index=0
     peli_count=${#PELIT[*]}
-    initDo "Etsitään pelejä"
+    initDo "EtsitÃ¤Ã¤n pelejÃ¤"
 
     game="false"
     echo ""
 
     if [ -n $DISPLAY ]; then
         if [ $(which kdialog 2>/dev/null) ]; then
-            KPROGRESS=$(kdialog --icon package_games --title "$PROGNAME" --progressbar "Etsitään pelejä..." $peli_count )
+            KPROGRESS=$(kdialog --icon package_games --title "$PROGNAME" --progressbar "EtsitÃ¤Ã¤n peliÃ¤..." $peli_count )
         fi
     fi
 
     while [ "$index" -lt "$peli_count" ]; do
         echo -n "  "
-        initDo "Etsitään peliä ${NIMET[$index]}"
+        initDo "EtsitÃ¤Ã¤n peliÃ¤ ${NIMET[$index]}"
 
         if [ -n $KPROGRESS ]; then
-            dcop $KPROGRESS setLabel "Etstsitään peliä ${NIMET[$index]}"
+            dcop $KPROGRESS setLabel "EtstsiÃ¤Ã¤n peliÃ¤ ${NIMET[$index]}"
             dcop $KPROGRESS setProgress $index
         fi
 
-        # Etsitään steam
+        # Etsitï¿½n steam
         if [ "${PELIT[$index]}" = "cstrike" ]; then
             STEAMAPP=$(find $HOME/.transgaming/ -type f -name STEAM.exe 2>/dev/null)
             if [ -z "$STEAMAPP" ]; then
                 initDoFail
             else
-                # Valitaan yhdistettävä serveri
+                # Valitaan yhdistettÃ¤vÃ¤ serveri
                 CSINDX=0
                 let "CSINDX = $RANDOM % ${#CSSERVERS[*]}"
                 CSSERVER=${CSSERVERS[$CSINDX]}
@@ -115,7 +115,7 @@ function valitsePeli {
                 game=${PELIT[$index]}
             fi
         else
-            # etsitään peliä unix komennon perusteella
+            # etsitÃ¤Ã¤n peliÃ¤ unix komennon perusteella
             peli=$(which `echo ${PELIT[$index]} | awk -F' ' '{ printf $1 }'` 2>/dev/null)
             if [ "$?" == "0" ]; then
                 initDoSuccess
@@ -135,7 +135,7 @@ function valitsePeli {
     fi
 
     if [ "$game" = "false" ]; then
-        bold; echo -n "   > "; cyan; echo -n "Pelejä ei löytynyt :( "
+        bold; echo -n "   > "; cyan; echo -n "PelejÃ¤ ei lÃ¶ytynyt :( "
         initDoFail
         exit 2
     fi
@@ -143,7 +143,7 @@ function valitsePeli {
     selectDialog $SELECTIONS
 
     if [ $? -ne 0 ]; then
-        echo "Keskeytetään pyynnöstä"
+        echo "KeskeytetÃ¤Ã¤n pyynnÃ¶stÃ¤"
         exit
     fi
 }
@@ -153,7 +153,7 @@ function selectDialog {
         if [ $(which dialog 2>/dev/null) ]; then
             consoleDialog ${@}
         else
-            red; echo "Ei graaffista eikä dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
+            red; echo "Ei graaffista eikÃ¤ dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
         fi
     elif [ $(which kdialog 2>/dev/null) ]; then
         kdeDialog ${@}
@@ -161,21 +161,21 @@ function selectDialog {
         if [ $(which dialog 2>/dev/null) ]; then
             consoleDialog ${@}
         else
-            red; echo "Ei kdialog eikä dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
+            red; echo "Ei kdialog eikï¿½dialog ohjelmaa, ei voida jatkaa :("; normal; exit 1
         fi
     fi
 }
 
 function consoleDialog {
     tempFile=`mktemp`
-    eval "$(which dialog) --title '$PROGNAME' --menu 'Valitse käynnistettävä peli' 0 0 0 ${@} 2> $tempFile"
+    eval "$(which dialog) --title '$PROGNAME' --menu 'Valitse kÃ¤ynnisetettÃ¤vÃ¤ peli' 0 0 0 ${@} 2> $tempFile"
     unset dialog
     export komento=`cat $tempFile`
     rm $tempFile
 }
 
 function kdeDialog {
-    ret=`eval "$(which kdialog) --icon package_games --title '$PROGNAME' --menu 'Valitse käynnistettävä peli' ${@}"`
+    ret=`eval "$(which kdialog) --icon package_games --title '$PROGNAME' --menu 'Valitse kÃ¤ynnisetettÃ¤vÃ¤ peli' ${@}"`
     export komento=$ret
 }
 
@@ -218,34 +218,46 @@ function initDoSuccess {
 
 function init {
 
-    # Disabloi taustakuva (sen vaihtuminen)
-    if dcop | grep -q "kdesktop"; then
-        initDo "Poistetaan taustakuva" "background"
-        dcop kdesktop KBackgroundIface setBackgroundEnabled false && initDoSuccess
-    fi
+    if [ $(which dcop 2>/dev/null) ]; then
+        # Disabloi taustakuva (sen vaihtuminen)
+        if dcop | grep -q "kdesktop"; then
+            initDo "Poistetaan taustakuva" "background"
+            dcop kdesktop KBackgroundIface setBackgroundEnabled false && initDoSuccess
+        fi
 
-    # Asetetaan Kopeten away viesti
-    if  dcop | grep -q "kopete"; then
-        initDo "Asetetaan kopeteen poissaolo" "kopete"
-        dcop kopete KopeteIface setAway 'Pelaamassa $game' && initDoSuccess
-    fi
+        # Asetetaan Kopeten away viesti
+        if  dcop | grep -q "kopete"; then
+            initDo "Asetetaan kopeteen poissaolo" "kopete"
+            dcop kopete KopeteIface setAway 'Pelaamassa $game' && initDoSuccess
+        fi
 
-    # Ei KMailin päivityksiä
-    if  dcop | grep -q "kmail"; then
-        if [ "$(dcop kmail kmail-mainwindow#1 updatesEnabled)" = "true" ]; then
-            initDo "Estetään KMailin päivitykset" "kmail"
-            dcop kmail kmail-mainwindow#1 setUpdatesEnabled false && initDoSuccess
+#
+# DÃ¶ nÃ¶t wÃ¶rk
+#
+#        # Ei KMailin pÃ¤ivityksiÃ¤
+#        if  dcop | grep -q "kmail"; then
+#            if [ "$(dcop kmail kmail-mainwindow#1 updatesEnabled)" = "true" ]; then
+#                initDo "EstetÃ¤Ã¤n KMailin pÃ¤ivitykset" "kmail"
+#                dcop kmail kmail-mainwindow#1 setUpdatesEnabled false && initDoSuccess
+#            fi
+#        fi
+
+        if dcop | grep -q "kwin"; then
+            if [ "$(dcop kwin KWinInterface kompmgrIsRunning)" = "true" ]; then
+                initDo "Sammutetaan kcompmgr" "kcompmgr"
+                dcop kwin KWinInterface stopKompmgr && initDoSuccess
+            fi
         fi
     fi
 
-    # Jos nvidianin näyttis, aseta antialising ja anisotropic textuurin filteröinti
+    # Jos nvidianin nï¿½ttis, aseta antialising ja anisotropic textuurin filterï¿½nti
     if [ -d "/proc/driver/nvidia" ]; then
-        # Laita simppeli antialising päälle (2x Quincunx Multisampling)
+        # Laita simppeli antialising pÃ¤Ã¤lle (2x Quincunx Multisampling)
         initDo "Asetetaan antialising"
         export __GL_FSAA_MODE=2 && initDoSuccess
 
         # 4x anisotropic filtering
-        #initDo "Asetataan anisotropic filteröinti"
+        #initDo "Asetataan anisotropic filterï¿½nti"
         #export __GL_LOG_MAX_ANISO=2 && initDoSuccess
 
         if [ $(which nvidia-settings 2>/dev/null) ]; then
@@ -254,7 +266,7 @@ function init {
 
             # Tarkista, onko coolbits tuki. Jos on, kellotetaan.
             if $(nvidia-settings -q GPU3DClockFreqs >/dev/null 2&>1); then
-                initDo "Kellotetaan näyttökorttia" "3DFreq"
+                initDo "Kellotetaan nÃ¤yttÃ¶korttia" "3DFreq"
                 if [ -z $FREQMULTIPLIER ]; then
                     FREQMULTIPLIER=1.1
                 fi
@@ -268,15 +280,15 @@ function init {
                 nvidia-settings -a GPU3DClockFreqs=$NFREQTWO,$NFREQTHREE > /dev/null && initDoSuccess
             fi
 
-            #initDo "Textuurien terävöitys"
+            #initDo "Textuurien terÃ¤vÃ¶itys"
             #nvidia-settings -a TextureSharpen=1 > /dev/null && initDoSuccess
         fi
     fi
 
-    ## Näytön gamma
+    ## NÃ¤ytÃ¶n gamma
     if [ $(which xgamma 2>/dev/null) ]; then
         if [ -z $GAMMAMULTIPLIER ]; then
-            GAMMAMULTIPLIER=1.4
+            GAMMAMULTIPLIER=1.7
         fi
         # Tallennetaan vanhat gamma arvot
         GAMMA=$(xgamma 2>&1)
@@ -296,7 +308,7 @@ function init {
     if [ $(which artsshell 2>/dev/null) ]; then
         artsshell status > /dev/null 2>&1
         if [ $? == 0 ]; then
-            initDo "Yritetään vapauttaa äänilaite KDE:ltä"
+            initDo "YritetÃ¤Ã¤n vapauttaa Ã¤Ã¤nilaite Arts:ilta"
         fi
         artsshell suspend > /dev/null 2>&1 && initDoSuccess
     fi
@@ -308,6 +320,7 @@ function initEnd {
         if [ $PROG = "kopete" ]; then dcop kopete KopeteIface setAvailable; fi
         if [ $PROG = "background" ]; then dcop kdesktop KBackgroundIface setBackgroundEnabled true; fi
         if [ $PROG = "kmail" ]; then dcop kmail kmail-mainwindow#1 setUpdatesEnabled true; fi
+        if [ $PROG = "kcompmgr" ]; then dcop kwin KWinInterface startKompmgr; fi
         if [ $PROG = "3DFreq" ]; then
             echo -n " ($FREQTWO,$FREQTHREE)"
             nvidia-settings -a GPU3DClockFreqs=$FREQTWO,$FREQTHREE > /dev/null

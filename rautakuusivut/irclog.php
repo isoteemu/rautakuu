@@ -1,18 +1,40 @@
 <?php
+
+// Storage driver
+$storage = "mirc";
+
+//
+// Mirc log storage
+//
+
+// Mirc log file
+$mirclog = "/home/teemu/.eggdrop/RapedCunt/mel/logs/#rautakuu.log";
+
+// Starting offset in bytes (how many bytes are readed from end of file?)
+$startoffsetbytes = 1024;
+
+//
+// DB storage
+//
+
+// DB dns
+$dbdns = "mysql://foo:bar@localhost/irclog";
+
+// How many rows to show at begining?
+$startrows = 20;
+
 header("Content-Type: text/html;charset=utf-8");
 
 if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 );
 
-include_once("DB.php");
-//include_once("config.inc.php");
-
-
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
     //Vérification des bornes...
+    /*
     for($i=0;$i<=2;$i++) {
         $tablo[$i]=bornes($tablo[$i],0,255);
     }
+    */
     //Le str_pad permet de remplir avec des 0
     //parce que sinon rgb2html(Array(0,255,255)) retournerai #0ffff<=manque un 0 !
     return "#".str_pad(dechex(($tablo[0]<<16)|($tablo[1]<<8)|$tablo[2]),6,"0",STR_PAD_LEFT);
@@ -171,41 +193,51 @@ function formatNick($nick) {
     return htmlentities($nick);
 }
 
-function formatTime($time) {
-    //lazy
-    return substr($time,-8,2).":".substr($time,-5,2);
+function formatMircTime(&$time) {
+    $times = explode(":", $time);
+    $times = array_slice($times, 0, 3);
+    while(count($times) < 3) {
+        array_push($times, "00");
+    }
+
+    $time = mktime($times[0], $times[1], $times[2]);
 }
 
-function getMessages($time=null) {
+
+function getMessagesDB(&$ttime) {
+    include_once("DB.php");
+
+    global $dbdns, $startrows;
     static $DB;
+
     if(!isset($DB)) {
-        $DB = DB::Connect("mysql://miniteemu:a24cdcf4903642@localhost/rautakuuirc");
+        $DB = DB::Connect($dbdns);
     }
-    if( $time == null ) {
+
+    if( $ttime == null ) {
         $sql = "
             SELECT
-                `time` , `action`, `nick` , `msg`
+                UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             ORDER BY
                 `time` DESC
-            LIMIT 0 , 10";
-            $now = 0;
+            LIMIT 0 , {$startrows}";
+            $ttime = 0;
     } else {
         $sql = "
             SELECT
-                `time` , `action`, `nick` , `msg`
+                UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             WHERE
-                `time` > '{$time}'
+                `time` > FROM_UNIXTIME('{$ttime}')
             ORDER BY
                 `time` DESC";
-            $now = $time;
     }
     $res =& $DB->query($sql);
     if(DB::IsError($res)) {
-        die("DB Error: ".$res->getMessage());
+        die("Error: DB: ".$res->getMessage());
     }
 
     $times = "";
@@ -215,17 +247,125 @@ function getMessages($time=null) {
 
     $tmp = array();
     while(list($time, $action,  $nick, $msg)=$res->fetchRow()) {
-        $tmp[] = array('time' => $time, 'action' => $action, 'nick' => $nick, 'msg' => $msg);
+        if($time > $ttime) $ttime = $time;
+        $results[] = array('time' => $time, 'action' => $action, 'nick' => $nick, 'msg' => $msg);
     }
 
-    $tmp = array_reverse($tmp);
+    $results = array_reverse($results);
+    return $results;
+}
 
-    foreach($tmp as $row) {
-        if($row['time'] > $now) $now = $row['time'];
-        $times .= '"'.formatTime($row['time']).'",';
+function getMessagesMirc(&$pos) {
+    global $mirclog, $startoffsetbytes;
+    if(!file_exists($mirclog)) {
+        die("Error: Mirclog file does not exists");
+    }
+
+    if(!$fp = fopen($mirclog, "r")) {
+        die("Error: Error opening file handler");
+    }
+    $totalsize = filesize($mirclog);
+
+    // Move pointer
+    if($pos == null) {
+        if($startoffsetbytes > $totalsize) $startoffsetbytes = $filesize;
+        fseek($fp, -$startoffsetbytes, SEEK_END);
+        $readAmmount=$startoffsetbytes;
+    } else {
+        $pos = intval($pos);
+        if($pos < 0 || $pos > $totalsize) {
+            // You fuckwad
+            fseek($fp, -$startoffset, SEEK_END);
+            $readAmmount=$startoffsetbytes;
+        } else {
+            fseek($fp, $pos);
+            $readAmmount=$totalsize-$pos;
+        }
+    }
+
+    if($readAmmount <= 0) return array();
+
+    // read logfile
+    $log = fread($fp, $readAmmount);
+    $pos = ftell($fp);
+    fclose($fp);
+
+    preg_match_all('%^\[([^\]]*)] (.*)$%mU', $log, $match, PREG_PATTERN_ORDER);
+
+    $match = array_slice($match, 1);
+
+    $times =& $match[0];
+
+    array_walk($times,'formatMircTime');
+
+    $results = array();
+
+    foreach($match[1] as $key => $val) {
+
+        // Is action?
+        if(preg_match('%^\*\*\* (.*) (.*)$%U', $val, $tulitikut)) {
+            $nick =& $tulitikut[1];
+            $act  =& $tulitikut[2];
+
+            if(preg_match('%^\(([^\)]*)\) has joined%',$act, $whom)) {
+                $action = "JOIN";
+                $msg    = $whom[1];
+            } elseif(preg_match('%^has left .* \(([^\)]*)\)$%U',$act, $whom)) {
+                // Crappy mirc. Part, left and quit are all logged as left.
+                $action = "QUIT";
+                $msg    = $whom[1];
+            } elseif(preg_match('%^is now known as (.*)$%U',$act, $whom)) {
+                $action = "NICK";
+                $msg    = $whom[1];
+            } elseif(preg_match('%^sets mode: (.*)$%U',$act, $whom)) {
+                $action = "MODE";
+                $msg    = $whom[1];
+            } else {
+                continue;
+            }
+
+        } elseif (preg_match('%^<([^>]*)> (.*)$%U', $val, $tulitikut)) {
+            $action = "PRIVMSG";
+            $nick   = $tulitikut[1];
+            $msg    = $tulitikut[2];
+        } else {
+            echo "Tuntematon rivi: $val\n";
+            continue;
+        }
+        $results[] = array(
+            'time'     => $times[$key],
+            'action'   => $action,
+            'nick'     => $nick,
+            'msg'      => $msg
+        );
+        //$results[count($results)-1]['raw'] = $val;
+    }
+    return $results;
+
+}
+
+function getMessages($time=null) {
+    global $storage;
+    switch($storage) {
+        case "DB" :
+            $results = getMessagesDB($time);
+            break;
+        case "mirc" :
+            $results = getMessagesMirc($time);
+            break;
+        default :
+            die("No usable driver");
+            break;
+    }
+
+    foreach($results as $row) {
+        $times .= '"'.$row['time'].'",';
         $actions .= '"'.$row['action'].'",';
         $nicks .= '"'.formatNick($row['nick']).'",';
-        $mesgs .= '"'.htmlline($row['msg']).'",';
+        if($row['action'] == "PRIVMSG")
+            $mesgs .= '"'.htmlline($row['msg']).'",';
+        else
+            $mesgs .= '"'.htmlentities($row['msg']).'",';
     }
 
     $times = substr($times,0,strlen($times)-1);
@@ -233,14 +373,12 @@ function getMessages($time=null) {
     $nicks = substr($nicks,0,strlen($nicks)-1);
     $mesgs = substr($mesgs,0,strlen($mesgs)-1);
 
-    return "new Array(\"{$now}\", new Array({$times}), new Array({$actions}), new Array({$nicks}), new Array({$mesgs}));";
+    return "new Array(\"{$time}\", new Array({$times}), new Array({$actions}), new Array({$nicks}), new Array({$mesgs}));";
 }
 
 if(isset($_GET['time'])) {
     die(getMessages($_GET['time']));
 }
-
-
 
 ?>
 <html>
@@ -252,27 +390,27 @@ if(isset($_GET['time'])) {
 body {
     font-family: monospace;
     font-size: 10px;
-    color: #FF3C12;
+    color: #7b7b7b;
 }
 
 p, td {
     font-family: monospace;
     font-size: 10px;
-    color: #FF3C12;
+    color: #7b7b7b;
 }
 
 a:link, a:visited, a:active {
     text-decoration: none;
-    color: #545454;
+    color: #005D93;
 }
 
 a:hover {
     text-decoration: underline;
-    color: #7A7A7A;
+     color: #990000;
 }
 
-#fade {
-    background-image:url("/rautakuu/towhite.png");
+#fadevert {
+    background-image:url("/rautakuu/towhite-vert.png");
     background-repeat:repeat-y;
     background-position:right center;
     z-index:20;
@@ -283,12 +421,39 @@ a:hover {
     position:fixed;
 }
 
+#fadehori {
+    background-image:url("/rautakuu/towhite-hori.png");
+    background-repeat:repeat-x;
+    background-position:center top;
+    z-index:21;
+    height:25px;
+    width:100%;
+    top:0;
+    left:0;
+    right:0;
+    position:fixed;
+}
+/*
 #irssi {
     background-image:url("/rautakuu/irssilogo.jpg");
     background-repeat:no-repeat;
     background-position:right bottom;
+    bottom:0;
+    right:0;
     width:100%;
     height:100%;
+    position:fixed;
+}
+*/
+
+#container {
+    width:100%;
+    height:100%;
+    position:absolute;
+}
+
+#foo {
+    background:inherit;
 }
 
         </style>
@@ -302,6 +467,8 @@ var xmlResult = <?= getMessages();?>
 var xmlHttp = null;
 
 var _sleepTime = 2;
+var _uSleepSum = new Array();
+var _uSleepPointer = 0;
 
 var _appendId = "viestit";
 
@@ -309,6 +476,11 @@ var nickColors = new Array();
 
 // Estää tupla refreshauksen
 var _refreshing = false;
+
+var _sTime = <?= time() ?>;
+var _mTime = Math.round(new Date().getTime()/1000);
+
+var timeDiff = 0;
 
 function getXMLHTTPResult() {
     if(xmlHttp&&xmlHttp.readyState!=0&&_refreshing==false) {
@@ -339,7 +511,7 @@ function parseResult() {
 
 function buildLayout() {
 
-    // kertoo sen hetkisen ty�kentely divin.
+    // kertoo sen hetkisen työskentely divin.
     var workTR = null;
 
     for( var f=0; f<xmlResult[1].length; ++f) {
@@ -349,8 +521,10 @@ function buildLayout() {
         setStyle(workTR);
 
         var timeTD=document.createElement("TD");
-        setText(timeTD, "["+xmlResult[1][f]+"]");
+        setText(timeTD, "["+unixtimetodate(xmlResult[1][f])+"]");
         workTR.appendChild(timeTD);
+
+        addSleepSum(xmlResult[1][f]);
 
         var nickTD=document.createElement("TD");
         if ( xmlResult[2][f] == "PRIVMSG" ) {
@@ -360,11 +534,33 @@ function buildLayout() {
         } else {
             var nick = "<font color=\""+colorNick(xmlResult[3][f])+"\">"+xmlResult[3][f]+"</font>";
             setText(nickTD, "-<font color=\"#0000ff\"><strong>!</strong></font>- "+nick);
-            nickTD.style.textAlign="left";
+            nickTD.style.textAlign="right";
         }
         workTR.appendChild(nickTD);
 
         var msgTD=document.createElement("TD");
+        switch (xmlResult[2][f]) {
+            case "NICK" :
+                setText(msgTD, "is now known as "+xmlResult[4][f]);
+                break;
+            case "PART" :
+                setText(msgTD, "has left ["+xmlResult[4][f]+"]");
+                break;
+            case "QUIT" :
+                setText(msgTD, "has quit ["+xmlResult[4][f]+"]");
+                break;
+            case "JOIN" :
+                setText(msgTD, "has joined");
+                break;
+            case "MODE" :
+                setText(msgTD, "mode ["+xmlResult[4][f]+"] by "+xmlResult[3][f]);
+                break;
+            default :
+            case "PRIVMSG" :
+                setText(msgTD, xmlResult[4][f]);
+                break;
+        }
+        /*
         if ( xmlResult[2][f] == "PRIVMSG" ) {
             setText(msgTD, xmlResult[4][f]);
         } else {
@@ -374,11 +570,14 @@ function buildLayout() {
             }
             setText(msgTD, "Has "+xmlResult[2][f]+msg);
         }
+        */
         workTR.appendChild(msgTD);
 
         _appendId.appendChild(workTR);
+
+        scrollme();
+        getSleepTimer();
     }
-    window.scroll(0,document.body.offsetHeight);
 }
 
 function IntRandom(max) {
@@ -396,6 +595,54 @@ function colorNick(nick) {
     }
     return nickColors[nick];
 
+}
+
+function unixtimetodate(time) {
+    var theDate = new Date(time * 1000);
+    //dateString = formatInt(theDate.getHours())+":"+formatInt(theDate.getMinutes())+":"+formatInt(theDate.getSeconds());
+    dateString = formatInt(theDate.getHours())+":"+formatInt(theDate.getMinutes());
+    return dateString;
+}
+
+function formatInt(sstr) {
+    var str = new String(sstr);
+    if(str.length < 2) str = "0"+str;
+    return str;
+}
+
+function addSleepSum(ammount) {
+    if(_uSleepPointer > 9) {
+        _uSleepPointer = 0;
+    }
+    _uSleepSum[_uSleepPointer] = ammount;
+    ++_uSleepPointer;
+}
+
+function getSleepTimer() {
+    timeDiff = _sTime-_mTime;
+    //document.getElementById("fadehori").innerHTML=_sTime+" "+_mTime+" "+timeDiff;
+    /*
+    var _totalTime = 0;
+    for( var i=0; i<_uSleepSum.length; ++i) {
+        _totalTime = _totalTime+parseInt(_uSleepSum[i]);
+//        alert("bar2: "+_totalTime+" ("+_uSleepSum[i]+")");
+    }
+
+    var uTime = new Date();
+
+    if(timeDiff > 0 ) {
+        _sleepTime = Math.round(((uTime.getTime()/1000)-timeDiff)-(_totalTime/(i)));
+    } else if ( timeDiff < 0 ) {
+        _sleepTime = Math.round(((uTime.getTime()/1000)-timeDiff)-(_totalTime/(i)));
+        _sleepTime = Math.round(((uTime.getTime()/1000))-((_totalTime/(i))-timeDiff));
+    }
+    */
+    //    alert(_sleepTime);
+    //_sleepTime = Math.round(((uTime.getTime()/1000))-(_totalTime/(i)));
+
+    //alert("Sleep:"+Math.round(uTime.getTime()/1000)+" / "+Math.round(_totalTime/(i)));
+    //alert(i+"/"+_uSleepPointer+"/"+_sleepTime);
+    return _sleepTime;
 }
 
 function setStyle(tag) {
@@ -448,15 +695,26 @@ mainLoop=function() {
 }
 
 function getTimer() {
-    return _sleepTime*1000;
+    //return getSleepTimer*1000;
+    return 2000;
+}
+
+function scrollme(){
+    var mypos=window.innerHeight+window.pageYOffset;
+    if (mypos<document.getElementById("foo").offsetHeight) {
+        window.scrollBy(0,2);
+        setTimeout("scrollme()",50)
+    }
 }
 
         </script>
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
-        <div id="irssi">
-            <div id="foo" style="z-index:5;"></div>
-            <div id="fade"><img src="#" height="0" widht="0"></div>
+        <div id="container">
+            <!--<div id="irssi"></div>-->
+            <div id="foo"></div>
+            <div id="fadevert" style="bottom:0px;"><img src="#" height="0" widht="0"></div>
+            <div id="fadehori" style="top:0px;"><img src="#" height="0" widht="0"></div>
         </div>
     </body>
 </html>

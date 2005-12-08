@@ -7,8 +7,10 @@ $page    = "http://irc-galleria.net/channel.php?channel_id=686740";
 // Pisgin conf tiedosto. Sieltä luetaan user aliakset.
 $pisgcfg = "pisg.cfg";
 
-// Kuvakansio. Jos false, ei käsitellä kuvia.
+// Kuvakansio. Jos false, ei käsitellä kuvia. Relatiivinen tai absoluuttinen
 $kuvakansio = "kuvat";
+// Kuvakansion URL websivulle
+$kuvaurl    = "http://janoks.sivut.rautakuu.org/pisg/kuvat";
 
 // Tunnistetiedot. Jos joskus scripti blokataan, vaihdat vain tähän jonkin toisen selaimen.
 $ie      = "Mozilla/4.0 (compatible; MSIE 5.0; Windows 98;)";
@@ -174,14 +176,14 @@ foreach( $userNicks as $uid => $user ) {
         $kuvapage = fetchPage($ircgalleriaview.urlencode($userNicks[$uid]));
         if($img = confirmImage($kuvapage)) {
             $imgurl = grepImage($img[0]);
-            echo " bigpic=\"".$imgurl."\"";
+            //echo " bigpic=\"".$imgurl."\"";
             $kuva = basename($imgurl);
             if(file_exists($kuvakansio."/".$kuva)) {
-                echo " pic=\"".$kuvakansio."/".$kuva."\"";
+                echo " pic=\"".$kuvaurl."/".$kuva."\"";
             } else {
                 exec('convert -scale 85x85 '.escapeshellarg($imgurl).' '.escapeshellarg($kuvakansio."/".$kuva));
                 if(file_exists($kuvakansio."/".$kuva)) {
-                    echo " pic=\"".$kuvakansio."/".$kuva."\"";
+                    echo " pic=\"".$kuvaurl."/".$kuva."\"";
                 }
             }
         }

@@ -1,0 +1,18 @@
+#!/usr/bin/php -q
+<?php
+
+$app = "Mädäntäjä";
+
+if($argv[1]) {
+    $str = $argv[1];
+} else {
+    $str = shell_exec('kdialog --title '.escapeshellarg($app).' --inputbox "Mädännettävä sana:"');
+
+}
+$str = rtrim(str_rot13($str));
+
+echo "$str\n";
+if(!$argv[1]) {
+    shell_exec('kdialog --title '.escapeshellarg($app).' --msgbox '.escapeshellarg($str).'');
+}
+?>

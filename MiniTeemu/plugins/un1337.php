@@ -16,7 +16,8 @@ $teinix = array(
     'rofl',
     'munq',
     'noob',
-    'n00b'
+    'n00b',
+    'ihq'
 );
 
 $byes = array(

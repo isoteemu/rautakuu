@@ -262,10 +262,10 @@ function init {
 
         if [ $(which nvidia-settings 2>/dev/null) ]; then
             initDo "nvidia coolbits (kellotus)"
-            nvidia-settings -a GPUOverclockingState=1 > /dev/null && initDoSuccess
+            nvidia-settings -a GPUOverclockingState=1 > /dev/null 2>&1 && initDoSuccess
 
             # Tarkista, onko coolbits tuki. Jos on, kellotetaan.
-            if $(nvidia-settings -q GPU3DClockFreqs >/dev/null 2&>1); then
+            if $(nvidia-settings -q GPU3DClockFreqs >/dev/null 2>&1); then
                 initDo "Kellotetaan näyttökorttia" "3DFreq"
                 if [ -z $FREQMULTIPLIER ]; then
                     FREQMULTIPLIER=1.1
@@ -277,7 +277,7 @@ function init {
                 NFREQTHREE=$(echo $FREQTHREE $FREQMULTIPLIER | awk '{ printf("%.0f\n", $1 * $2); }')
 
                 echo -n " x$FREQMULTIPLIER=$NFREQTWO,$NFREQTHREE"
-                nvidia-settings -a GPU3DClockFreqs=$NFREQTWO,$NFREQTHREE > /dev/null && initDoSuccess
+                nvidia-settings -a GPU3DClockFreqs=$NFREQTWO,$NFREQTHREE > /dev/null 2>&1 && initDoSuccess
             fi
 
             #initDo "Textuurien terävöitys"
@@ -347,7 +347,7 @@ if [ -z "$komento" ]; then
     echo ""
     exit 1
 fi
-
+#
 #initDo "Tarkistetaan komentoa $komento"
 #if [ $(which `echo $komento | awk -F' ' '{ printf $1 }'` 2>/dev/null) ]; then
 #   initDoSuccess

@@ -49,6 +49,11 @@ class irc_data {
     // Triggerit.
     var $triggers;
 
+    function irc_data(&$irc) {
+        $this->irc =& $irc;
+        $this->triggers =& new irc_trigger_plugins(&$this->irc);
+    }
+
     function append($rawdata) {
         // Muutetaan windows enterit UNIX enteriksi.
         $this->data = str_replace("\r", '', $rawdata);
@@ -246,6 +251,9 @@ class irc {
     // Kuinka monta kertaa yritetään yhdistää ennen kuin annetaan periksi.
     var $tries      = 5;
 
+    // How long to try connect before timeout? in secs
+    var $_timeout   = 10;
+
     // Yhteys resurssi
     var $_connection;
 
@@ -293,6 +301,9 @@ class irc {
             register_shutdown_function(array(&$this,"__destruct"));
         }
 
+        // Luodaan data stack
+        $this->irc_data =& new irc_data(&$this);
+
         // Signal handlerit
         //pcntl_signal(SIGTERM, array(&$this,"_SigTerm"));
         //pcntl_signal(SIGKILL, array(&$this,"_SigKill"));
@@ -309,7 +320,7 @@ class irc {
     }
 
     function _send($msg) {
-        if(! fwrite($this->_connection, $msg."\r\n")) {
+        if(! socket_write($this->_connection, $msg."\r\n")) {
 
             $this->trace("Viestin lähetys epäonnistui \"{$msg}\"");
             return false;
@@ -335,21 +346,34 @@ class irc {
 
             $i++;
             $this->trace("Yritetään yhdistää #".($i));
-            $this->_connection = fsockopen($this->server, $this->port, $errno, $errstr);
+            //$this->_connection = fsockopen($this->server, $this->port, $errno, $errstr);
+            $this->_connection = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            socket_set_nonblock($this->_connection);
 
-            if( $this->_connection === false ) {
-                $this->trace("Ei saatu yhdistettyä palvelimelle \"{$this->server}:{$this->port}\". Syy: {$errstr} ({$errno})");
-                continue;
-            } else {
-                break;
+            $timeout = time();
+            while(!socket_connect($this->_connection, $this->server, $this->port)) {
+                $err = socket_last_error($this->_connection);
+                if ($err == 115 || $err == 114) {
+                    if ((time() - $timeout) >= $this->_timeout) {
+                        $this->trace("Connection timed out");
+                        continue 2;
+                    } else {
+                        sleep(1);
+                        continue;
+                    }
+                }
+                $this->trace("Problems on connecting: ".socket_strerror($err));
+                continue 2;
             }
+            if(!socket_set_block($this->_connection)) {
+                $this->trace("Could not set socket block ".socket_strerror(socket_last_error($this->_connection)));
+                continue;
+            }
+            socket_clear_error($this->_connection);
+            $this->trace("R:".is_resource( $this->_connection )." T:".get_resource_type( $this->_connection )." E:".socket_last_error( $this->_connection ));
+            return true;
         }
-        if( $this->_connection === false ) {
-            $this->trace("Yhteyttä ei saatu muodostettua");
-            return false;
-        }
-
-        socket_set_blocking($this->_connection, false);
+        return false;
     }
 
     /**
@@ -377,8 +401,7 @@ class irc {
     function listen() {
 
         if(!isset($this->irc_data)) {
-            $this->irc_data =& new irc_data();
-            $this->irc_data->irc =& $this;
+            $this->irc_data =& new irc_data(&$this);
         }
 
         // Niin kauan kuin me olemme yhteydessä, kuuntele.
@@ -386,9 +409,8 @@ class irc {
 
             // Annetaan 2s aikaa silmukan ajoon.
             set_time_limit(2);
-            // Nukutaan hetki
-            usleep( $this->_delay*1000 );
 
+            // Send stuff
             $this->flushBuffer();
 
             // Jos ei kirjauduttu, kirjaudu.
@@ -396,18 +418,23 @@ class irc {
                 $this->login();
             }
 
-            $rawdata = trim(fread($this->_connection, 10240));
+            $sread = array($this->_connection);
+            if(socket_select($sread, $w = null, $e = null, 0, $this->_delay*1000)) {
 
-            // Littetään edellinen ylijäänyt data nykyiseen dataan
-            $rawdata = trim($this->irc_data->getLeftOvers()).$rawdata;
+                $rawdata = trim(socket_read($this->_connection, 10240));
 
-            if(!empty( $rawdata )) {
-                // Liitetään data ja otetaan ylijäänyt data talteen
-                $this->irc_data->append( $rawdata );
+                // Littetään edellinen ylijäänyt data nykyiseen dataan
+                $rawdata = trim($this->irc_data->getLeftOvers().$rawdata);
 
-                $this->irc_data->runTriggers();
+                if(!empty( $rawdata )) {
+                    // Liitetään data ja otetaan ylijäänyt data talteen
+                    $this->irc_data->append( $rawdata );
+
+                    $this->irc_data->runTriggers();
+                }
             }
         }
+        $this->trace("Listen loop closed");
     }
 
     function part( $channel=NULL, $reason=NULL ) {
@@ -419,10 +446,14 @@ class irc {
 
     function disconnect($msg="") {
         $this->send("QUIT $msg");
+        sleep( $this->_delay*1000 );
+        socket_shutdown($this->_connection);
+        socket_close($this->_connection);
     }
 
     function pong($data) {
-        $this->send("PONG ".$data);
+        // Ei käytetä viesti queuea
+        $this->_send("PONG ".$data);
     }
 
     /**
@@ -473,7 +504,9 @@ class irc {
      */
     function _state() {
         if( is_resource( $this->_connection ) &&
-            get_resource_type( $this->_connection ) == "stream" ) return true;
+            get_resource_type( $this->_connection ) == "Socket" &&
+            !socket_last_error( $this->_connection ) ) return true;
+        $this->trace("Socket not in usable state");
         return false;
     }
 

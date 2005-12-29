@@ -1,5 +1,7 @@
 <?php
 
+static $regex;
+
 if( $init==true ) {
     $plugin->addRule('code', 'PRIVMSG');
     return;
@@ -10,35 +12,50 @@ $teinix = array(
     'imac',
     'vinq',
     'parq',
-    'lol',
+    '\blol',
+    'lol\b',
+    '\blol\b',
+    'l0l',
+    'lÃ¥l',
     'itq',
     'stfu',
     'rofl',
     'munq',
     'noob',
     'n00b',
-    'ihq'
+    'ihq',
+    'xD'
 );
 
 $byes = array(
-    'Näkemiin',
+    'NÃ¤emiin',
     'Ixudzan',
     'Ciao',
     'Farewell',
     'Adiau^',
-    'Hyvästi',
+    'HyvÃ¤ti',
     'Au revoir',
-    'Bonne journée',
+    'Bonne journÃ©',
     'Auf Wiedersehen',
     'Wiedersehen',
 );
 
-foreach($teinix as $str) {
-    if (stristr($plugin->line->msg, $str)) {
-        $bye=$byes[array_rand($byes)];
-        irc::trace("Teinixiä havaittu:{$str} in {$plugin->line->msg}");
-        $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} : Teinixiä. $bye");
+if(!isset($regex)) {
+    $regex = "/(";
+    foreach($teinix as $str) {
+        if(substr($regex,-1) != "(") $regex .= "|";
+        $regex .= $str;
     }
+    $regex .= ")/i";
+    irc::trace("regex: ".$regex);
+}
+
+$matches = array();
+
+if (preg_match($regex, $plugin->line->msg, $matches)) {
+    $bye =& $byes[array_rand($byes)];
+    irc::trace("TeinixiÃ¤ havaittu:{$matches[2]} in {$plugin->line->msg}");
+    $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} :TeinixiÃ¤, $bye");
 }
 
 ?>

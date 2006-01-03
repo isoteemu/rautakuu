@@ -13,15 +13,15 @@ if( $init==true ) {
 $pluginName = trim(substr($plugin->line->msg, strrpos($plugin->line->msg, " ")+1));
 
 if(isset($plugin->irc->irc_data->triggers->plugins[$pluginName])) {
-    $plugin->irc->message("{$plugin->line->nick}: Plugin {$pluginName} on jo rekisteröity. käytä reloadPluginiä");
+    $plugin->message("{$plugin->line->nick}: Plugin {$pluginName} on jo rekisterÃ¶ity. kÃ¤ytÃ¤ reloadPluginiÃ¤");
     return false;
 }
 
 if(!$plugin->irc->irc_data->triggers->registerPlugin($pluginName)) {
-    $plugin->irc->message("{$plugin->line->nick}: Virhe ladattaessa pluginiä {$pluginName}");
+    $plugin->message("{$plugin->line->nick}: Virhe ladattaessa pluginiÃ¤ {$pluginName}");
     return false;
 }
-$plugin->irc->message("{$plugin->line->nick}: Plugin {$pluginName} ladattiin onnistuneesti");
+$plugin->message("{$plugin->line->nick}: Plugin {$pluginName} ladattiin onnistuneesti");
 return true;
 
 ?>

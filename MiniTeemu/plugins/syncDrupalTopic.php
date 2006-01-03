@@ -4,6 +4,7 @@ static $db;
 
 if( $init==true ) {
     $plugin->addRule('code', "TOPIC");
+    $plugin->addRule('channel', "#rautakuu");
 
     // DB connection
     include_once("DB.php");
@@ -14,16 +15,13 @@ if( $init==true ) {
 }
 
 if(DB::IsError($db)) {
-    irc::trace("Virhe tietokantayhteydessä, ei voi syncata topicia");
+    irc::trace("Virhe tietokantayhteydessÃ¤, ei voi syncata topicia");
     return;
 }
 
-$topic = mb_convert_encoding($plugin->line->msg, "utf-8", "iso-8859-1");
-if (substr($topic, 0, 21) == "Rautakuu [dot] org ||") {
-    $topic = substr($topic, 22);
-}
+$topic = mb_convert_encoding($plugin->line->msg, "utf-8");
 
-$sql = sprintf("UPDATE `variable` SET `value`='%s' WHERE `name` = 'site_slogan'", serialize($topic));
+$sql = sprintf("UPDATE `node` SET `title`='%s' WHERE `nid` = '32'", $topic);
 
 $res =& $db->query($sql);
 

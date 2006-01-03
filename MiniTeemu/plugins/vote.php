@@ -1,6 +1,6 @@
 <?php
 /**
- * vote.php - Käynnistää voten jostain
+ * vote.php - KÃ¤ynnistÃ¤Ã¤ voten jostain
  */
 
 static $vote;
@@ -22,15 +22,15 @@ switch( $voteCmd ) {
     case "result" :
     case "tulos"  :
         if ($vote['ongoing'] == true && $vote['time'] > time()) {
-            $plugin->irc->message("{$plugin->line->nick}: Äänestys ei ole vielä päättynyt.");
+            $plugin->message("{$plugin->line->nick}: Ã„Ã¤nestys ei ole vielÃ¤ pÃ¤Ã¤ttynyt.");
             break;
         }
         if( $vote['ongoing'] == true ) $vote['ongoing'] = false;
-        $plugin->irc->message("{$plugin->line->nick}: Äänestys oli: \"".$vote['topic']."\"");
+        $plugin->message("{$plugin->line->nick}: Ã„Ã¤nestys oli: \"".$vote['topic']."\"");
         if(($yes = count($vote['votes']['yes'])) > ($no = count($vote['votes']['no']))) {
-            $plugin->irc->message("Äänestyksen tulos: Kyllä voitti äänin ".$yes."/".($yes+$no).".");
+            $plugin->message("Ã„Ã¤nestyksen tulos: KyllÃ¤ voitti Ã¤Ã¤nin ".$yes."/".($yes+$no).".");
         } else {
-            $plugin->irc->message("Äänestyksen tulos: Ei voitti äänin ".$no."/".($yes+$no).".");
+            $plugin->message("Ã„Ã¤nestyksen tulos: Ei voitti Ã¤Ã¤nin ".$no."/".($yes+$no).".");
         }
         break;
 
@@ -42,28 +42,28 @@ switch( $voteCmd ) {
     case "e"  :
     case "E"  :
         if($vote['ongoing'] != true) {
-            $plugin->irc->message("{$plugin->line->nick}: Äänestyksiä ei ole menossa.");
+            $plugin->message("{$plugin->line->nick}: Ã„Ã¤nestyksiÃ¤ ei ole menossa.");
             break;
         }
         if(isset($vote['votes']['no'][$plugin->line->nick]) || isset($vote['votes']['yes'][$plugin->line->nick])) {
-            $plugin->irc->message("{$plugin->line->nick}: Olet jo äänestänyt.");
+            $plugin->message("{$plugin->line->nick}: Olet jo Ã¤Ã¤nestÃ¤nyt.");
             break;
         }
         $vote['votes']['no'][$plugin->line->nick] = true;
         break;
 
     case "yes"   :
-    case "kyllä" :
+    case "kyllÃ¤" :
     case "1"     :
     case "Y"     :
     case "K"     :
     case "k"     :
         if($vote['ongoing'] != true) {
-            $plugin->irc->message("{$plugin->line->nick}: Äänestyksiä ei ole menossa.");
+            $plugin->message("{$plugin->line->nick}: Ã„Ã¤nestyksiÃ¤ ei ole menossa.");
             break;
         }
         if(isset($vote['votes']['no'][$plugin->line->nick]) || isset($vote['votes']['yes'][$plugin->line->nick])) {
-            $plugin->irc->message("{$plugin->line->nick}: Olet jo äänestänyt.");
+            $plugin->message("{$plugin->line->nick}: Olet jo Ã¤Ã¤nestÃ¤nyt.");
             break;
         }
         $vote['votes']['yes'][$plugin->line->nick] = true;
@@ -71,7 +71,7 @@ switch( $voteCmd ) {
 
     default :
         if($vote['ongoing'] == true) {
-            $plugin->irc->message("{$plugin->line->nick}: Tuntematon äänestys komento. Äänestä joko kyllä tai ei.");
+            $plugin->message("{$plugin->line->nick}: Tuntematon Ã¤Ã¤nestys komento. Ã„Ã¤nestÃ¤ joko kyllÃ¤ tai ei.");
             break;
         }
         if(substr($voteCmd, -1) == "?") {
@@ -81,19 +81,19 @@ switch( $voteCmd ) {
             $vote['votes']['yes'] = array();
             $vote['votes']['no']  = array();
             $vote['time']         = (time()+180);
-            $plugin->irc->message("Uusi äänestys: {$voteCmd}");
+            $plugin->message("Uusi Ã¤Ã¤nestys: {$voteCmd}");
         } else {
-            $plugin->irc->message("{$plugin->line->nick}: Tuntematon komento.");
+            $plugin->message("{$plugin->line->nick}: Tuntematon komento.");
         }
         break;
 }
 
 if($vote['ongoing'] == true && $vote['time'] < time()) {
-    $plugin->irc->message("{$plugin->line->nick}: Vote on umpeutunut. Kiitoksia osallistuneille.");
+    $plugin->message("{$plugin->line->nick}: Vote on umpeutunut. Kiitoksia osallistuneille.");
     if(($yes = count($vote['votes']['yes'])) > ($no = count($vote['votes']['no']))) {
-        $plugin->irc->message("Äänestyksen tulos: Kyllä voitti äänin ".$yes."/".($yes+$no).".");
+        $plugin->message("Ã„Ã¤nestyksen tulos: KyllÃ¤ voitti Ã¤Ã¤nin ".$yes."/".($yes+$no).".");
     } else {
-        $plugin->irc->message("Äänestyksen tulos: Ei voitti äänin ".$no."/".($yes+$no).".");
+        $plugin->message("Ã„Ã¤nestyksen tulos: Ei voitti Ã¤Ã¤nin ".$no."/".($yes+$no).".");
     }
     $vote['ongoing'] = false;
 }

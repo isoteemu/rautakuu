@@ -16,7 +16,7 @@ $teinix = array(
     'lol\b',
     '\blol\b',
     'l0l',
-    'lål',
+    'lÃ¥l',
     'itq',
     'stfu',
     'rofl',
@@ -28,14 +28,14 @@ $teinix = array(
 );
 
 $byes = array(
-    'Näemiin',
+    'Näkemiin',
     'Ixudzan',
     'Ciao',
     'Farewell',
     'Adiau^',
-    'Hyväti',
+    'olet heikoin lenkki. Hyvästi.',
     'Au revoir',
-    'Bonne journé',
+    'Bonne journë',
     'Auf Wiedersehen',
     'Wiedersehen',
 );

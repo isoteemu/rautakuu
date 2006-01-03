@@ -13,11 +13,11 @@ if( $init==true ) {
 $pluginName = trim(substr($plugin->line->msg, strrpos($plugin->line->msg, " ")+1));
 
 if(!isset($plugin->irc->irc_data->triggers->plugins[$pluginName])) {
-    $plugin->irc->message("{$plugin->line->nick}: Pluginiä {$pluginName} ei ole rekisteröity.");
+    $plugin->message("{$plugin->line->nick}: PluginiÃ¤ {$pluginName} ei ole rekisterÃ¶ity.");
     return false;
 }
 unset($plugin->irc->irc_data->triggers->plugins[$pluginName]);
-$plugin->irc->message("{$plugin->line->nick}: Plugin {$pluginName} poistettiin.");
+$plugin->message("{$plugin->line->nick}: Plugin {$pluginName} poistettiin.");
 return true;
 
 ?>

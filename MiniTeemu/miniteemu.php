@@ -25,26 +25,26 @@ function timer() {
 }
 
 /**
- * Kuinka monta rivi‰ voi containerissa olla kerrallaan s‰ilˆss‰.
+ * Kuinka monta rivi√§ voi containerissa olla kerrallaan s√§il√∂ss√§.
  */
 define("IRC_DATA_LINES_MAX_COUNT", 500);
 /**
- * Kuinka monta rivi‰ poistetaan kerralla kun containerissa on IRC_DATA_LINES_MAX_COUNT rivi‰.
+ * Kuinka monta rivi√§ poistetaan kerralla kun containerissa on IRC_DATA_LINES_MAX_COUNT rivi√§.
  */
 define("IRC_DATA_LINES_RM_COUNT", 250);
 
 class irc_data {
 
-    // K‰sitelt‰v‰ data
+    // K√§sitelt√§v√§ data
     var $data;
 
-    // Ylij‰‰nyt osa
+    // Ylij√§√§nyt osa
     var $leftOver = "";
 
     // Rivi objectit
     var $lines = array();
 
-    // Kokonais rivien m‰‰r‰
+    // Kokonais rivien m√§√§r√§
     var $i=0;
 
     // Viimeksi tarkastettu rivi
@@ -66,12 +66,12 @@ class irc_data {
         $this->data = str_replace("\r", '', $rawdata);
         $this->leftOver = "";
 
-        // Jos dataa j‰‰ yli, yritett‰n se ottaa talteen.
+        // Jos dataa j√§√§ yli, yritett√§n se ottaa talteen.
         if(( $strrpos = strrpos($data ,"\n")) !== false ) {
             $this->leftOver = substr($this->data, $strrpos+1);
             irc::trace("LEFTOVER DATA: {$this->leftOver}");
 
-            // Otetaan oleellinen osa, ja j‰tet‰‰n yli‰‰nyt osa pois.
+            // Otetaan oleellinen osa, ja j√§tet√§√§n yli√§√§nyt osa pois.
             $this->data = substr($this->data, 0, $strrpos);
         }
 
@@ -88,7 +88,7 @@ class irc_data {
             $this->lines[$this->i] =& new irc_data_line( array_shift($lines) );
 
             if(!$this->lines[$this->i]->valid()) {
-                // Line ei ollut hyv‰ksytt‰v‰. Pudotetaan se.
+                // Line ei ollut hyv√§ksytt√§v√§. Pudotetaan se.
                 irc::trace("Pudotetaan rivi {$this->i}. Ei valid()");
                 unset($this->lines[$this->i]);
                 continue;
@@ -98,7 +98,7 @@ class irc_data {
         }
 
         if($this->numLines() >= IRC_DATA_LINES_MAX_COUNT) {
-            irc::trace("Cleanup. Saavutettu ".IRC_DATA_LINES_MAX_COUNT." rivin m‰‰r‰");
+            irc::trace("Cleanup. Saavutettu ".IRC_DATA_LINES_MAX_COUNT." rivin m√§√§r√§");
 
             $this->lines = array_slice($this->lines, 0-IRC_DATA_LINES_RM_COUNT);
             ksort($this->lines);
@@ -125,8 +125,8 @@ class irc_data {
     }
 
     /**
-     * palauttaa ylij‰‰neen osan.
-     * @param $nuke h‰vitet‰‰nkˆ ylij‰‰nyt osa.
+     * palauttaa ylij√§√§neen osan.
+     * @param $nuke h√§vitet√§√§nk√∂ ylij√§√§nyt osa.
      */
     function getLeftOvers($nuke=true) {
         if(empty($this->leftOver)) return;
@@ -138,7 +138,7 @@ class irc_data {
     }
 
     /**
-     * T‰m‰ palauttaa viimeisen rivin.
+     * T√§m√§ palauttaa viimeisen rivin.
      */
     function getLastLine() {
         if( is_array($this->lines) && count($this->lines) > 0 ) {
@@ -216,7 +216,7 @@ class irc_data_line {
         $this->ident   = substr($exs[0], $poe+1, ($poa-$poe)-1);
         $this->channel = $exs[2];
 
-        // WHOIS kertoo nelj‰nten‰ parametrin‰ nickin
+        // WHOIS kertoo nelj√§nten√§ parametrin√§ nickin
         if(empty($this->nick) && isset($exs[3])) $this->nick = $exs[3];
 
         $this->msg     = trim(substr($this->data, $poc+1));
@@ -234,6 +234,7 @@ class irc_data_line {
             return false;
         }
     }
+
 }
 
 define("IRC_TRACE_ECHO", 0);
@@ -241,8 +242,8 @@ define("IRC_TRACE_SEND", 1);
 
 class irc {
 
-    // Serveri, jolle liityt‰‰n
-    var $server     = "port80.se.quakenet.org";
+    // Serveri, jolle liityt√§√§n
+    var $server     = "fi.quakenet.org";
 
     // Serverin portti.
     var $port       = "6667";
@@ -252,7 +253,7 @@ class irc {
     var $botNick    = "MiniTeemu";
     var $botUName   = "rautakuu";
 
-    // Kuinka monta kertaa yritet‰‰n yhdist‰‰ ennen kuin annetaan periksi.
+    // Kuinka monta kertaa yritet√§√§n yhdist√§√§ ennen kuin annetaan periksi.
     var $tries      = 5;
 
     // How long to try connect before timeout? in secs
@@ -267,7 +268,7 @@ class irc {
     // IRC data container
     var $irc_data;
 
-    // Bufferi joka sis‰lt‰‰ kaiken saamamme datan.
+    // Bufferi joka sis√§lt√§√§ kaiken saamamme datan.
     var $_loggedin  = false;
 
     // Trace ajuri
@@ -289,14 +290,14 @@ class irc {
      */
     function irc( $config = null ) {
         if( $config != null && is_array( $config )) {
-            if( $config['server'] )     $this->server   = $config['channel'];
+            if( $config['server'] )     $this->server   = $config['server'];
             if( $config['port'] )       $this->port     = $config['port'];
         }
 
-        // Huuhdellaan v‰littˆm‰sti
+        // Huuhdellaan v√§litt√∂m√§sti
         ob_implicit_flush(true);
 
-        // Ei aikarajaa viel‰
+        // Ei aikarajaa viel√§
         @set_time_limit(0);
 
         // PHP4 __destructori emulaatio
@@ -313,10 +314,10 @@ class irc {
 
     }
 
-    // Hoitaa viestin l‰hetyksen IRC serverille
+    // Hoitaa viestin l√§hetyksen IRC serverille
     function send( $msg ) {
         if( $this->_state() === false ) {
-            $this->trace("Yhteytt‰ ei ole");
+            $this->trace("Yhteytt√§ ei ole");
             return false;
         }
         $this->buffer[] = $msg;
@@ -325,10 +326,10 @@ class irc {
     function _send($msg) {
         if(! socket_write($this->_connection, $msg."\r\n")) {
 
-            $this->trace("Viestin l‰hetys ep‰onnistui \"{$msg}\"");
+            $this->trace("Viestin l√§hetys ep√§onnistui \"{$msg}\"");
             return false;
         }
-        $this->trace("Viesti l‰hetetty\n>> \"{$msg}\"");
+        $this->trace("Viesti l√§hetetty\n>> \"{$msg}\"");
         return true;
     }
 
@@ -340,15 +341,15 @@ class irc {
     }
 
     /**
-     * Yhdist‰‰ palvelimelle
+     * Yhdist√§√§ palvelimelle
      */
     function connect() {
-        // Yritet‰‰n loopata yhteytt‰
+        // Yritet√§√§n loopata yhteytt√§
         $i = 0;
         while( $i < $this->tries ) {
 
             $i++;
-            $this->trace("Yritet‰‰n yhdist‰‰ #".($i));
+            $this->trace("Yritet√§√§n yhdist√§√§ #".($i));
             //$this->_connection = fsockopen($this->server, $this->port, $errno, $errstr);
             $this->_connection = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
             socket_set_nonblock($this->_connection);
@@ -365,7 +366,7 @@ class irc {
                         continue;
                     }
                 }
-                $this->trace("Problems on connecting: ".socket_strerror($err));
+                $this->trace("Problems on connecting: to ".$this->server.":".$this->port." - ".socket_strerror($err));
                 continue 2;
             }
             if(!socket_set_block($this->_connection)) {
@@ -407,7 +408,7 @@ class irc {
             $this->irc_data =& new irc_data(&$this);
         }
 
-        // Niin kauan kuin me olemme yhteydess‰, kuuntele.
+        // Niin kauan kuin me olemme yhteydess√§, kuuntele.
         while( $this->_state() ) {
 
             // Annetaan 2s aikaa silmukan ajoon.
@@ -426,11 +427,11 @@ class irc {
 
                 $rawdata = trim(socket_read($this->_connection, 10240));
 
-                // Littet‰‰n edellinen ylij‰‰nyt data nykyiseen dataan
+                // Littet√§√§n edellinen ylij√§√§nyt data nykyiseen dataan
                 $rawdata = trim($this->irc_data->getLeftOvers().$rawdata);
 
                 if(!empty( $rawdata )) {
-                    // Liitet‰‰n data ja otetaan ylij‰‰nyt data talteen
+                    // Liitet√§√§n data ja otetaan ylij√§√§nyt data talteen
                     $this->irc_data->append( $rawdata );
 
                     $this->irc_data->runTriggers();
@@ -455,20 +456,20 @@ class irc {
     }
 
     function pong($data) {
-        // Ei k‰ytet‰ viesti queuea
+        // Ei k√§ytet√§ viesti queuea
         $this->_send("PONG ".$data);
     }
 
     /**
-     * L‰hett‰‰ perinteisen viestin.
-     * Voidaan kutsua staattisesti, jos $irc on on rekisterˆity sivulla,
+     * L√§hett√§√§ perinteisen viestin.
+     * Voidaan kutsua staattisesti, jos $irc on on rekister√∂ity sivulla,
      * ja kenelle viesti on osoitettu on asetettu.
-     * @param $msg l‰hetett‰v‰ viesti
-     * @param $to kenelle viesti l‰hetet‰‰n
+     * @param $msg l√§hetett√§v√§ viesti
+     * @param $to kenelle viesti l√§hetet√§√§n
      */
     function message($msg, $to) {
 
-        //irc::trace("Yritet‰‰n l‰hett‰‰ viesti‰: ".$message);
+        //irc::trace("Yritet√§√§n l√§hett√§√§ viesti√§: ".$message);
 
         global $irc;
         if(is_a($this, "irc")) {
@@ -534,7 +535,7 @@ class irc {
 
 /**
  * @class irc_trigger_plugin IRC trigger plugin luokka
- * T‰m‰ luokka toimii jokaisen trigger pluginin pohjana
+ * T√§m√§ luokka toimii jokaisen trigger pluginin pohjana
  */
 
 class irc_trigger_plugin {
@@ -549,7 +550,7 @@ class irc_trigger_plugin {
     var $irc;
 
     /**
-     * @var $rules Laukaisuun johtavat s‰‰nnˆt
+     * @var $rules Laukaisuun johtavat s√§√§nn√∂t
      */
     var $rules = array("expire" => 0,
                        "break"  => false);
@@ -567,8 +568,8 @@ class irc_trigger_plugin {
     function irc_trigger_plugin(&$irc, $code) {
         $this->irc =& $irc;
 
-        /* Ensimm‰inen parametri on viittaus itseemme. Toinen muuttuja, $init
-         * kertoo taas pluginille asetetaanko vain s‰‰nnˆt kuntoon */
+        /* Ensimm√§inen parametri on viittaus itseemme. Toinen muuttuja, $init
+         * kertoo taas pluginille asetetaanko vain s√§√§nn√∂t kuntoon */
         if($this->_lamdadriver = create_function('&$plugin, $init=false', $code)) {
             $this->initLamda();
         } else {
@@ -584,7 +585,7 @@ class irc_trigger_plugin {
     }
 
     /**
-     * K‰skee plugini‰ asettamaan parametrinsa (rules) kohdalleen
+     * K√§skee plugini√§ asettamaan parametrinsa (rules) kohdalleen
      */
     function &initLamda() {
         $lamda =& $this->_lamdadriver;
@@ -593,11 +594,11 @@ class irc_trigger_plugin {
 
     /**
      * Ajaa pluginin
-     * Ajetaan jos s‰‰nnˆt t‰sm‰siv‰t
+     * Ajetaan jos s√§√§nn√∂t t√§sm√§siv√§t
      */
     function &trigger() {
         $lamda =& $this->_lamdadriver;
-        $lamda(&$this, false);
+        return $lamda(&$this, false);
     }
 
     function addRule($name, $rule) {
@@ -623,9 +624,31 @@ class irc_trigger_plugin {
      */
     function expire($time=null) {
         if($time === null) {
-            // asetetaan aika menneisyydest‰.
+            // asetetaan aika menneisyydest√§.
             $this->addRule("expire", time()-1);
         }
+    }
+
+    /**
+     * Reply to message whit privmsg
+     * This is wrong place to place this, more "correct" would
+     * be in $this->line->message(), but this is simpler to get
+     * it working
+     *
+     * @param $message message to send
+     */
+    function message($msg, $to=null) {
+        if($to === null) {
+            if(!empty($this->line->channel)) {
+                $to =& $this->line->channel;
+            } elseif(!empty($this->line->nick)) {
+                $to =& $this->line->nick;
+            } else {
+                irc::Trace("WaTaFa? could not get whom to send message");
+                return false;
+            }
+        }
+        return $this->irc->message($msg, $to);
     }
 }
 
@@ -661,7 +684,7 @@ class irc_trigger_plugins {
             $name = "pseudoPlugin";
         }
         if(isset($this->plugins[$name])) {
-            irc::trace("Plugin nimell‰ $name on jo, annetaan uusi nimi");
+            irc::trace("Plugin nimell√§ $name on jo, annetaan uusi nimi");
             $i=0;
             $namebase = $name."_";
             $name = $namebase.$i;
@@ -684,7 +707,7 @@ class irc_trigger_plugins {
             while (false !== ($file = readdir($PDHandle))) {
                 if(is_dir($this->pluginDir."/".$file)) continue;
                 if(!is_readable($this->pluginDir."/".$file)) continue;
-                // Jos ei p‰‰ty .php niin hyp‰t‰‰n ohi
+                // Jos ei p√§√§ty .php niin hyp√§t√§√§n ohi
                 if( substr($file, -4) != ".php" ) continue;
 
                 $this->registerPluginFile($this->pluginDir."/".$file);
@@ -733,10 +756,10 @@ class irc_trigger_plugins {
 
     function removePlugin($plugin) {
         if(!isset($this->plugins[$plugin])) {
-            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei lˆydy");
+            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei l√∂ydy");
             return false;
         } elseif ( in_array($plugin, $this->pluginsToRemoval)) {
-            irc::trace("Ei voida poistaa pluginia; Plugin {$plugin} lis‰tty jo poistettavaksi");
+            irc::trace("Ei voida poistaa pluginia; Plugin {$plugin} lis√§tty jo poistettavaksi");
             return false;
         } else {
             $this->pluginsToRemoval[] = $plugin;
@@ -746,7 +769,7 @@ class irc_trigger_plugins {
 
     function unregisterPlugin($plugin) {
         if(!isset($this->plugins[$plugin])) {
-            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei lˆydy");
+            irc::trace("Ei voida poistaa pluginia; Pluginia {$plugin} ei l√∂ydy");
             return false;
         }
         unset($this->plugins[$plugin]);
@@ -762,7 +785,7 @@ class irc_trigger_plugins {
     }
 
     /**
-     * K‰y plugin stackin l‰pi ja suorittaa soveliaat pluginit;
+     * K√§y plugin stackin l√§pi ja suorittaa soveliaat pluginit;
      */
     function newEvent( &$line ) {
         if( $line !== null ) {
@@ -781,13 +804,13 @@ class irc_trigger_plugins {
                 if( $key == "break" ) continue;
 
                 if( $key == "expire" && $param > 0 && $param < time() ) {
-                    irc::trace("Pluginin {$pluginName} expire t‰ynn‰");
+                    irc::trace("Pluginin {$pluginName} expire t√§ynn√§");
                     $this->removePlugin($pluginName);
                     $validPlugin = false;
                     break;
                 } elseif( $key == "expire" ) continue;
 
-                // Vertailee onko prefix t‰sm‰‰v‰
+                // Vertailee onko prefix t√§sm√§√§v√§
                 if( $key == "prefix" ) {
                     if( substr($this->line->msg, 0, strlen($param)) != $param) {
                         $validPlugin = false;

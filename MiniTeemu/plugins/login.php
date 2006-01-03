@@ -1,6 +1,6 @@
 <?php
 /**
- * login.php - Lähettää login komennon
+ * login.php - LÃ¤hettÃ¤Ã¤ login komennon
  */
 if( $init==true ) {
     $plugin->addRule('code', "451");
@@ -8,6 +8,6 @@ if( $init==true ) {
     return;
 }
 
-$plugin->irc->trace("451; Rekisteröidy ensin.");
+$plugin->irc->trace("451; RekisterÃ¶idy ensin.");
 $plugin->irc->login();
 ?>

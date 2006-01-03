@@ -8,6 +8,6 @@ if( $init==true ) {
     return;
 }
 
-$plugin->irc->message("{$plugin->line->nick}: ".trim(exec("uptime")));
+$plugin->message("{$plugin->line->nick}: ".trim(exec("uptime")));
 
 ?>

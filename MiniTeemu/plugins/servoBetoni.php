@@ -5,12 +5,12 @@ if( $init==true ) {
     return;
 }
 
-$key = "Mikä on kun ei taidot riitä, mikä on kun ei onnistu?";
+$key = "MikÃ¤ on kun ei taidot riitÃ¤, mikÃ¤ on kun ei onnistu?";
 
 $percent = 0;
 similar_text($key, $plugin->line->msg, $percent);
-if( $percent >= 95 ) {
-    $plugin->irc->message('"Heikoille voi olla liikaa kutsu metallin, muttei niille joita ohjaa vaisto soturin!"');
+if( $percent >= 93 ) {
+    $plugin->message('"Heikoille voi olla liikaa kutsu metallin, muttei niille joita ohjaa vaisto soturin!"');
 }
 
 ?>

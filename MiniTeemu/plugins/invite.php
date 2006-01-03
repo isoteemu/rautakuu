@@ -5,5 +5,9 @@ if( $init==true ) {
     return;
 }
 
-$plugin->irc->join($plugin->line->channel);
+$channelparts = explode(" ", $plugin->line->data);
+$channel =& $channelparts[3];
+
+irc::trace("Joining to channel ".$channel);
+$plugin->irc->join($channel);
 ?>

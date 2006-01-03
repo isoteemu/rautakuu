@@ -22,8 +22,9 @@ if( $init==true ) {
 //print_r($plugin->line);
 
 irc::trace("Away scripti havaittu '.$plugin->line->msg.'");
-//$plugin->irc->send("MODE '.$plugin->irc->channel.' +b *!*'.$toban.'");
-$plugin->irc->send("KICK '.$plugin->irc->channel.' '.$plugin->line->msg.' :http://rautakuu.org/drupal/RautakuuIrc #4");
+//$plugin->irc->send("MODE '.$plugin->line->channel.' +b *!*'.$toban.'");
+
+$plugin->irc->send("KICK '.$plugin->line->channel.' '.$plugin->line->msg.' :http://rautakuu.org/drupal/RautakuuIrc #4");
 
 $plugin->expire();
 ';

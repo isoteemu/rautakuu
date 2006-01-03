@@ -2,6 +2,13 @@
 
 define("MINITEEMU", __FILE__);
 
+if( function_exists("putenv")) putenv('LANG="fi_FI.UTF-8');
+if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
+if(function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
+
+ini_set("default_charset", "uft-8");
+ini_set("mbstring.encoding_translation", "on");
+
 /**
  * Ajastin function.
  */
@@ -240,9 +247,6 @@ class irc {
     // Serverin portti.
     var $port       = "6667";
 
-    // Kanavan nimi, jolle liitytään.
-    var $channel    = "#rautakuu";
-
     // Botin henk. koht. tietoja.
     var $botRName   = "Mini Me, completes me!";
     var $botNick    = "MiniTeemu";
@@ -286,7 +290,6 @@ class irc {
     function irc( $config = null ) {
         if( $config != null && is_array( $config )) {
             if( $config['server'] )     $this->server   = $config['channel'];
-            if( $config['channel'] )    $this->channel  = $config['channel'];
             if( $config['port'] )       $this->port     = $config['port'];
         }
 
@@ -437,7 +440,7 @@ class irc {
         $this->trace("Listen loop closed");
     }
 
-    function part( $channel=NULL, $reason=NULL ) {
+    function part( $channel, $reason=NULL ) {
         if( $reason !== NULL ) {
             $reason = " :".$reason;
         }
@@ -460,18 +463,18 @@ class irc {
      * Lähettää perinteisen viestin.
      * Voidaan kutsua staattisesti, jos $irc on on rekisteröity sivulla,
      * ja kenelle viesti on osoitettu on asetettu.
+     * @param $msg lähetettävä viesti
+     * @param $to kenelle viesti lähetetään
      */
-    function message($msg, $to=null) {
+    function message($msg, $to) {
 
         //irc::trace("Yritetään lähettää viestiä: ".$message);
 
         global $irc;
         if(is_a($this, "irc")) {
-            if($to === null) $to = $this->channel;
             $message = "PRIVMSG ".$to." :".$msg;
             $this->send($message);
         } elseif( is_a($irc, "irc")) {
-            if($to === null) $to = $irc->channel;
             $message = "PRIVMSG ".$to." :".$msg;
             $irc->send($message);
         }

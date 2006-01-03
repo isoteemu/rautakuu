@@ -19,5 +19,4 @@ passthru("php -q ".MINITEEMU." &");
 sleep(1);
 die("Killing myself due restart");
 
-$plugin->irc->pong(substr( $plugin->line->getLine(), 5));
 ?>

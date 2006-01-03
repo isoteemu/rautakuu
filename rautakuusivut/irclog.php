@@ -1,7 +1,14 @@
 <?php
 
 // Storage driver
-$storage = "mirc";
+$storage = "DB";
+
+// "throtling".
+// If system is near this AVG load, (%80),
+// fetching new messages are delayed.
+$loadavg = 4;
+$delaytime = 5;
+$maxdelay = 10;
 
 //
 // Mirc log storage
@@ -18,12 +25,21 @@ $startoffsetbytes = 1024;
 //
 
 // DB dns
-$dbdns = "mysql://foo:bar@localhost/irclog";
+$dbdns = "mysql://miniteemu:***********@localhost/rautakuuirc";
 
 // How many rows to show at begining?
 $startrows = 20;
 
+// Default channel
+$channel = "#rautakuu";
+
 header("Content-Type: text/html;charset=utf-8");
+if( function_exists("putenv")) putenv('LANG="fi_FI.UTF-8');
+if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
+if(function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
+
+ini_set("default_charset", "uft-8");
+ini_set("mbstring.encoding_translation", "on");
 
 if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 );
 
@@ -170,7 +186,7 @@ function irc2html($texte){
                 break;
             default:
                 //->Chr normal, afficher
-                $buffer.= htmlentities($chr);
+                $buffer.=htmlspecialchars($chr,ENT_QUOTES);
                 break;
         }
     }
@@ -179,7 +195,7 @@ function irc2html($texte){
 
 
 function htmlline($str) {
-    //$str = mb_convert_encoding($str, "UTF-8", "ISO-8859-15");
+    $str = mb_convert_encoding($str, "UTF-8","UTF-8,Windows-1252,ISO-8859-15,ISO-8859-1");
     //$str = htmlspecialchars($str);
 
     $str = irc2html($str);
@@ -190,10 +206,10 @@ function htmlline($str) {
 }
 
 function formatNick($nick) {
-    return htmlentities($nick);
+    return htmlentities($nick, ENT_QUOTES);
 }
 
-function formatMircTime(&$time) {
+function formatMircTime(&$time, $channel) {
     $times = explode(":", $time);
     $times = array_slice($times, 0, 3);
     while(count($times) < 3) {
@@ -204,7 +220,7 @@ function formatMircTime(&$time) {
 }
 
 
-function getMessagesDB(&$ttime) {
+function getMessagesDB(&$ttime, $channel) {
     include_once("DB.php");
 
     global $dbdns, $startrows;
@@ -220,6 +236,8 @@ function getMessagesDB(&$ttime) {
                 UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
+            WHERE
+                 `channel` = '{$channel}'
             ORDER BY
                 `time` DESC
             LIMIT 0 , {$startrows}";
@@ -231,7 +249,8 @@ function getMessagesDB(&$ttime) {
             FROM
                 `ircmsg`
             WHERE
-                `time` > FROM_UNIXTIME('{$ttime}')
+                `time` > FROM_UNIXTIME('{$ttime}') AND
+                `channel` = '{$channel}'
             ORDER BY
                 `time` DESC";
     }
@@ -245,7 +264,7 @@ function getMessagesDB(&$ttime) {
     $nicks = "";
     $mesgs = "";
 
-    $tmp = array();
+    $results = array();
     while(list($time, $action,  $nick, $msg)=$res->fetchRow()) {
         if($time > $ttime) $ttime = $time;
         $results[] = array('time' => $time, 'action' => $action, 'nick' => $nick, 'msg' => $msg);
@@ -344,14 +363,17 @@ function getMessagesMirc(&$pos) {
 
 }
 
-function getMessages($time=null) {
+function getMessages($channel="#rautakuu",$time=null) {
     global $storage;
+
+    if(substr($channel,0,1) != "#") $channel = "#".$channel;
+
     switch($storage) {
         case "DB" :
-            $results = getMessagesDB($time);
+            $results = getMessagesDB($time,$channel);
             break;
         case "mirc" :
-            $results = getMessagesMirc($time);
+            $results = getMessagesMirc($time,$channel);
             break;
         default :
             die("No usable driver");
@@ -365,7 +387,7 @@ function getMessages($time=null) {
         if($row['action'] == "PRIVMSG")
             $mesgs .= '"'.htmlline($row['msg']).'",';
         else
-            $mesgs .= '"'.htmlentities($row['msg']).'",';
+            $mesgs .= '"'.htmlentities($row['msg'], ENT_QUOTES, "UTF-8").'",';
     }
 
     $times = substr($times,0,strlen($times)-1);
@@ -376,25 +398,65 @@ function getMessages($time=null) {
     return "new Array(\"{$time}\", new Array({$times}), new Array({$actions}), new Array({$nicks}), new Array({$mesgs}));";
 }
 
+/**
+ * This function calculates load avarage for linux system.
+ * This data is then used to add litle delay to page load, so
+ * system won't be totally trashed
+ * Code partly stolen from phpsysinfo
+ * http://cvs.sourceforge.net/viewcvs.py/phpsysinfo/phpsysinfo-dev/includes/os/class.Linux.inc.php
+ *
+ * @return estimate of load avarage of system total capacity in percents
+ */
+
+function loadavg() {
+    if ($fd = fopen('/proc/loadavg', 'r')) {
+        $avg = preg_split("/\s/", fgets($fd, 4096),4); // We wan't only the most curren avarage
+        fclose($fd);
+        return $avg[0];
+    } else {
+        return false;
+    }
+}
+
+
+if(empty($_GET['channel'])) $_GET['channel'] = $channel;
+
 if(isset($_GET['time'])) {
-    die(getMessages($_GET['time']));
+
+    // It really does not matter if updates aren't instant.
+    // Use sleep so if server is under load, frequent updates
+    // won't trash it totally.
+    $load = loadavg();
+    $loadprc = ($load/$loadavg);
+    if($loadprc > 0.80) {
+        // calculate how log to delay.
+        $delay = ($loadprc-0.8)*5*$delaytime;
+        if($delay > $maxdelay) $delay = $maxdelay;
+        sleep($delay);
+    }
+
+    die(getMessages($_GET['channel'], $_GET['time']));
 }
 
 ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">
+<!-- Irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.    -->
+<!-- Irclog.php: http://svn.rautakuu.org/repos/homebrevcomputing/rautakuusivut/irclog.php -->
+<!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
 <html>
     <head>
-        <title>Rautakuu [dot] org :: #rautakuu IRC viestit</title>
+        <title>Rautakuu [dot] org :: <?= htmlspecialchars($_GET['channel']);?> IRC viestit</title>
         <meta http-equiv="Content-Language" content="fi">
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>
 body {
-    font-family: monospace;
+    font-family: Monospace;
     font-size: 10px;
     color: #7b7b7b;
 }
 
 p, td {
-    font-family: monospace;
+    font-family: Monospace;
     font-size: 10px;
     color: #7b7b7b;
 }
@@ -461,14 +523,13 @@ a:hover {
 
 var topuri = "<?= $_SERVER['REQUEST_URI'] ?>?time=";
 
-var xmlResult = <?= getMessages();?>
+var channelparam = "&amp;channel=<?= urlencode($_GET['channel']); ?>";
 
+var xmlResult = <?= getMessages($_GET['channel']);?>
 
 var xmlHttp = null;
 
-var _sleepTime = 2;
-var _uSleepSum = new Array();
-var _uSleepPointer = 0;
+var _sleepTime=_sleepDefTime= 1;
 
 var _appendId = "viestit";
 
@@ -477,13 +538,10 @@ var nickColors = new Array();
 // Estää tupla refreshauksen
 var _refreshing = false;
 
-var _sTime = <?= time() ?>;
-var _mTime = Math.round(new Date().getTime()/1000);
-
-var timeDiff = 0;
-
 function getXMLHTTPResult() {
-    if(xmlHttp&&xmlHttp.readyState!=0&&_refreshing==false) {
+    if(_refreshing==true) {
+        return false;
+    } else if(xmlHttp&&xmlHttp.readyState!=0) {
         xmlHttp.abort();
         requesterInit();
     } else if(!xmlHttp) {
@@ -491,9 +549,9 @@ function getXMLHTTPResult() {
         _refreshing = true;
     } else {
         if(_refreshing == false ) {
-            var openUri=topuri+xmlResult[0];
-            xmlHttp.open("GET",openUri,true);
+            var openUri=topuri+xmlResult[0]+channelparam;
             _refreshing = true;
+            xmlHttp.open("GET",openUri,true);
             xmlHttp.onreadystatechange=parseResult;
             xmlHttp.send(null);
             return true;
@@ -511,6 +569,8 @@ function parseResult() {
 
 function buildLayout() {
 
+    if(xmlResult[1].length < 1) return;
+
     // kertoo sen hetkisen työskentely divin.
     var workTR = null;
 
@@ -523,8 +583,6 @@ function buildLayout() {
         var timeTD=document.createElement("TD");
         setText(timeTD, "["+unixtimetodate(xmlResult[1][f])+"]");
         workTR.appendChild(timeTD);
-
-        addSleepSum(xmlResult[1][f]);
 
         var nickTD=document.createElement("TD");
         if ( xmlResult[2][f] == "PRIVMSG" ) {
@@ -555,6 +613,9 @@ function buildLayout() {
             case "MODE" :
                 setText(msgTD, "mode ["+xmlResult[4][f]+"] by "+xmlResult[3][f]);
                 break;
+            case "TOPIC" :
+                setText(msgTD, "changed the topic to "+xmlResult[4][f]);
+                break;
             default :
             case "PRIVMSG" :
                 setText(msgTD, xmlResult[4][f]);
@@ -574,10 +635,9 @@ function buildLayout() {
         workTR.appendChild(msgTD);
 
         _appendId.appendChild(workTR);
-
-        scrollme();
-        getSleepTimer();
     }
+    scrollme();
+    getSleepTimer();
 }
 
 function IntRandom(max) {
@@ -610,39 +670,17 @@ function formatInt(sstr) {
     return str;
 }
 
-function addSleepSum(ammount) {
-    if(_uSleepPointer > 9) {
-        _uSleepPointer = 0;
-    }
-    _uSleepSum[_uSleepPointer] = ammount;
-    ++_uSleepPointer;
+/**
+ * Resetoi ajan pienimmilleen
+ */
+function getSleepTimer() {
+    _sleepTime = _sleepDefTime;
 }
 
-function getSleepTimer() {
-    timeDiff = _sTime-_mTime;
-    //document.getElementById("fadehori").innerHTML=_sTime+" "+_mTime+" "+timeDiff;
-    /*
-    var _totalTime = 0;
-    for( var i=0; i<_uSleepSum.length; ++i) {
-        _totalTime = _totalTime+parseInt(_uSleepSum[i]);
-//        alert("bar2: "+_totalTime+" ("+_uSleepSum[i]+")");
-    }
-
-    var uTime = new Date();
-
-    if(timeDiff > 0 ) {
-        _sleepTime = Math.round(((uTime.getTime()/1000)-timeDiff)-(_totalTime/(i)));
-    } else if ( timeDiff < 0 ) {
-        _sleepTime = Math.round(((uTime.getTime()/1000)-timeDiff)-(_totalTime/(i)));
-        _sleepTime = Math.round(((uTime.getTime()/1000))-((_totalTime/(i))-timeDiff));
-    }
-    */
-    //    alert(_sleepTime);
-    //_sleepTime = Math.round(((uTime.getTime()/1000))-(_totalTime/(i)));
-
-    //alert("Sleep:"+Math.round(uTime.getTime()/1000)+" / "+Math.round(_totalTime/(i)));
-    //alert(i+"/"+_uSleepPointer+"/"+_sleepTime);
-    return _sleepTime;
+function getTimer() {
+    //return getSleepTimer*1000;
+    if(_sleepTime < 15 ) ++_sleepTime;
+    return _sleepTime*1000;
 }
 
 function setStyle(tag) {
@@ -694,11 +732,6 @@ mainLoop=function() {
     setTimeout("mainLoop()", getTimer());
 }
 
-function getTimer() {
-    //return getSleepTimer*1000;
-    return 2000;
-}
-
 function scrollme(){
     var mypos=window.innerHeight+window.pageYOffset;
     if (mypos<document.getElementById("foo").offsetHeight) {
@@ -712,7 +745,7 @@ function scrollme(){
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">
             <!--<div id="irssi"></div>-->
-            <div id="foo"></div>
+            <div id="foo"><noscript>Sorry peipe, tämä vaatii javascriptin :/</noscript></div>
             <div id="fadevert" style="bottom:0px;"><img src="#" height="0" widht="0"></div>
             <div id="fadehori" style="top:0px;"><img src="#" height="0" widht="0"></div>
         </div>

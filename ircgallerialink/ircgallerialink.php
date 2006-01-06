@@ -13,7 +13,7 @@ $kuvakansio = "kuvat";
 $kuvaurl    = "http://janoks.sivut.rautakuu.org/pisg/kuvat";
 
 // Tunnistetiedot. Jos joskus scripti blokataan, vaihdat vain tähän jonkin toisen selaimen.
-$ie      = "Mozilla/4.0 (compatible; MSIE 5.0; Windows 98;)";
+$ie      = "Mozilla/4.0 (compatible; MSIE 5.0; Linux;)";
 
 $ircgalleriaview = "http://irc-galleria.net/view.php?nick=";
 

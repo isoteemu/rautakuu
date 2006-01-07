@@ -1,31 +1,42 @@
 <?php
 
-// Storage driver
-$storage = "DB";
+// Storage driver. currently supported:
+// * DB - uses pear DB layer
+// * logfile - reads messages from logfile
+$storage = "logfile";
 
 // "throtling".
 // If system is near this AVG load, (%80),
 // fetching new messages are delayed.
+// Set $loadavg to false if throtling is not wanted
+// (eg, in windows enviroment, it does not work).
 $loadavg = 4;
 $delaytime = 5;
 $maxdelay = 10;
 
 //
-// Mirc log storage
+// logfile storage
 //
 
-// Mirc log file
-$mirclog = "/home/teemu/.eggdrop/RapedCunt/mel/logs/#rautakuu.log";
+// logfile
+$logfile = "/home/teemu/.eggdrop/RapedCunt/logs/rautakuu.log";
 
 // Starting offset in bytes (how many bytes are readed from end of file?)
-$startoffsetbytes = 1024;
+$startoffsetbytes = 2048;
+
+// Format of logfile. Currently supported:
+// * mirc - For those who use m-IRC (or only compatible logfile)
+// * irssi - For default irssi logfiles
+// * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
+
+$logfileformat = "egg";
 
 //
 // DB storage
 //
 
 // DB dns
-$dbdns = "mysql://miniteemu:***********@localhost/rautakuuirc";
+$dbdns = "mysql://miniteemu:*******@localhost/rautakuuirc";
 
 // How many rows to show at begining?
 $startrows = 20;
@@ -36,7 +47,7 @@ $channel = "#rautakuu";
 header("Content-Type: text/html;charset=utf-8");
 if( function_exists("putenv")) putenv('LANG="fi_FI.UTF-8');
 if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
-if(function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
+if( function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
 
 ini_set("default_charset", "uft-8");
 ini_set("mbstring.encoding_translation", "on");
@@ -195,7 +206,9 @@ function irc2html($texte){
 
 
 function htmlline($str) {
-    $str = mb_convert_encoding($str, "UTF-8","UTF-8,Windows-1252,ISO-8859-15,ISO-8859-1");
+    if(function_exists("mb_convert_encoding"))
+        $str = mb_convert_encoding($str, "UTF-8","UTF-8,Windows-1252,ISO-8859-15,ISO-8859-1");
+
     //$str = htmlspecialchars($str);
 
     $str = irc2html($str);
@@ -220,7 +233,7 @@ function formatMircTime(&$time, $channel) {
 }
 
 
-function getMessagesDB(&$ttime, $channel) {
+function getMessagesDB(&$pos, $channel) {
     include_once("DB.php");
 
     global $dbdns, $startrows;
@@ -230,29 +243,33 @@ function getMessagesDB(&$ttime, $channel) {
         $DB = DB::Connect($dbdns);
     }
 
-    if( $ttime == null ) {
+    if( $pos == null ) {
         $sql = "
             SELECT
-                UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
+                `key`, UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             WHERE
-                 `channel` = '{$channel}'
+                `channel` = '@GLOBAL' OR
+                `channel` = '{$channel}'
             ORDER BY
-                `time` DESC
+                `time` DESC, `key` DESC
             LIMIT 0 , {$startrows}";
-            $ttime = 0;
+            $pos = 0;
     } else {
         $sql = "
             SELECT
-                UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
+                `key`, UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             WHERE
-                `time` > FROM_UNIXTIME('{$ttime}') AND
-                `channel` = '{$channel}'
+                `key` > '{$pos}' AND
+                (
+                    `channel` = '@GLOBAL' OR
+                    `channel` = '{$channel}'
+                )
             ORDER BY
-                `time` DESC";
+                `time` DESC, `key` DESC";
     }
     $res =& $DB->query($sql);
     if(DB::IsError($res)) {
@@ -265,8 +282,8 @@ function getMessagesDB(&$ttime, $channel) {
     $mesgs = "";
 
     $results = array();
-    while(list($time, $action,  $nick, $msg)=$res->fetchRow()) {
-        if($time > $ttime) $ttime = $time;
+    while(list($key, $time, $action,  $nick, $msg)=$res->fetchRow()) {
+        if($key > $pos) $pos = $key;
         $results[] = array('time' => $time, 'action' => $action, 'nick' => $nick, 'msg' => $msg);
     }
 
@@ -274,16 +291,145 @@ function getMessagesDB(&$ttime, $channel) {
     return $results;
 }
 
-function getMessagesMirc(&$pos) {
-    global $mirclog, $startoffsetbytes;
-    if(!file_exists($mirclog)) {
-        die("Error: Mirclog file does not exists");
+function _parserMessagesMirc($log) {
+
+    preg_match_all('/^\[([^\]]*)] (.*)$/mU', $log, $match, PREG_PATTERN_ORDER);
+
+    $match = array_slice($match, 1);
+
+    $times =& $match[0];
+
+    array_walk($times,'formatMircTime');
+
+    $results = array();
+
+    foreach($match[1] as $key => $val) {
+
+        // Is action?
+        if(preg_match('/^\*\*\* (.*) (.*)$/U', $val, $tulitikut)) {
+            $nick =& $tulitikut[1];
+            $act  =& $tulitikut[2];
+
+            if(preg_match('/^\(([^\)]*)\) has joined/',$act, $whom)) {
+                $action = "JOIN";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^has left .* \(([^\)]*)\)$/U',$act, $whom)) {
+                // Crappy mirc. Part, left and quit are all logged as left.
+                $action = "QUIT";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^is now known as (.*)$/U',$act, $whom)) {
+                $action = "NICK";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^sets mode: (.*)$/U',$act, $whom)) {
+                $action = "MODE";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^was kicked by .* \(([^\)]*)\)$/U',$act, $whom)) {
+                $action = "KICK";
+                $msg    = $whom[1];
+            } else {
+                continue;
+            }
+
+        } elseif (preg_match('/^<([^>]*)> (.*)$/U', $val, $tulitikut)) {
+            $action = "PRIVMSG";
+            $nick   = $tulitikut[1];
+            $msg    = $tulitikut[2];
+        } else {
+            echo "Tuntematon rivi: $val\n";
+            continue;
+        }
+        $results[] = array(
+            'time'     => $times[$key],
+            'action'   => $action,
+            'nick'     => $nick,
+            'msg'      => $msg
+        );
+        //$results[count($results)-1]['raw'] = $val;
+    }
+    return $results;
+}
+
+
+function _parserMessagesEgg($log) {
+
+    preg_match_all('/^\[([^\]]*)] (.*)$/mU', $log, $match, PREG_PATTERN_ORDER);
+
+    $match = array_slice($match, 1);
+
+    $times =& $match[0];
+
+    array_walk($times,'formatMircTime');
+
+    $results = array();
+
+    foreach($match[1] as $key => $val) {
+
+        // Is action?
+        if (preg_match('/^<([^>]*)> (.*)$/U', $val, $tulitikut)) {
+            $action = "PRIVMSG";
+            $nick   = $tulitikut[1];
+            $msg    = $tulitikut[2];
+        } elseif (preg_match('%(.*) (.*)$%U', $val, $tulitikut)) {
+            $nick =& $tulitikut[1];
+            $act  =& $tulitikut[2];
+
+
+            if(preg_match('/^\(([^\)]*)\) joined .*$/U',$act, $whom)) {
+                $action = "JOIN";
+                $msg    = $whom[1];
+            } elseif (preg_match('/^\([^\)]*\) left irc: (.*)$/U',$act, $reason)) {
+                $action = "QUIT";
+                $msg    = $reason[1];
+            } elseif (preg_match('/^\([^\)]*\) left .*\(([^\)]*)\)/U',$act, $reason)) {
+                $action = "PART";
+                $msg    = $reason[1];
+            } elseif (preg_match('/^\([^\)]*\) left .*$/U',$act, $reason)) {
+                // Without reason
+                $action = "PART";
+                $msg    = "";
+            } elseif (preg_match('/^Nick change: (.*) -> (.*)$/U',$val, $whom)) {
+                $action = "NICK";
+                $nick   = $whom[1];
+                $msg    = $whom[2];
+            } elseif (preg_match('/^[^:]*: mode change \'([^\']*)\' by ([^!]*)!.*/U',$val, $mode)) {
+                $action = "MODE";
+                $msg    = $mode[1];
+                $nick   = $mode[2];
+            } elseif (preg_match('/^kicked from .* by [^:]*: (.*)$/U',$act, $reason)) {
+                $action = "KICK";
+                $msg    = $reason[1];
+            } else {
+                //die(__LINE__.$val);
+                continue;
+            }
+
+        } else {
+            //die(__LINE__.$val);
+            continue;
+
+        }
+        $results[] = array(
+            'time'     => $times[$key],
+            'action'   => $action,
+            'nick'     => $nick,
+            'msg'      => $msg
+        );
+        //$results[count($results)-1]['raw'] = $val;
+    }
+    return $results;
+}
+
+
+function getMessagesLogfile(&$pos,$channe=null) {
+    global $logfile, $logfileformat, $startoffsetbytes;
+    if(!file_exists($logfile)) {
+        die("Error: logfile '{$logfile}' does not exists");
     }
 
-    if(!$fp = fopen($mirclog, "r")) {
-        die("Error: Error opening file handler");
+    if(!$fp = fopen($logfile, "r")) {
+        die("Error: Error opening logfile '{$logfile}' handler");
     }
-    $totalsize = filesize($mirclog);
+    $totalsize = filesize($logfile);
 
     // Move pointer
     if($pos == null) {
@@ -309,56 +455,20 @@ function getMessagesMirc(&$pos) {
     $pos = ftell($fp);
     fclose($fp);
 
-    preg_match_all('%^\[([^\]]*)] (.*)$%mU', $log, $match, PREG_PATTERN_ORDER);
-
-    $match = array_slice($match, 1);
-
-    $times =& $match[0];
-
-    array_walk($times,'formatMircTime');
-
-    $results = array();
-
-    foreach($match[1] as $key => $val) {
-
-        // Is action?
-        if(preg_match('%^\*\*\* (.*) (.*)$%U', $val, $tulitikut)) {
-            $nick =& $tulitikut[1];
-            $act  =& $tulitikut[2];
-
-            if(preg_match('%^\(([^\)]*)\) has joined%',$act, $whom)) {
-                $action = "JOIN";
-                $msg    = $whom[1];
-            } elseif(preg_match('%^has left .* \(([^\)]*)\)$%U',$act, $whom)) {
-                // Crappy mirc. Part, left and quit are all logged as left.
-                $action = "QUIT";
-                $msg    = $whom[1];
-            } elseif(preg_match('%^is now known as (.*)$%U',$act, $whom)) {
-                $action = "NICK";
-                $msg    = $whom[1];
-            } elseif(preg_match('%^sets mode: (.*)$%U',$act, $whom)) {
-                $action = "MODE";
-                $msg    = $whom[1];
-            } else {
-                continue;
-            }
-
-        } elseif (preg_match('%^<([^>]*)> (.*)$%U', $val, $tulitikut)) {
-            $action = "PRIVMSG";
-            $nick   = $tulitikut[1];
-            $msg    = $tulitikut[2];
-        } else {
-            echo "Tuntematon rivi: $val\n";
-            continue;
-        }
-        $results[] = array(
-            'time'     => $times[$key],
-            'action'   => $action,
-            'nick'     => $nick,
-            'msg'      => $msg
-        );
-        //$results[count($results)-1]['raw'] = $val;
+    switch(strtolower($logfileformat)) {
+        case "mirc" :
+            $results = _parserMessagesMirc($log);
+            break;
+        case "egg" :
+            $results = _parserMessagesEgg($log);
+            break;
+        case "irssi" :
+            $results = _parserMessagesIrssi($log);
+            break;
+        default :
+            die("Unknown logtype {$logfileformat}");
     }
+
     return $results;
 
 }
@@ -372,8 +482,8 @@ function getMessages($channel="#rautakuu",$time=null) {
         case "DB" :
             $results = getMessagesDB($time,$channel);
             break;
-        case "mirc" :
-            $results = getMessagesMirc($time,$channel);
+        case "logfile" :
+            $results = getMessagesLogfile($time,$channel);
             break;
         default :
             die("No usable driver");
@@ -426,13 +536,15 @@ if(isset($_GET['time'])) {
     // It really does not matter if updates aren't instant.
     // Use sleep so if server is under load, frequent updates
     // won't trash it totally.
-    $load = loadavg();
-    $loadprc = ($load/$loadavg);
-    if($loadprc > 0.80) {
-        // calculate how log to delay.
-        $delay = ($loadprc-0.8)*5*$delaytime;
-        if($delay > $maxdelay) $delay = $maxdelay;
-        sleep($delay);
+    if($loadavg != false) {
+        $load = loadavg();
+        $loadprc = ($load/$loadavg);
+        if($loadprc > 0.80) {
+            // calculate how log to delay.
+            $delay = ($loadprc-0.8)*5*$delaytime;
+            if($delay > $maxdelay) $delay = $maxdelay;
+            sleep($delay);
+        }
     }
 
     die(getMessages($_GET['channel'], $_GET['time']));
@@ -599,7 +711,7 @@ function buildLayout() {
         var msgTD=document.createElement("TD");
         switch (xmlResult[2][f]) {
             case "NICK" :
-                setText(msgTD, "is now known as "+xmlResult[4][f]);
+                setText(msgTD, "is now known as <font color=\""+colorNick(xmlResult[4][f])+"\">"+xmlResult[4][f]+"</font>");
                 break;
             case "PART" :
                 setText(msgTD, "has left ["+xmlResult[4][f]+"]");
@@ -610,8 +722,11 @@ function buildLayout() {
             case "JOIN" :
                 setText(msgTD, "has joined");
                 break;
+            case "KICK" :
+                setText(msgTD, "was kicked ["+xmlResult[4][f]+"]");
+                break;
             case "MODE" :
-                setText(msgTD, "mode ["+xmlResult[4][f]+"] by "+xmlResult[3][f]);
+                setText(msgTD, "mode ["+xmlResult[4][f]+"] by <font color=\""+colorNick(xmlResult[3][f])+"\">"+xmlResult[3][f]+"</font>");
                 break;
             case "TOPIC" :
                 setText(msgTD, "changed the topic to "+xmlResult[4][f]);

@@ -19,7 +19,7 @@ $maxdelay = 10;
 //
 
 // logfile
-$logfile = "/home/teemu/.eggdrop/RapedCunt/logs/rautakuu.log";
+$logfile = "/home/isoteemu/irclogs/QuakeNET/#rautakuu.log";
 
 // Starting offset in bytes (how many bytes are readed from end of file?)
 $startoffsetbytes = 2048;
@@ -28,8 +28,7 @@ $startoffsetbytes = 2048;
 // * mirc - For those who use m-IRC (or only compatible logfile)
 // * irssi - For default irssi logfiles
 // * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
-
-$logfileformat = "egg";
+$logfileformat = "irssi";
 
 //
 // DB storage
@@ -335,7 +334,6 @@ function _parserMessagesMirc($log) {
             $nick   = $tulitikut[1];
             $msg    = $tulitikut[2];
         } else {
-            echo "Tuntematon rivi: $val\n";
             continue;
         }
         $results[] = array(
@@ -349,6 +347,65 @@ function _parserMessagesMirc($log) {
     return $results;
 }
 
+function _parserMessagesIrssi($log) {
+
+    preg_match_all('/^([\d:]*) (.*)$/mU', $log, $match, PREG_PATTERN_ORDER);
+
+    $match = array_slice($match, 1);
+
+    $times =& $match[0];
+
+    array_walk($times,'formatMircTime');
+
+    $results = array();
+
+    foreach($match[1] as $key => $val) {
+
+        // Is action?
+        if(preg_match('/^-!- (.*) (.*)$/U', $val, $tulitikut)) {
+            $nick =& $tulitikut[1];
+            $act  =& $tulitikut[2];
+
+            if(preg_match('/^\[([^\]]*)\] has joined/U',$act, $whom)) {
+                $action = "JOIN";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^\[[^\]]*\] has left .* \[([^\]]*)\]$/U',$act, $whom)) {
+                $action = "PART";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^\[[^\]]*\] has quit \[([^\]]*)\]$/U',$act, $whom)) {
+                $action = "QUIT";
+                $msg    = $whom[1];
+            } elseif(preg_match('/^is now known as (.*)$/U',$act, $whom)) {
+                $action = "NICK";
+                $msg    = $whom[1];
+            } elseif(preg_match('/mode\/.* \[([^\]]*)\] by (.*)$/U',$val, $whom)) {
+                $action = "MODE";
+                $msg    = $whom[1];
+                $nick   = $whom[2];
+            } elseif(preg_match('/^was kicked from .* \[([^\]]*)\]/U',$act, $whom)) {
+                $action = "KICK";
+                $msg    = $whom[1];
+            } else {
+                continue;
+            }
+
+        } elseif (preg_match('/^<([^>]*)> (.*)$/U', $val, $tulitikut)) {
+            $action = "PRIVMSG";
+            // First character in nicks in irssi logs is mode character
+            $nick   = substr($tulitikut[1],1);
+            $msg    = $tulitikut[2];
+        } else {
+            continue;
+        }
+        $results[] = array(
+            'time'     => $times[$key],
+            'action'   => $action,
+            'nick'     => $nick,
+            'msg'      => $msg
+        );
+    }
+    return $results;
+}
 
 function _parserMessagesEgg($log) {
 
@@ -414,7 +471,6 @@ function _parserMessagesEgg($log) {
             'nick'     => $nick,
             'msg'      => $msg
         );
-        //$results[count($results)-1]['raw'] = $val;
     }
     return $results;
 }

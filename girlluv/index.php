@@ -352,7 +352,7 @@ foreach ( $kuvat as $key => $kuva ) {
         $jsWidths   .= ", ";
         $jsHeights  .= ", ";
     }
-    $jsarray    .= '"'.urlencode($kuva).'"';
+    $jsarray    .= '"'.rawurlencode($kuva).'"';
     $jsWidths   .= $w;
     $jsHeights  .= $h;
 

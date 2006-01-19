@@ -1,0 +1,93 @@
+#!/bin/sh
+
+function getImage() {
+    PIC=$(kdialog --getopenfilename $PWD "image/png image/jpeg image/gif")
+    if [ $? != 0 ]; then
+        return $?
+    fi
+    echo $PIC
+    return 0
+}
+
+
+##
+## Get folder icon
+##
+if [ -f "${HOME}/.kde/share/config/kdeglobals" ]; then
+    ICONTHEME=$(grep "Theme" "${HOME}/.kde/share/config/kdeglobals" | sed 's/^Theme=\(.*\)$/\1/')
+    if [ -e "${HOME}/.kde/share/icons/${ICONTHEME}/" ]; then
+        if [ -f "${HOME}/.kde/share/icons/${ICONTHEME}/128x128/filesystems/folder.png" ]; then
+            FOLDERICON="${HOME}/.kde/share/icons/${ICONTHEME}/128x128/filesystems/folder.png"
+        fi
+    else
+        echo "Ei kuvake $ICONTHEME hakemistoa"
+    fi
+fi
+
+if [ -z "$FOLDERICON" ]; then
+    if [ -f `kde-config --prefix`/share/config/kdeglobals ]; then
+        ICONTHEME=$(grep "Theme" `kde-config --prefix`/share/config/kdeglobals | sed 's/^Theme=\(.*\)$/\1/')
+    else
+        ICONTHEME="`kde-config --prefix`/share/icons/default.kde/"
+    fi
+
+    if [ -e "${ICONTHEME}/" ]; then
+        if [ -f "${ICONTHEME}/128x128/filesystems/folder.png" ]; then
+            FOLDERICON="${ICONTHEME}/128x128/filesystems/folder.png"
+        fi
+    else
+        kdialog --error "Ei hokastu kuvake hakemistoa"
+        exit 1
+    fi
+fi
+
+
+##
+## Get path and image
+##
+if [ -z "${@}" ]; then
+    IMG=$(getImage)
+    DIR=$PWD
+elif [ -f "${@}" ]; then
+    IMG=${@}
+    DIR=$PWD
+elif [ -d "${@}" ]; then
+    IMG=$(getImage)
+    DIR=${@}
+else
+    IMG=$(getImage)
+    DIR=$PWD
+fi
+
+if [ -z "$IMG" ]; then
+    exit
+fi
+
+if [ ! -w "$DIR" ]; then
+    kdialog --error "Hakemisto $DIR ei ole kirjoitettavissa"
+    exit 1
+fi
+
+TMPIMG=$(mktemp)
+CONV=$(convert -scale 96x96 -border 2 "$IMG" png32:"$TMPIMG" 2>&1)
+if [ $? != 0 ]; then
+    kdialog --error "Ei voitu convertoina thumbia:\n$CONV"
+    exit 1
+fi
+
+CONV=$(convert -gravity SouthWest -depth 8 -composite "$FOLDERICON" png:"$TMPIMG" png:"$TMPIMG" 2>&1)
+if [ $? != 0 ]; then
+    kdialog --error "Ei voitu yhditää kuvia:\n$CONV"
+    exit 1
+fi
+
+if [ ! -f "${DIR}/.directory" ]; then
+    touch "${DIR}/.directory"
+fi
+
+cp -f "$TMPIMG" "${DIR}/.foldericon.png"
+
+echo "[Desktop Entry]"          >> "${DIR}/.directory"
+echo "Icon=./.foldericon.png"   >> "${DIR}/.directory"
+
+rm "$TMPIMG"

@@ -48,6 +48,7 @@ function valitsePeli {
     PELIT[19]="domain2049"
     PELIT[20]="piddly"
     PELIT[21]="quake4"
+    PELIT[22]="glxgears"
 
     NIMET[0]="Unreal Tournament 2004"
     NIMET[1]="Unreal Tournament 2003"
@@ -71,6 +72,7 @@ function valitsePeli {
     NIMET[19]="Domain 2049 (UT)"
     NIMET[20]="Piddly's Chance (UT)"
     NIMET[21]="Quake 4"
+    NIMET[22]="GLX Gears"
 
     SELECTIONS=""
     index=0
@@ -253,12 +255,16 @@ function init {
     # Jos nvidianin n�ttis, aseta antialising ja anisotropic textuurin filter�nti
     if [ -d "/proc/driver/nvidia" ]; then
         # Laita simppeli antialising päälle (2x Quincunx Multisampling)
-        initDo "Asetetaan antialising"
-        export __GL_FSAA_MODE=2 && initDoSuccess
+        #initDo "Asetetaan antialising"
+        #export __GL_FSAA_MODE=2 && initDoSuccess
 
-        # 4x anisotropic filtering
-        #initDo "Asetataan anisotropic filter�nti"
-        #export __GL_LOG_MAX_ANISO=2 && initDoSuccess
+        # 2x anisotropic filtering
+        initDo "Asetataan anisotropic filteröinti"
+        export __GL_LOG_MAX_ANISO=1 && initDoSuccess
+
+        # Disabloidaan vsync
+        initDo "Disabloidaan vsync"
+        export __GL_SYNC_TO_VBLANK=0 && initDoSuccess
 
         if [ $(which nvidia-settings 2>/dev/null) ]; then
             initDo "nvidia coolbits (kellotus)"
@@ -278,6 +284,13 @@ function init {
 
                 echo -n " x$FREQMULTIPLIER=$NFREQTWO,$NFREQTHREE"
                 nvidia-settings -a GPU3DClockFreqs=$NFREQTWO,$NFREQTHREE > /dev/null 2>&1 && initDoSuccess
+
+                GLQUALITY=$(nvidia-settings -q OpenGLImageSettings | head -n1 | sed 's/^.*: \([0-9]*\)\./\1/')
+                if [ $GLQUALITY -lt 2 ]; then
+                    initDo "Asetetaan performanssi laadun edelle" "glquality"
+                    nvidia-settings -a OpenGLImageSettings=2 > /dev/null && initDoSuccess
+                fi
+
             fi
 
             #initDo "Textuurien terävöitys"
@@ -325,6 +338,7 @@ function initEnd {
             echo -n " ($FREQTWO,$FREQTHREE)"
             nvidia-settings -a GPU3DClockFreqs=$FREQTWO,$FREQTHREE > /dev/null
         fi
+        if [ $PROG = "kcompmgr" ]; then nvidia-settings -a OpenGLImageSettings=$GLQUALITY > /dev/null; fi
         if [ $PROG = "gamma" ]; then
              xgamma -rgamma $GAMMAR -ggamma $GAMMAG -bgamma $GAMMAB > /dev/null 2>&1
         fi

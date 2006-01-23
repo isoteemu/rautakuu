@@ -338,7 +338,7 @@ function initEnd {
             echo -n " ($FREQTWO,$FREQTHREE)"
             nvidia-settings -a GPU3DClockFreqs=$FREQTWO,$FREQTHREE > /dev/null
         fi
-        if [ $PROG = "kcompmgr" ]; then nvidia-settings -a OpenGLImageSettings=$GLQUALITY > /dev/null; fi
+        if [ $PROG = "glquality" ]; then nvidia-settings -a OpenGLImageSettings=$GLQUALITY > /dev/null; fi
         if [ $PROG = "gamma" ]; then
              xgamma -rgamma $GAMMAR -ggamma $GAMMAG -bgamma $GAMMAB > /dev/null 2>&1
         fi

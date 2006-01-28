@@ -613,7 +613,7 @@ if(isset($_GET['time'])) {
 <!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
 <html>
     <head>
-        <title>Rautakuu [dot] org :: <?= htmlspecialchars($_GET['channel']);?> IRC viestit</title>
+        <title><?= htmlspecialchars($_GET['channel']);?> IRC viestit</title>
         <meta http-equiv="Content-Language" content="fi">
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>

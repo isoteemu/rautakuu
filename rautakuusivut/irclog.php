@@ -609,7 +609,7 @@ if(isset($_GET['time'])) {
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">
 <!-- Irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.    -->
-<!-- Irclog.php: http://svn.rautakuu.org/repos/homebrevcomputing/rautakuusivut/irclog.php -->
+<!-- Irclog.php: http://svn.rautakuu.org/trac/homebrevcomputing/wiki/IrcScroller          -->
 <!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
 <html>
     <head>

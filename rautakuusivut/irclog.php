@@ -1,4 +1,5 @@
 <?php
+// kate: space-indent true; encoding utf-8; indent-width 4;
 
 // Storage driver. currently supported:
 // * DB - uses pear DB layer

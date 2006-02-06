@@ -1,0 +1,34 @@
+/* kate: space-indent false; encoding utf-8; indent-width 4; */
+
+#container {
+    background-image: url('../img/nausicaa/nausicaa_05.jpg');
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-position: left top;
+}
+
+.searchbox {
+    background-image: url('../img/nausicaa/nausicaa_05hi.jpg');
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-position: left top;
+}
+
+#searchfield input[type=text] {
+    background-image: url('../img/nausicaa/nausicaa_05.jpg');
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-position: left top;
+}
+
+#about a:hover {
+    background-image: url('../img/nausicaa/nausicaa_05hi.jpg');
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-position: left top;
+}
+
+#about a:hover {
+    color:#103C93;
+    text-shadow: rgba(255,255,255,.4) 0px 1px 2px; /* Safari/khtml only, but cool */
+}

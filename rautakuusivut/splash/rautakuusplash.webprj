@@ -1,0 +1,16 @@
+<!DOCTYPE webproject>
+<webproject>
+  <project type="Local" name="Rautakuu Splash" encoding="utf8" >
+    <upload/>
+    <author>Teemu A</author>
+    <email>teemu@rautakuu.org</email>
+    <defaultDTD>-//W3C//DTD XHTML 1.0 Transitional//EN</defaultDTD>
+    <item url="" uploadstatus="1" />
+    <item url="index.php" uploadstatus="1" />
+    <annotations/>
+    <item url="css/page.css" uploadstatus="1" />
+    <item url="css/" uploadstatus="1" />
+    <templates>templates/</templates>
+    <toolbars>toolbars/</toolbars>
+  </project>
+</webproject>

@@ -1,0 +1,297 @@
+/* kate: space-indent true; encoding utf-8; indent-width 4; */
+
+* {
+    font-size: 12px;
+    font-family: "Trebuchet MS", Helvetica, Arial, sans-serif;
+  }
+
+
+body {
+    background-color:#2e5fc5;
+    text-align: center;
+    min-width: 520px;
+    padding:0px;
+    margin:0px;
+  }
+
+a {
+    text-decoration:none;
+    text-shadow: rgba(0,0,0,.4) 0px 1px 2px; /* Safari/khtml only, but cool */
+}
+
+#header {
+    text-align:right;
+
+    padding-top:4px;
+    padding-bottom:4px;
+    padding-left:4px;
+    background-color:#103C93;
+    display: block;
+  }
+
+#header, #header * {
+    color:#ffffff;
+    font-size:12px;
+    text-shadow: rgba(0,0,0,.4) 0px 2px 5px; /* Safari/khtml only, but cool */
+}
+
+#header div {
+    display:inline;
+}
+
+#title {
+    float:left;
+    text-align:left;
+}
+
+#container {
+
+    background-color:#ffffff;
+    overflow: hidden;
+
+	margin : auto;
+	padding: 0px;
+
+    padding-top:25px;
+    padding-bottom:25px;
+  }
+
+#main {
+    position : relative;
+    width: 520px;
+}
+
+.searchbox {
+    background-color : #EFEFF9;
+    width : 520px;
+
+    padding-left:20px;
+    padding-right:20px;
+    vertical-align:top;
+
+    -moz-border-radius: 0.6em;  /* Mozilla */
+    border-radius: 0.6em;       /* CSS 3 */
+  }
+
+#searchfield {
+    padding-top:20px;
+    padding-bottom:20px;
+}
+
+#searchfield input[type=text] {
+
+    color:#D8D8F9;
+    width:100%;
+    border-bottom-color : #F5F5F9;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #E9E9F9;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #F5F5F9;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #E9E9F9;
+    border-top-style : solid;
+    border-top-width : 1px;
+
+    -moz-border-radius: 0.2em;  /* Mozilla */
+    border-radius: 0.2em;       /* CSS 3 */
+}
+
+#imageTitle {
+    font-weight:bolder;
+    font-size:16px;
+    height:18px;
+}
+
+#footer {
+    color:#ffffff;
+    background-color:#103C93;
+    width:100%;
+    height:100%;
+    padding-top:1px;
+  }
+
+
+#about {
+    background-color : #1244A7;
+    border-bottom-color : #3c7aff;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #3c7aff;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #3c7aff;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #3c7aff;
+    border-top-style : solid;
+    border-top-width : 1px;
+    width : 520px;
+    padding:0px;
+    margin-bottom:25px;
+    margin-top:25px;
+    vertical-align:top;
+
+    -moz-border-radius: 0.4em;  /* Mozilla */
+    border-radius: 0.4em;       /* CSS 3 */
+    text-align:left;
+  }
+
+
+#about td {
+    padding : 5px;
+  }
+
+
+#about a {
+    padding:3px;
+    color:#ffffff;
+    background-color : inherit;
+    display:block;
+    text-decoration:none;
+
+    border-bottom-color : transparent;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : transparent;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : transparent;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : transparent;
+    border-top-style : solid;
+    border-top-width : 1px;
+
+    overflow:hidden;
+  }
+
+
+#about a:hover {
+    padding:3px;
+    background-color : #2e5fc5;
+    text-decoration:none;
+    border-bottom-color : #3C7AFF;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #3C7AFF;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #3C7AFF;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #3C7AFF;
+    border-top-style : solid;
+    border-top-width : 1px;
+
+    overflow:hidden;
+
+    -moz-border-radius: 0.2em;  /* Mozilla */
+    border-radius: 0.2em;       /* CSS 3 */
+
+  }
+
+
+#about .column {
+    width:33.3%;
+  }
+
+
+#about-left {
+    border-right-color : #103c93;
+    border-right-style : solid;
+    border-right-width : 1px;
+  }
+
+#about-center {
+    border-right-color : #103c93;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-left-color : #1244A7;
+    border-left-style : solid;
+    border-left-width : 1px;
+}
+
+#about-right {
+    border-left-color : #1244A7;
+    border-left-style : solid;
+    border-left-width : 1px;
+  }
+
+
+#copyright {
+    clear:both;
+    background: #2e5fc5 url('../img/bg-grad.png') repeat-x center top;
+    color : #ffffff;
+    width : 100%;
+    height: 110px;
+    text-align : center;
+    padding-top:40px;
+  }
+
+#copyright a {
+    color:#ffffff;
+    text-decoration:none;
+    vertical-align:middle;
+  }
+
+#copyright a:hover {
+    text-decoration:underline;
+  }
+
+#copyright #b {
+    position:absolute;
+    bottom:0px;
+}
+
+/**
+ * common Menu shit crap
+ * http://dean.edwards.name/IE7/compatibility/Pure%20CSS%20Menus.html
+ */
+
+ul.menu, ul.menu * {
+    text-align:left;
+    padding: 0;
+    margin: 0;
+    display:inline;
+}
+
+ul.menu li {
+    list-style-type: none;
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+ul.menu li a {
+    display:block;
+}
+
+ul.menu ul {
+    width: 100%;
+    display: none;
+}
+
+ul.menu li:hover > ul {
+    display: block;
+    position: absolute;
+    left: -3px;
+}
+
+/**
+ * Theme settings
+ */
+
+#ThemeMenu {
+   display: none;
+}
+
+#ThemeSettings:hover > #ThemeMenu {
+    display:inherit;
+}
+
+#ThemeMenu ul.menu, #ThemeMenu ul.menu * {
+    background-color:#103C93;
+}

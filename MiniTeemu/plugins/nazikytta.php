@@ -1,6 +1,6 @@
 <?php
 /**
- * nazikytta.php -- tarkastaa onko käyttäjä away nickin vaihdon yhteydessä.
+ * nazikytta.php -- tarkastaa onko kÃ¤yttÃ¤jÃ¤ away nickin vaihdon yhteydessÃ¤.
  */
 if( $init==true ) {
     $plugin->addRule('code', "NICK");
@@ -9,7 +9,7 @@ if( $init==true ) {
 $exp = time()+10;
 $toban = substr($plugin->line->from, strpos($plugin->line->from, "~")+1);
 // Luodaan uusi plugin.
-// TODO: vitun ääliömäistä. keksi jotain fiksumpaa
+// TODO: vitun Ã¤Ã¤liÃ¶mÃ¤istÃ¤. keksi jotain fiksumpaa
 
 $code = '
 if( $init==true ) {
@@ -24,15 +24,15 @@ if( $init==true ) {
 irc::trace("Away scripti havaittu '.$plugin->line->msg.'");
 //$plugin->irc->send("MODE '.$plugin->line->channel.' +b *!*'.$toban.'");
 
-$plugin->irc->send("KICK '.$plugin->line->channel.' '.$plugin->line->msg.' :http://rautakuu.org/drupal/RautakuuIrc #4");
+$plugin->irc->send("KICK #rautakuu '.$plugin->line->msg.' :http://rautakuu.org/drupal/RautakuuIrc #4");
 
 $plugin->expire();
 ';
 
-// Rekisteröidään plugini uutena
-$plugin->irc->irc_data->triggers->newPlugin($code);
+// RekisterÃ¶idÃ¤Ã¤n plugini uutena
+$plugin->irc->irc_data->triggers->newPlugin($code, "whois_".$plugin->line->msg);
 
-// Lähetetään whois kysely
+// LÃ¤hetetÃ¤Ã¤n whois kysely
 $plugin->irc->send("WHOIS {$plugin->line->msg}");
 
 ?>

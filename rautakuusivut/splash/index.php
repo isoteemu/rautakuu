@@ -59,19 +59,23 @@ function aboutLink(&$links) {
 header("Content-Type: text/html; charset=UTF-8");
 
 // Haetaan käyttäjät joilla on nettisivutilaa tietokannasta
-if($cyrus_hlds) {
-  $cyrus = DB::Connect($cyrus_hlds);
+include_once("conf.inc.php");
+
+if($cyrus_dns) {
+  include_once("DB.php");
+  $cyrus = DB::Connect($cyrus_dns);
   if(DB::IsError($cyrus)) {
     break;
   }
   $res = $cyrus->query("SELECT `username`, `home` FROM `pureftpd` WHERE `enabled` = 'y' AND `public` = '1' AND `home` REGEXP '/var/www/sites/([^/]+)$'");
-  while(list($nick, $home) =& $res->fetchRow()) {
+  while($row =& $res->fetchRow()) {
     $blinks[] = array(
-      'title' => "Käyttäjä: $nick",
-      'url'   => "http://".rawurlencode(basename($home)).".sivut.rautakuu.org/",
+      'title' => "Käyttäjä: ".$row[0],
+      'url'   => "http://".rawurlencode(basename($row[1])).".sivut.rautakuu.org/",
       'class' => "external",
     );
   }
+  $cyrus->disconnect();
 }
 
 

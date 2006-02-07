@@ -9,6 +9,8 @@ if(function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
 ini_set("default_charset", "uft-8");
 ini_set("mbstring.encoding_translation", "on");
 
+include("log.class.inc.php");
+
 /**
  * Ajastin function.
  */
@@ -164,6 +166,7 @@ class irc_data_line {
     var $msg;
 
     var $ping = false;
+    var $error = false;
 
     var $timestamp;
 
@@ -171,7 +174,7 @@ class irc_data_line {
 
         $this->timestamp = timer();
 
-        irc::trace("Saatu dataa:\n<< \"{$line}\"");
+        irc::trace("Saatu dataa:\n<< {$line}");
         if( substr($line,0,6) != "PING :" && $this->valid($line) ) {
             $this->data = substr($line, 1);
         } else {
@@ -188,6 +191,7 @@ class irc_data_line {
             $this->valid = true;
         } elseif( substr( $line, 0, 7 ) == "ERROR :" ) {
             $this->valid = true;
+            $this->error = true;
         } elseif( substr( $line, 0, 1 ) == ":" ) {
             $this->valid = true;
         } else {
@@ -255,6 +259,9 @@ class irc {
 
     // Kuinka monta kertaa yritetään yhdistää ennen kuin annetaan periksi.
     var $tries      = 5;
+
+    // Shall we reconnect on ERROR
+    var $reconnect  = true;
 
     // How long to try connect before timeout? in secs
     var $_timeout   = 10;
@@ -329,7 +336,7 @@ class irc {
             $this->trace("Viestin lähetys epäonnistui \"{$msg}\"");
             return false;
         }
-        $this->trace("Viesti lähetetty\n>> \"{$msg}\"");
+        $this->trace("Viesti lähetetty\n>> {$msg}");
         return true;
     }
 
@@ -345,6 +352,162 @@ class irc {
      */
     function connect() {
         // Yritetään loopata yhteyttä
+        if(!$this->_connect()) return false;
+        if(!$this->login($usermode=0)) return false;
+        return true;
+    }
+
+    /**
+     * Kirjaudu palvelimelle
+     */
+    function login($usermode=0) {
+        if(!$this->_state()) return false;
+        $this->send("NICK ".$this->botNick);
+        $this->send("USER ".$this->botUName." ".$usermode." * :".$this->botRName);
+        $this->loggedin = true;
+    }
+
+    /**
+     * Liity kanavalle
+     */
+    function join($channel) {
+        if(!$this->loggedin) $this->login();
+        $this->send("JOIN $channel");
+    }
+
+    /**
+     * Kuuntelee kanavaa.
+     */
+    function listen() {
+
+        if(!isset($this->irc_data)) {
+            $this->irc_data =& new irc_data(&$this);
+        }
+
+        if(!$this->_state()) {
+            $this->trace("Socket not usable; Can't listen");
+            return false;
+        }
+
+        // Niin kauan kuin me olemme yhteydessä, kuuntele.
+        while( $this->_state() ) {
+
+            // Annetaan 2s aikaa silmukan ajoon.
+            set_time_limit(1);
+
+            // Send stuff
+            $this->flushBuffer();
+
+            // Jos ei kirjauduttu, kirjaudu.
+            if($this->loggedin == false) {
+                $this->login();
+            }
+
+            $sock = array($this->_connection);
+            if(socket_select($sock, $sock, $sock, 0, $this->_delay*1000)) {
+
+                $rawdata = trim(socket_read($this->_connection, 10240));
+
+                // Littetään edellinen ylijäänyt data nykyiseen dataan
+                $rawdata = trim($this->irc_data->getLeftOvers().$rawdata);
+
+                if(!empty( $rawdata )) {
+                    // Liitetään data ja otetaan ylijäänyt data talteen
+                    $this->irc_data->append( $rawdata );
+
+                    /**
+                     * @todo Make this better
+                     */
+                    $lastline = $this->irc_data->getLastLine();
+                    if($lastline->error == true) {
+                        $this->trace("Got error line: ".$line->data);
+                        if($this->reconnect) {
+                            $this->reconnect();
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    }
+
+                    $this->irc_data->runTriggers();
+                }
+            } else {
+                $this->trace("Could not select socket: ".socket_strerror(socket_last_error()));
+                break;
+            }
+        }
+        $this->trace("Listen loop closed");
+    }
+
+    function part( $channel, $reason=NULL ) {
+        if( $reason !== NULL ) {
+            $reason = " :".$reason;
+        }
+        $this->send("PART $channel $reason");
+    }
+
+    function disconnect($msg="") {
+        $this->send("QUIT $msg");
+        sleep( $this->_delay*1000 );
+        socket_shutdown($this->_connection);
+        socket_close($this->_connection);
+    }
+
+    function reconnect($msg="") {
+        $this->disconnect();
+        $this->connect();
+    }
+
+    function pong($data) {
+        // Ei käytetä viesti queuea
+        $this->_send("PONG ".$data);
+    }
+
+    /**
+     * Lähettää perinteisen viestin.
+     * Voidaan kutsua staattisesti, jos $irc on on rekisteröity sivulla,
+     * ja kenelle viesti on osoitettu on asetettu.
+     * @param $msg lähetettävä viesti
+     * @param $to kenelle viesti lähetetään
+     */
+    function message($msg, $to) {
+
+        //irc::trace("Yritetään lähettää viestiä: ".$message);
+
+        global $irc;
+        if(is_a($this, "irc")) {
+            $message = "PRIVMSG ".$to." :".$msg;
+            $this->send($message);
+        } elseif( is_a($irc, "irc")) {
+            $message = "PRIVMSG ".$to." :".$msg;
+            $irc->send($message);
+        }
+    }
+
+    function trace($msg="") {
+        log::trace($msg);
+
+        if( function_exists( "debug_backtrace" )) {
+            $tstack = debug_backtrace();
+            if( $tstack[0]['function'] == "trace" ) $tstack = array_slice($tstack, 1);
+            $msg = $tstack[0]['class'].$tstack[0]['type'].$tstack[0]['function']."[".$tstack[0]['line']."]: ".$msg;
+        }
+        $msg = timer()." ".$msg;
+        /*
+        switch( $this->traceDrv ) {
+            case IRC_TRACE_SEND :
+                $this->message($msg);
+                break;
+            case IRC_TRACE_ECHO :
+            default :
+                echo $msg."\n";
+                break;
+        }
+        */
+        echo $msg."\n";
+    }
+
+    function _connect() {
         $i = 0;
         while( $i < $this->tries ) {
 
@@ -381,137 +544,24 @@ class irc {
     }
 
     /**
-     * Kirjaudu palvelimelle
-     */
-    function login($usermode=0) {
-        $this->send("NICK ".$this->botNick);
-        $this->send("USER ".$this->botUName." ".$usermode." * :".$this->botRName);
-        $this->loggedin = true;
-    }
-
-    /**
-     * Liity kanavalle
-     */
-    function join($channel=NULL) {
-        if( $channel !== NULL ) {
-            $this->channel = $channel;
-        }
-        $this->send("JOIN ".$this->channel);
-    }
-
-    /**
-     * Kuuntelee kanavaa.
-     */
-    function listen() {
-
-        if(!isset($this->irc_data)) {
-            $this->irc_data =& new irc_data(&$this);
-        }
-
-        // Niin kauan kuin me olemme yhteydessä, kuuntele.
-        while( $this->_state() ) {
-
-            // Annetaan 2s aikaa silmukan ajoon.
-            set_time_limit(2);
-
-            // Send stuff
-            $this->flushBuffer();
-
-            // Jos ei kirjauduttu, kirjaudu.
-            if($this->loggedin == false) {
-                $this->login();
-            }
-
-            $sread = array($this->_connection);
-            if(socket_select($sread, $w = null, $e = null, 0, $this->_delay*1000)) {
-
-                $rawdata = trim(socket_read($this->_connection, 10240));
-
-                // Littetään edellinen ylijäänyt data nykyiseen dataan
-                $rawdata = trim($this->irc_data->getLeftOvers().$rawdata);
-
-                if(!empty( $rawdata )) {
-                    // Liitetään data ja otetaan ylijäänyt data talteen
-                    $this->irc_data->append( $rawdata );
-
-                    $this->irc_data->runTriggers();
-                }
-            }
-        }
-        $this->trace("Listen loop closed");
-    }
-
-    function part( $channel, $reason=NULL ) {
-        if( $reason !== NULL ) {
-            $reason = " :".$reason;
-        }
-        $this->send("PART $channel $reason");
-    }
-
-    function disconnect($msg="") {
-        $this->send("QUIT $msg");
-        sleep( $this->_delay*1000 );
-        socket_shutdown($this->_connection);
-        socket_close($this->_connection);
-    }
-
-    function pong($data) {
-        // Ei käytetä viesti queuea
-        $this->_send("PONG ".$data);
-    }
-
-    /**
-     * Lähettää perinteisen viestin.
-     * Voidaan kutsua staattisesti, jos $irc on on rekisteröity sivulla,
-     * ja kenelle viesti on osoitettu on asetettu.
-     * @param $msg lähetettävä viesti
-     * @param $to kenelle viesti lähetetään
-     */
-    function message($msg, $to) {
-
-        //irc::trace("Yritetään lähettää viestiä: ".$message);
-
-        global $irc;
-        if(is_a($this, "irc")) {
-            $message = "PRIVMSG ".$to." :".$msg;
-            $this->send($message);
-        } elseif( is_a($irc, "irc")) {
-            $message = "PRIVMSG ".$to." :".$msg;
-            $irc->send($message);
-        }
-    }
-
-    function trace($msg="") {
-        if( function_exists( "debug_backtrace" )) {
-            $tstack = debug_backtrace();
-            if( $tstack[0]['function'] == "trace" ) $tstack = array_slice($tstack, 1);
-            $msg = $tstack[0]['class'].$tstack[0]['type'].$tstack[0]['function']."[".$tstack[0]['line']."]: ".$msg;
-        }
-        $msg = timer()." ".$msg;
-        /*
-        switch( $this->traceDrv ) {
-            case IRC_TRACE_SEND :
-                $this->message($msg);
-                break;
-            case IRC_TRACE_ECHO :
-            default :
-                echo $msg."\n";
-                break;
-        }
-        */
-        echo $msg."\n";
-    }
-
-    /**
      * Palauttaa yhteyden tilan.
      * @return bool true jos yhteys auki, false jos kiinni
      */
     function _state() {
-        if( is_resource( $this->_connection ) &&
-            get_resource_type( $this->_connection ) == "Socket" &&
-            !socket_last_error( $this->_connection ) ) return true;
-        $this->trace("Socket not in usable state");
-        return false;
+        if(! is_resource( $this->_connection )) {
+             $this->trace("Connection not resource");
+             return false;
+        } elseif( ($_type = get_resource_type( $this->_connection )) != "Socket" ) {
+             $this->trace("Connection type not socket: $_type");
+             return false;
+        } elseif ($_error = socket_last_error( $this->_connection )) {
+             $this->trace("Connection socket error: $_error ".socket_strerror($_error));
+             return false;
+        } elseif (false === socket_select($r = array($this->_connection), $w = array($this->_connection), $f = array($this->_connection), 0)) {
+            $this->trace("Socket select error: ".socket_strerror(socket_last_error()));
+            return false;
+        }
+        return true;
     }
 
     function _SigTerm() {
@@ -692,6 +742,13 @@ class irc_trigger_plugins {
                 $i++;
                 $name=$namebase.$i;
             }
+            if(function_exists("php_check_syntax")) {
+                $synerror = "";
+                if(!php_check_syntax($code, $synerror)) {
+                    irc::Trace("Syntax error in plugin: ".$name.":".$synerror);
+                    return false;
+                }
+            }
         }
         $this->plugins[$name] =& new irc_trigger_plugin($this->irc, $code);
         irc::trace("Uusi plugin {$name} luotu");
@@ -836,3 +893,19 @@ class irc_trigger_plugins {
     }
 }
 
+function writeDebugInfo() {
+    static $done;
+    if(isset($done)) return true;
+    $filename = dirname(__FILE__)."/debug.log";
+    echo "Writing debug info to $filename";
+    touch($filename);
+    $fd=fopen($filename, "w+");
+    fwrite($filename, print_r(log::dumbTrace(),1));
+    fclose($filename);
+    $done = true;
+    return true;
+}
+
+if(!register_shutdown_function("writeDebugInfo")) {
+    echo "Could not register shutdown function";
+}

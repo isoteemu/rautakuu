@@ -45,7 +45,7 @@ foreach($blinks as $key => $val) {
 }
 
 // jos ei ole teemaa valittu, kokeillan hokasta joku.
-if(empty($_COOKIE['stylë́'])) {
+if(empty($_COOKIE['style'])) {
   $theme = false;
   include_once("conf.inc.php");
   include_once("DB.php");
@@ -53,8 +53,11 @@ if(empty($_COOKIE['stylë́'])) {
   if(!$theme) {
     // Ensin katsotaan CS teema
     $hlds = DB::Connect($hlds_dns);
-    $res = $hlds->query("SELECT COUNT(*) FROM `hlstats_Link_Trace` WHERE `time` >  DATE_SUB(NOW(), INTERVAL 7 DAY) AND `whom` = '%'", $_SERVER['REMOTE_ADDR']);
-    if($res->fetchResult() > 0) {
+    if(DB::IsError($hlds)) {
+      break;
+    }
+    $res = $hlds->query("SELECT COUNT(*) FROM `hlstats_Link_Trace` WHERE `time` >  DATE_SUB(NOW(), INTERVAL 7 DAY) AND `whom` = '{$_SERVER['REMOTE_ADDR']}'");
+    if($res->fetchRow() > 0) {
       $theme = "Counter-Strike";
     }
     $res->free();
@@ -62,8 +65,11 @@ if(empty($_COOKIE['stylë́'])) {
   }
   if(!$theme) {
     $drupal = DB::Connect($drupal_dns);
-    $res = $hlds->query("SELECT COUNT(*) FROM `watchdog` WHERE `timestamp` >  UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY)) AND `hostname` = '%'", $_SERVER['REMOTE_ADDR']);
-    if($res->fetchResult() > 0) {
+    if(DB::IsError($drupal)) {
+      break;
+    }
+    $res = $hlds->query("SELECT COUNT(*) FROM `watchdog` WHERE `timestamp` >  UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY)) AND `hostname` = '{$_SERVER['REMOTE_ADDR']}'");
+    if($res->fetchRow() > 0) {
       $theme = "Nausicaä";
     }
     $res->free();

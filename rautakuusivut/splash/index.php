@@ -16,7 +16,7 @@ $blinks = array(
   'Mainosta Rautakuussa' => 'https://adwords.google.com/select/OnsiteSignupLandingPage?client=ca-pub-3452268181804196&amp;referringUrl=http://rautakuu.org/&amp;hl=fi&amp;gl=FI',
   'Käyttäjä: RSL' => 'http://rsl.sivut.rautakuu.org/',
   'Käyttäjä: Chevy' => 'http://chevy.sivut.rautakuu.org/',
-  't3h s0urc3' => 'http://svn.rautakuu.org/trac/homebrevcomputing/browser/rautakuusivut/splasḧ́',
+  't3h s0urc3' => 'http://svn.rautakuu.org/trac/homebrevcomputing/browser/rautakuusivut/splash',
 );
 
 /**
@@ -36,11 +36,47 @@ function lentavahollantilainen() {
   return $str;
 }
 
+header("Content-Type: text/html; charset=UTF-8");
+
 foreach($blinks as $key => $val) {
   if(rand(0,count($links)) == 0) {
     $links[$key] = $val;
   }
 }
+
+// jos ei ole teemaa valittu, kokeillan hokasta joku.
+if(empty($_COOKIE['stylë́'])) {
+  $theme = false;
+  include_once("conf.inc.php");
+  include_once("DB.php");
+
+  if(!$theme) {
+    // Ensin katsotaan CS teema
+    $hlds = DB::Connect($hlds_dns);
+    $res = $hlds->query("SELECT COUNT(*) FROM `hlstats_Link_Trace` WHERE `time` >  DATE_SUB(NOW(), INTERVAL 7 DAY) AND `whom` = '%'", $_SERVER['REMOTE_ADDR']);
+    if($res->fetchResult() > 0) {
+      $theme = "Counter-Strike";
+    }
+    $res->free();
+    $hlds->disconnect();
+  }
+  if(!$theme) {
+    $drupal = DB::Connect($drupal_dns);
+    $res = $hlds->query("SELECT COUNT(*) FROM `watchdog` WHERE `timestamp` >  UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY)) AND `hostname` = '%'", $_SERVER['REMOTE_ADDR']);
+    if($res->fetchResult() > 0) {
+      $theme = "Nausicaä";
+    }
+    $res->free();
+    $drupal->disconnect();
+  }
+  if($theme) {
+    $thmstr = '
+    <script>
+      setActiveStyleSheetEx("'.$theme.'");
+    </script>';
+  }
+}
+
 
 ?>
 
@@ -52,6 +88,7 @@ foreach($blinks as $key => $val) {
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="css/page.css" type="text/css" media="all" />
     <link rel="alternate stylesheet" href="css/nausicaa.css" type="text/css" title="Nausicaä" />
+    <link rel="alternate stylesheet" href="css/cs.css" type="text/css" title="Counter-Strike" />
     <script type="text/javascript" src="http://www.beyondunreal.com/images/styleswitcher.js"></script>
     <script type="text/javascript">
     k=document;v=Date;x=false;z=Array;af=Math.floor;ag=RegExp;b=new z(8);s=new z("null","rautakuu","horde","cs","tao","mantis","binocular");aa=new z(11);ab=10;t=0;u=0;n=0;o=new v();h=5;m=385;c=0;w=x;var title;var firstHoverOccurred=x;m=385;p=0;function d(ac){c=ac;o=new v();setTimeout("gidle()",20);}function e(ac){c=0;w=x;o=new v();setTimeout("gidle()",20);}function ae(){for(var j=1;j<b.length;j++){b[j]=35}title=k.getElementById('imageTitle');for(i=0;i<b.length;i++){aa[i]=new Image();aa[i].src="img/"+s[i+1]+".gif"}setTimeout("gidle()",20);}function gidle(){var l=0;for(var i=1;i<b.length;i++){var imagename="image"+i;var imageElem=k.getElementById(imagename);if(c!=i){if(b[i]>35){b[i]-=h;if(b[i]<=35){b[i]=35;imageElem.src="img/"+s[i]+".gif"}imageElem.width=b[i];imageElem.height=b[i];if(c==0){var g=af(255-255*(b[i]-35)/35);title.style.color="rgb("+g+","+g+","+g+")"}p=1}l+=b[i]}}if(c!=0&&b[c]<70){imagename="image"+c;imageElem=k.getElementById(imagename);if(w==x){w=true;if(c<4){var y=240-c*70;title.innerHTML=k.getElementById(imagename).alt+'<img src="img/spacer.gif" width="'+y+'" height="1">'}else{var y=(c-4)*70+35;title.innerHTML='<img src="img/spacer.gif" width="'+y+'" height="1">'+k.getElementById(imagename).alt}}b[c]+=h;p=1;if(b[c]>70){b[c]=70}l+=b[c];if(l<m){b[c]+=m-l;if(b[c]>70){b[c]=70}l=m}var g=af(255-255*(b[c]-35)/35);title.style.color="rgb("+g+","+g+","+g+")";imageElem.width=b[c];imageElem.height=b[c];k.getElementById(imagename).src="img/"+s[c]+".gif"}m=l;var ad=new v();ab=ad.getTime()-o.getTime();o=ad;t+=ab;u++;n=t/u;h=5;if(u>4){if(n>30){h=10}if(n>60){h=15}if(n>90){h=20}}if(p){setTimeout("gidle()",20);p=0}}
@@ -66,10 +103,11 @@ foreach($blinks as $key => $val) {
     }
 
     </script>
+  <?= $thmstr; ?>
   </head>
   <body onload="ae()">
   <div id="header">
-    <div id="title"><strong>Rautakuu [dot] org</strong> -- Vote for change, vote for judgement day</div>
+    <div id="title"><a href="http://rautakuu.org"><strong>Rautakuu [dot] org</strong> -- Vote for change, vote for judgement day</a></div>
     <div id="ThemeSettings">
       <span id="ThemeMenu">
         <ul class="menu">
@@ -77,6 +115,7 @@ foreach($blinks as $key => $val) {
             <ul>
               <li><a href="JavaScript:setActiveStyleSheetEx('Plain');"  onclick="setActiveStyleSheetEx('Plain');" id="DefThemeBtn" class="themeBtn">Oletus</a></li>
               <li><a href="JavaScript:setActiveStyleSheetEx('Nausicaä');" onclick="setActiveStyleSheetEx('Nausicaä');" id="NausThemeBtn" class="themeBtn">Nausicaä</a></li>
+              <li><a href="JavaScript:setActiveStyleSheetEx('Counter-Strike');" onclick="setActiveStyleSheetEx('Counter-Strike');" id="NausThemeBtn" class="themeBtn">Counter-Strike</a></li>
             </ul>
           </li>
         </ul>
@@ -85,10 +124,13 @@ foreach($blinks as $key => $val) {
     </div>
   </div>
   <div id="container">
+  <pre>
+  <? print_r($_COOKIE); ?>
+  </pre>
     <table border="0" cellpadding="0" cellspacing="0" align="center" id="main">
       <thead>
         <tr>
-          <td align="center"><img src="img/pc.gif" alt="Rautakuu [dot] org" width="276" height="219" align="baseline" border="0" align="center" /></td>
+          <td align="center"><img id="logo" src="img/spacer.gif" alt="Rautakuu [dot] org" width="276" height="219" align="baseline" border="0" align="center" /></td>
         </tr>
       </thead>
       <tbody>
@@ -162,7 +204,7 @@ while($i < $num) {
     </table>
     <div id="copyright">
       <!--Creative Commons License-->
-      <a rel="license" href="http://creativecommons.org/licenses/by-sa/1.0/fi/">Some Rights reserved&#174;</a><!--/Creative Commons License--><!-- <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/1.0/fi/">Some Rights reserved</a><!--/Creative Commons License--><!-- <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
           <Work rdf:about="">
               <license rdf:resource="http://creativecommons.org/licenses/by-sa/1.0/fi/" />
       <dc:title>Rautakuu [dot] org</dc:title>

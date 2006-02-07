@@ -1,31 +1,31 @@
-/* kate: space-indent false; encoding utf-8; indent-width 4; */
+/* kate: space-indent true; encoding utf-8; indent-width 4; */
 
 #container {
     background-image: url('../img/nausicaa/nausicaa_05.jpg');
 	background-repeat: no-repeat;
 	background-attachment: fixed;
-	background-position: left top;
+	background-position: center top;
 }
 
 .searchbox {
     background-image: url('../img/nausicaa/nausicaa_05hi.jpg');
 	background-repeat: no-repeat;
 	background-attachment: fixed;
-	background-position: left top;
+	background-position: center top;
 }
 
 #searchfield input[type=text] {
     background-image: url('../img/nausicaa/nausicaa_05.jpg');
 	background-repeat: no-repeat;
 	background-attachment: fixed;
-	background-position: left top;
+	background-position: center top;
 }
 
 #about a:hover {
     background-image: url('../img/nausicaa/nausicaa_05hi.jpg');
 	background-repeat: no-repeat;
 	background-attachment: fixed;
-	background-position: left top;
+	background-position: center top;
 }
 
 #about a:hover {

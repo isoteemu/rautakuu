@@ -48,7 +48,6 @@ echo $jag; ?>" />
             echo " » $t";
         }
     ?></title>
-        <!--[if IE 6]><link rel="stylesheet" href="/noIE/noIE.css" type="text/css"><![endif]-->
     <style type="text/css">
     <!--
         .fontNormal
@@ -82,6 +81,11 @@ echo $jag; ?>" />
             font-size: 11px;
             background-color:#161652;
             color:#EEEEEE;
+            <?php $bodybgimg = getImage("/csbg"); ?>
+            background-image: url('<?=$bodybgimg['url'];?>');
+            background-position: bottom right;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
 
         INPUT.textbox,
@@ -109,6 +113,10 @@ echo $jag; ?>" />
 
         BODY
         {
+            <?php $bodybgimg = getImage("/csbg"); ?>
+            background: url('<?=$bodybgimg['url'];?>') bottom right no-repeat;
+            background-attachment: fixed;
+            background-color:<?=$g_options["body_bgcolor"];?>;
             margin-top: <?php echo $g_options["body_topmargin"]; ?>px;
             margin-right: <?php echo $g_options["body_leftmargin"]; ?>px;
             margin-bottom: <?php echo $g_options["body_topmargin"]; ?>px;
@@ -181,6 +189,9 @@ echo $jag; ?>" />
             height: 22px;
             min-height: 22px;
             padding: 8px 10px 8px 46px;
+
+            background-color:<?=$g_options["table_bgcolor1"];?>;
+            border: 1px solid <?=$g_options["table_border"]; ?>;
         }
 
         #messages div.loading {
@@ -191,6 +202,24 @@ echo $jag; ?>" />
             background-color:<?=$g_options["table_bgcolor1"];?>;
 
             border: 1px solid <?=$g_options["table_border"]; ?>;
+        }
+
+        .table {
+            background-color:<?= $g_options["table_border"]; ?>;
+        }
+
+        .tableRow1 {
+            background-color:<?= $g_options["table_bgcolor1"]; ?>;
+            background-position: bottom right;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        .tableRow2 {
+            background-color:<?= $g_options["table_bgcolor2"]; ?>;
+            background-position: bottom right;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
     -->
     </style>
@@ -232,7 +261,11 @@ loadingimg = new Image();
 loadingimg.src = '<?=$loadingimg['url'];?>';
 
 function nextpageLoading() {
-    document.getElementById("messages").innerHTML='<div class="loading"><?= _("Generating page...");?></div>';
+    msgbox('<div class="loading"><?= _("Generating page...");?></div>');
+}
+
+function msgbox(msg) {
+    document.getElementById("messages").innerHTML=msg;
     document.getElementById("messages").style.display='block';
     setTimeout('hideMessageBox()', 8000);
 }
@@ -251,6 +284,7 @@ function jump(url) {
 
 // -->
 </script>
+<script type="text/javascript" src="cs-suggest/ggsgst.js"></script>
 </head>
 <body bgcolor="<?php echo $g_options["body_bgcolor"]; ?>"
     background="<?php echo $g_options["body_background"]; ?>"
@@ -269,7 +303,7 @@ function jump(url) {
         <table width="100%" border=0 cellspacing=0 cellpadding=0>
 
         <tr valign="bottom">
-            <td width=77 style="background-image:url(<?php echo $g_options["imgdir"]; ?>/title-background.gif);"><a href="<?php echo $g_options["scripturl"]; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/title.gif" width=185 height=40 alt="HLstats" border=0></a></td>
+            <td width="77" style="background-image:url(<?php echo $g_options["imgdir"]; ?>/title-background.gif);"><a href="<?php echo $g_options["scripturl"]; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/title.gif" width="177" height="40" alt="HLstats" border="0"></a></td>
             <td align="right" style="background-image:url(<?php echo $g_options["imgdir"]; ?>/title-background.gif);"><a href="<?php echo $g_options["scripturl"]; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/title-contents.gif" alt="Contents" border=0 hspace=2></a><a href="http://rautakuu.org/drupal/search/hlstats"><img src="<?php echo $g_options["imgdir"]; ?>/title-search.gif" alt="Search" border=0 hspace=2></a><a href="http://rautakuu.org/drupal/taxonomy/term/24"><img src="<?php echo $g_options["imgdir"]; ?>/title-help.gif" alt="Help" border=0 hspace=2></a><img src="<?php echo $g_options["imgdir"]; ?>/spacer.gif" width=6 height=1 border=0 alt="spacer.gif"></td>
         </tr>
 

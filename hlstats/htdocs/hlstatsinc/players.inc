@@ -44,6 +44,7 @@
 		array($gamename=>"%s?game=$game", _("Player Rankings")=>"")
 	);
 ?>
+<script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
 
 <form method="GET" action="<?php echo $g_options["scripturl"]; ?>" name="f">
 <input type="hidden" name="mode" value="search">
@@ -57,8 +58,10 @@
 	<td width="25%" align="right" nowrap><?php echo $g_options["font_normal"]; ?>Siirry <a href="<?php echo $g_options["scripturl"] . "?mode=clans&amp;game=$game"; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/clan.gif" width=16 height=16 hspace=3 border=0 align="middle" alt="clan.gif">Claanien sijoituksiin</a><?php echo $g_options["fontend_normal"]; ?></td>
 </tr>
 </table><p>
+
 <script>
    InstallAC(document.f,document.f.q,document.f.laheta,"search","en");
+
 </script>
 </form>
 
@@ -68,23 +71,18 @@
 			new TableColumn(
 				"lastName",
 				"Nimi",
-				"width=31&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")
+				"width=35&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")."&append=.".rawurlencode("<span id=\"%k\"></span><script>addPlayer('%k');</script>")
 			),
 			new TableColumn(
 				"skill",
 				_("Points"),
-				"width=11&align=right"
+				"width=11&align=right&diff=old_skill"
 			),
 			new TableColumn(
 					"activity",
 					"Aktiivisuus",
-					"width=10&sort=no&type=bargraph"
+					"width=11&sort=no&type=bargraph"
 					),
-            new TableColumn(
-                    "oldrank",
-                    "<span title=\"Viikon takainen sijoitus\">lr</span>",
-                    "width=5&align=right"
-                    ),
 			new TableColumn(
 				"kills",
 				"Tapot",
@@ -122,7 +120,7 @@
             hlstats_Events_Connects.ipAddress AS ip,
             IFNULL(kills/deaths, '-') AS kpd,
                 IF(".MINACTIVITY." > (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))), ((100/".MINACTIVITY.") * (".MINACTIVITY." - (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))))), 0) as activity,
-                IFNULL(hlstats_Old_Rank.rank, '-') AS oldrank
+            hlstats_Old_Rank.skill AS old_skill
 		FROM
 			hlstats_Players
         RIGHT JOIN hlstats_Events_PlayerActions ON
@@ -164,6 +162,14 @@
 
 	$table->draw($result, $numitems, 90);
 ?><p>
+
+<!-- Game is set. Fetch bans -->
+<script language="Javascript1.2">
+<!--
+var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+uasf();
+// -->
+</script>
 
 <form method="GET" action="<?php echo $g_options["scripturl"]; ?>">
 <table width="90%" align="center" border=0 cellspacing=0 cellpadding=2>

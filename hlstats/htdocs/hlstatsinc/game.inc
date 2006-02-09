@@ -42,7 +42,7 @@ pageHeader(array($gamename), array($gamename=>""));
 <tr>
     <td><?php echo $g_options["font_normal"]; ?>&nbsp;<img src="<?php echo $g_options["imgdir"]; ?>/downarrow.gif" width=9 height=6 border=0 align="middle" alt="downarrow.gif"><b>&nbsp;Sections</b><?php echo $g_options["fontend_normal"];?><p>
 
-        <table width="75%" align="center" border=0 cellspacing=0 cellpadding=0>
+        <table width="75%" align="center" border="0" cellspacing="0" cellpadding="0">
           <tr valign="top">
             <td>
               <ul class="tabs">
@@ -117,6 +117,7 @@ pageHeader(array($gamename), array($gamename=>""));
 
     if ($db->num_rows($resultAwards) > 0 && $awards_d_date) {
 ?>
+<script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
 <table width="90%" align="center" border="0" cellspacing="0" cellpadding="0">
 
 <tr>
@@ -155,6 +156,7 @@ pageHeader(array($gamename), array($gamename=>""));
                     . $awarddata["d_winner_id"] . "\">".flag($flagimg)."&nbsp;<b>"
                     . htmlspecialchars($awarddata["d_winner_name"]) . "</b></a> ("
                     . $awarddata["d_winner_count"] . " " . htmlspecialchars($awarddata["verb"]) . ")";
+                echo "<span id=\"{$awarddata["d_winner_id"]}\"></span><script>addPlayer('{$awarddata["d_winner_id"]}');</script>";
             }
             else
             {
@@ -178,7 +180,13 @@ geoip_close($gi);
 
 </table><p>
 <br>
-
+<!-- Game is set. Fetch bans -->
+<script language="Javascript1.2">
+<!--
+var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+uasf();
+// -->
+</script>
 <?php
 }
 ?>

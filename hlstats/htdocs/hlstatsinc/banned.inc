@@ -44,7 +44,7 @@ $table = new Table(
         new TableColumn(
             "player_nick",
             _("Name"),
-            "width=25&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")
+            "width=25&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")."&append=.".rawurlencode("<span id=\"%k\"></span><script>addPlayer('%k');</script>")
         ),
         new TableColumn(
             "ban_reason",
@@ -182,12 +182,20 @@ $numitems = $db->num_rows($numresult);
 <script>
    InstallAC(document.f,document.f.q,document.f.laheta,"search","en");
 </script>
+<script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
 </form>
 
 <?php
 $table->draw($result, $numitems, 95);
 
 ?>
+<!-- Game is set. Fetch bans -->
+<script language="Javascript1.2">
+<!--
+var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+uasf();
+// -->
+</script>
 
 <form method="GET" action="<?php echo $g_options["scripturl"]; ?>">
 <table width="90%" align="center" border=0 cellspacing=0 cellpadding=2>

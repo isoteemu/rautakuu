@@ -43,16 +43,20 @@ define("_HLSTATS", 1);
 define("INCLUDE_PATH", dirname(__FILE__)."/hlstatsinc");
 
 
-//
-$serverparts = explode(".", $_SERVER['HTTP_HOST']);
-$serverparts = array_reverse($serverparts);
-$confprefix="";
-foreach($serverparts as $serverpart) {
+if(!defined("DIRECTORY_SEPARATOR")) define("DIRECTORY_SEPARATOR", "/");
 
-    $confprefix = $serverpart.".".$confprefix;
-    $conffile = INCLUDE_PATH.DIRECTORY_SEPARATOR."conf.".$confprefix."inc.php";
+$serverparts = explode(".", $_SERVER['HTTP_HOST']);
+//$serverparts = array_reverse($serverparts);
+$confprefix="";
+
+foreach($serverparts as $serverpart) {
+    $confprefix = implode(".",$serverparts);
+    $conffile = INCLUDE_PATH.DIRECTORY_SEPARATOR."conf.".$confprefix.".inc.php";
     if(file_exists($conffile)) {
         require($conffile);
+        break;
+    } else {
+        $serverparts = array_slice($serverparts,1);
     }
 }
 
@@ -232,7 +236,7 @@ class Table
     $numpages = ceil($numitems / $this->numperpage);
     ?>
 
-      <table width="<?php echo $width; ?>%" align="<?php echo $align; ?>" border=0 cellspacing=0 cellpadding="0" bgcolor="<?php echo $g_options["table_border"]; ?>">
+      <table width="<?php echo $width; ?>%" align="<?php echo $align; ?>" border="0" cellspacing="0" cellpadding="0" class="table">
 
      <tr>
      <td><table width="100%" border=0 cellspacing=1 cellpadding=4>
@@ -310,7 +314,7 @@ class Table
             else
             $colalign = "";
 
-            $bgcolor = $g_options["table_bgcolor$c"];
+            $colclass = "tableRow{$c}";
 
             if ($col->icon || $col->flag) {
                 $cellbody = "&nbsp;";
@@ -420,21 +424,46 @@ class Table
                     if ($this->showranking && $rank == 1 && $i == 1)
                     $cellbody .= "<b>";
 
-                    if ((is_numeric($colval)) && ($colval >= 1000))
-                        $colval = number_format($colval);
+                    if ((is_numeric($colval)) && ($colval >= 1000)) {
+                        $colvall = number_format($colval);
+                    } else {
+                        $colvall = $colval;
+                    }
 
-                    $colval = nl2br(htmlentities($colval, ENT_COMPAT, "UTF-8"));
+                    $colvall = nl2br(htmlentities($colvall, ENT_COMPAT, "UTF-8"));
 
                     if ($col->embedlink == "yes")
                     {
-                        $colval = ereg_replace("%A%([^ %]+)%", "<a href=\"\\1\">", $colval);
-                        $colval = ereg_replace("%/A%", "</a>", $colval);
+                        $colvall = ereg_replace("%A%([^ %]+)%", "<a href=\"\\1\">", $colvall);
+                        $colvall = ereg_replace("%/A%", "</a>", $colvall);
                     }
 
-                    $cellbody .= $colval;
+                    $cellbody .= $colvall;
 
                     if ($this->showranking && $rank == 1 && $i == 1)
                     $cellbody .= "</b>";
+
+                    if($col->diff) {
+                        if(!is_numeric($colval)) {
+                            error(sprintf(_("Column %s is not numerical, but diff is wanted", false),$col->name));
+                        } else {
+                            $diff =& $rowdata[$col->diff];
+                            if( $diff == "" ) {
+                                $img = getImage("/t1");
+                            } elseif( $colval == $diff ) {
+                                $img = getImage("/t1");
+                            } elseif($colval > $diff) {
+                                $img = getImage("/t0");
+                            } elseif( $colval < $diff ) {
+                                $img = getImage("/t2");
+                            } else {
+                                // What what what?
+                                $img = getImage("/t1");
+                            }
+
+                            $cellbody .= "&nbsp;<img src=\"".$img["url"]."\" ".$img["size"]." border=\"0\" alt=\"".$diff."\">";
+                        }
+                    }
 
                     break;
             }
@@ -444,10 +473,17 @@ class Table
             }
 
             if ($col->append) {
-                $cellbody .= $col->append;
+                $col->append = ereg_replace("\\\\'", "'", $col->append);
+                $col->append = ereg_replace("\\\\\"", "\"", $col->append);
+                $append = ereg_replace("%k", urlencode($rowdata[$this->keycol]), $col->append);
+                $cellbody .= $append;
             }
 
-            echo "<td {$colalign} bgcolor=\"$bgcolor\">"
+            if ($col->colappend) {
+                $cellbody .= $rowdata[$col->colappend];
+            }
+
+            echo "<td {$colalign} class=\"$colclass\">"
             . $g_options["font_normal"]
             . $cellbody
             . $g_options["fontend_normal"] . "</td>\n";
@@ -559,9 +595,11 @@ class TableColumn
   var $icon;
   var $flag;
   var $link;
+  var $diff;
   var $sort = "yes";
   var $type = "text";
   var $embedlink = "no";
+  var $onloadjs;
 
   function TableColumn ($name, $title, $attrs="") {
     $this->name = $name;
@@ -572,11 +610,13 @@ class TableColumn
                 "width",
                 "icon",
                 "link",
+                "diff",
                 "sort",
                 "append",
                 "type",
                 "embedlink",
-                "flag"
+                "flag",
+                "onloadjs",
                );
 
     if(is_array($attrs)) {
@@ -748,7 +788,7 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
 
     if(phpCheck($content)) {
         // This is like, asking for trouble.
-        preg_match_all("/(<\?php|<\?)(.*?)\?>/si", $content, $_execPhpfile_raw_php_matches);
+        preg_match_all("/<\?php(.*?)\?>/si", $content, $_execPhpfile_raw_php_matches);
 
         $_execPhpfile_php_idx = 0;
 
@@ -758,11 +798,11 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
             $_execPhpfile_raw_php_str = str_replace("?>", "", $_execPhpfile_raw_php_str);
 
             ob_start();
-            eval("$_execPhpfile_raw_php_str;");
+            eval("$_execPhpfile_raw_php_str");
             $_execPhpfile_exec_php_str = ob_get_contents();
             ob_end_clean();
 
-            $_execPhpfile_read = preg_replace("/(<\?php|<\?)(.*?)\?>/si", $_execPhpfile_exec_php_str, $_execPhpfile_read, 1);
+            $content = preg_replace("/<\?php(.*?)\?>/si", $_execPhpfile_exec_php_str, $content, 1);
             $_execPhpfile_php_idx++;
         }
     }
@@ -779,10 +819,11 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $me = preg_quote($_SERVER['SCRIPT_NAME']);
         $content = preg_replace('%href=\"'.$me.'(\?[^\"]*?)\"%e', 'formatUrlParams("\\1");', $content);
     }
+
     if(! pageNotFound()) {
         // Now, as all main content edition is done, do ETag header.
         // It takes resouces, but can save time in page loading.
-        $etag = md5($content);
+        if(!$etag) $etag = md5($content);
         header("ETag: ".$etag);
     }
 
@@ -791,58 +832,21 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         global $cache, $db;
 
         if($cacheLifeTime === null) {
-            // Ydinfysiikkaa cachen lifetimen laskemiseksi.
-            $to = $_SERVER['SCRIPT_URI'];
-            if(substr($to, -1) != "/") $to .= "/";
-
-            $from = $_SERVER['HTTP_REFERER'];
-            if(substr($from, -1) != "/") $from .= "/";
-
-            $res1 = $db->query("SELECT
-                                    SUM(UNIX_TIMESTAMP(`time`)) as time
-                                FROM
-                                    `hlstats_Link_Trace`
-                                WHERE
-                                    `to` = '{$from}'
-                                GROUP BY
-                                        `to`
-                                ORDER BY time DESC
-                                LIMIT 0, 5");
-            list($time1) = $db->fetch_row($res1);
-            $time1c = $db->num_rows($res1);
-            $db->free_result($res1);
-
-            $res2 = $db->query("SELECT
-                                    SUM(UNIX_TIMESTAMP(`time`)) as time
-                                FROM
-                                    `hlstats_Link_Trace`
-                                WHERE
-                                    `from` = '{$from}' AND
-                                    `to` = '{$to}'
-                                GROUP BY
-                                        `to`
-                                ORDER BY time DESC
-                                LIMIT 0, 5");
-            list($time2) = $db->fetch_row($res2);
-            $db->free_result($res2);
-
-            $timediff = ($time2-$time1);
-            $messages['footer'][] = _("Cache $timediff $time2 - $time1");
-            $cache->setLifeTime(60*$took);
-        } else {
-            $cache->setLifeTime($cacheLifeTime);
+            $cacheLifeTime = round(60*$took);
         }
+        $cache->setLifeTime($cacheLifeTime);
 
-        $messages['footer'][] = _("Caching page");
+
+        $messages['footer'][] = _("Caching page")."<!-- $cacheLifeTime -->";
 
         $tosave = $content;
         $tosave = '<?php $g_options["noFormatUrlParams"]=true;?>'.$tosave;
+        $tosave = '<?php $etag="'.$etag.'";?>'.$tosave;
 
         // If footer was not wantet to be show, save that option to cached file.
         if($footer==false) $tosave = '<?php $footer=false; ?>'.$tosave;
 
-        $cache->save($tosave, $_SERVER['REQUEST_URI'], "pages");
-        $cache->save($etag, $_SERVER['REQUEST_URI'], "E-Tags");
+        $cache->save($tosave, $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages");
 
             /*
             $meres = $db->query("SELECT
@@ -1003,7 +1007,7 @@ function getSortArrow ($sort, $sortorder, $name, $longname,
   if ($sort == $name)
     {
       $arrowstring .= "&nbsp;<img src=\"" . $g_options["imgdir"] . "/$sortimg\""
-    . "width=7 height=7 hspace=4 border=0 align=\"middle\" alt=\"$sortimg\">";
+    . " width=\"7\" height=\"7\" hspace=\"4\" border=\"0\" align=\"middle\" alt=\"$sortimg\">";
     }
 
   $arrowstring .= "</a>".$g_options["fontend_small"];
@@ -1278,21 +1282,15 @@ if($g_options['useCache']) {
     }
     $cache_options = array(
         'cacheDir' => $g_options['cacheDir'],
-        'lifeTime' => 86400,
+        'lifeTime' => 3600,
         'pearErrorMode' => CACHE_LITE_ERROR_DIE
     );
 
     $cache = new Cache_Lite($cache_options);
 
     // Now, test if content is cached already.
-    if ($content = $cache->get($_SERVER['REQUEST_URI'], "pages")) {
+    if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
         // Content was cached. Fetch it.
-
-        // Check for E-Tag
-        if($etag = $cache->get($_SERVER['REQUEST_URI'], "E-Tags")) {
-            header("ETag: ".$etag);
-        }
-
         $messages['footer'][] = _("Cache hit");
 
         // Disable cache to prevent double caching.

@@ -77,8 +77,9 @@
 			hlstats_Players.homepage,
 			hlstats_Players.icq,
             hlstats_Players.jabber,
+            hlstats_Players.msn,
 			hlstats_Players.game,
-                        hlstats_Players.hideranking,
+            hlstats_Players.hideranking,
 			hlstats_Players.skill,
 			hlstats_Players.kills,
 			hlstats_Players.deaths,
@@ -121,64 +122,6 @@
 	else
 		list($gamename) = $db->fetch_row();
 
-	// Submit comments if is set.
-	if( !empty( $_POST['comment'] )) {
-        $g_options['cache'] = false;
-		// error_reporting(E_ALL);
-	        if( empty( $_POST['q'] )) {
-                	error("Sinun tulee antaa nimimerkki l&auml;hett&auml;&auml;ksesi kommentteja",false);
-        	} else {
-
-	                $commentFromNick = substr(trim($_POST['q']),0, 32);
-			$authOK = true;
-
-                	// Create auth DB connection.
-
-			// $authDB = new DB_Mysql ("localhost", "cs", "f9307fe00c", "cyrus");
-			$authDB =& $db;
-
-	                $uidCheckRes = $db->query("
-                        	SELECT `password`
-                	        FROM `accountuser`
-        	                WHERE `username` LIKE '$commentFromNick'");
-
-	                if( $db->num_rows() != 0 ) {
-				$authOK = false;
-				list($_pwhome) = $db->fetch_row();
-				if( strtolower($_SERVER['PHP_AUTH_USER']) == strtolower($commentFromNick) &&
-				    $_SERVER['PHP_AUTH_PW'] == $_pwhome) {
-					$authOK = true;
-					unset($_pwhome);
-				} else {
-					$authOK = false;
-					header('WWW-Authenticate: Basic realm="Suojattu nick"');
-					header('HTTP/1.0 401 Unauthorized');
-					// Headerin jalkeen
-					// error("Nickin k&auml;tt&ouml; edellytt&auml;&auml; admin tunnuksia",false);
-				}
-	                }
-
-			if( $authOK === true ) {
-
-		                $commentMessage  = substr(trim($_POST['comment']),0, 500);
-				// Do BB Code formating
-				if(@include_once("HTML/BBCodeParser.php")) {
-					$bbMesg = new HTML_BBCodeParser(array("filters"=>"Basic,Links,Email"));
-					$commentMessage = $bbMesg->qparse($commentMessage);
-				} else {
-					$commentMessage = nl2br(htmlspecialchars($commentMessage));
-				}
-				$commentMessage = addslashes($commentMessage);
-
-			        $db->query("
-        		                INSERT INTO
-                		                `hlstats_Comments` ( `time` , `ip`, `from` , `playerId` , `comment` )
-                        		VALUES
-                                		( NOW( ) , '".$_SERVER['REMOTE_ADDR']."', '$commentFromNick', '$player', '$commentMessage')");
-			}
-		}
-	}
-
 	pageHeader(
 		array($gamename, _("Player Details"), $pl_name),
 		array(
@@ -188,8 +131,6 @@
 		),
 		$pl_name
 	);
-
-	if( $authOK === false ) error("Nickin k&auml;tt&ouml; edellytt&auml;&auml; admin tunnuksia",false);
 
 ?>
 
@@ -313,19 +254,19 @@
 					?></td>
 					<td><?php
 						echo $g_options["font_normal"];
-                        if ($jabber = getEmailLink($playerdata["jabber"], 50, "xmpp"))
+                        if ($playerdata["icq"])
                         {
-                            echo $jabber;
-                        }
-                        else
-                        {
+                            echo "<a href=\"http://wwp.icq.com/"
+                                . urlencode($playerdata["icq"]) . "\" target=\"_blank\">"
+                                . htmlspecialchars($playerdata["icq"]) . "</a>";
+                        } else {
                             echo _("(Not specified.)");
                         }
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
 
-                <tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
+                <tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
                     <td><?php
                         echo $g_options["font_normal"];
                         echo _("Jabber").":";
@@ -333,14 +274,30 @@
                     ?></td>
                     <td><?php
                         echo $g_options["font_normal"];
-                        if ($playerdata["jabber"])
+                        if ($jabber = getEmailLink($playerdata["jabber"], 50, "xmpp"))
                         {
-                            echo "<a href=\"http://wwp.icq.com/"
-                                . urlencode($playerdata["icq"]) . "\" target=\"_blank\">"
-                                . htmlspecialchars($playerdata["icq"]) . "</a>";
+                            echo $jabber;
+                        } else {
+                            echo _("(Not specified.)");
                         }
-                        else
+                        echo $g_options["fontend_normal"];
+                    ?></td>
+                </tr>
+
+                <tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
+                    <td><?php
+                        echo $g_options["font_normal"];
+                        echo _("MSN").":";
+                        echo $g_options["fontend_normal"];
+                    ?></td>
+                    <td><?php
+                        echo $g_options["font_normal"];
+                        if ($playerdata["msn"])
                         {
+                            echo "<a href=\"http://members.msn.com/default.msnw?mem="
+                                . urlencode($playerdata["msn"]) . "\" target=\"_blank\">"
+                                . htmlspecialchars($playerdata["msn"]) . "</a>";
+                        } else {
                             echo _("(Not specified.)");
                         }
                         echo $g_options["fontend_normal"];
@@ -440,7 +397,7 @@
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
-						echo "Last Connect:*";
+						echo _("Last Connect").":*";
 						echo $g_options["fontend_normal"];
 					?></td>
 					<td><?php
@@ -471,7 +428,7 @@
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
-						echo "Total Connection Time:*";
+						echo _("Total Connection Time").":*";
 						echo $g_options["fontend_normal"];
 					?></td>
 					<td><?php
@@ -545,7 +502,7 @@
                                 <tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
                                         <td width="45%"><?php
 	                                       echo $g_options["font_normal"];
-                                               echo "Sijoitus:";
+                                               echo _("Ranking:");
                                                echo $g_options["fontend_normal"];
                                         ?></td>
                                         <td width="55%" colspan="2"><?php
@@ -635,70 +592,17 @@ AND eventTime IS NOT NULL
 							    }
 							  }
                                                echo $g_options["fontend_normal"];
-                                        ?>
-<script language="Javascript">
-<!--
-// Very simple trick to get UASF logo.
-var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&uniqueid=<?=urlencode($steamid)?>';
-var xmlHttp;
-
-function requesterInit() {
-    try{
-       xmlHttp=new ActiveXObject("Msxml2.XMLHTTP")
-    } catch(e){
-        try{
-            xmlHttp=new ActiveXObject("Microsoft.XMLHTTP")
-        } catch(sc) {
-            xmlHttp=null;
-        }
-    }
-    if(!xmlHttp&&typeof XMLHttpRequest!="undefined") {
-        xmlHttp=new XMLHttpRequest();
-    }
-}
-
-function getXMLHTTPResult() {
-    if(xmlHttp&&xmlHttp.readyState!=0) {
-        xmlHttp.abort();
-        requesterInit();
-        return false;
-    } else {
-        xmlHttp.open("GET",uri,true);
-        xmlHttp.onreadystatechange=parseResult;
-        xmlHttp.send(null);
-        return true;
-    }
-}
-
-function parseResult() {
-    if(xmlHttp.readyState==4&&xmlHttp.responseText) {
-
-        var _usaf=document.getElementById("usaf");
-        _usaf.innerHTML = xmlHttp.responseText;
-        //_usaf.innerText = xmlHttp.responseText;
-        //document.write(xmlHttp.responseText);
-        return true;
-    }
-}
-
-function uasf() {
-    requesterInit();
-    if(!getXMLHTTPResult()) {
-        // If got not ready or other crap, wait sec and retry.
-        setTimeout("uasf()", 5000);
-    }
-}
-
-uasf();
-
-// -->
-</script>
-                                          <?=$g_options["fontend_normal"]?><span id="usaf"></span><?=$g_options["fontend_normal"];?>
+                                        ?><script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
+                                          <?=$g_options["fontend_normal"]?><span id="<?=$player;?>"></span><script language="Javascript1.2">
+                                          var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+                                          addPlayer('<?=$player;?>');
+                                          uasf();
+                                          </script><?=$g_options["fontend_normal"];?>
                                         </td>
                                 </tr>
 
 
-				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
+				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td width="45%"><?php
 						echo $g_options["font_normal"];
 						echo _("Skill Points").":";
@@ -899,146 +803,6 @@ uasf();
 				. htmlspecialchars($playerdata["lastName"]) . "'s Event&nbsp;History</a><br>\n";
 
 		?>&nbsp;<a href="<?php echo $g_options["scripturl"]; ?>?mode=search&st=player&q=<?php echo $pl_urlname; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/search.gif" width=16 height=16 hspace=3 border=0 align="middle" alt="search.gif"  rel="nofollow"><?= _("Find other players with the same name");?></a><?php echo $g_options["fontend_normal"]; ?></td>
-</tr>
-
-</table><p>
-
-
-<!-- Comments -->
-<?php
-
-	$tblComments = new Table(
-		array(
-			new TableColumn(
-                                "time",
-                                "L&auml;hetetty",
-                                "width=15&align=right"
-                        ),
-			new TableColumn(
-				"from",
-				"L&auml;hett&auml;j&auml;",
-				"width=25"
-			),
-			new TableColumn(
-				"comment",
-				"Kommentti",
-				"width=60&type=plain"
-			)
-		),
-		NULL,
-		"time",
-		"from",
-		false,
-		20
-	);
-
-    $comRes = $db->query("
-        (
-            SELECT
-                FROM_UNIXTIME( ban_created ) AS time,
-                admin_nick AS `from`,
-                CONCAT('<font color=\"red\">Pelaaja saanut porttikiellon:</font> ', ban_reason) AS comment
-            FROM
-                `amx_bans`
-            WHERE
-                `player_id` = '$steamid'
-            AND (
-                    `ban_length` LIKE '0'
-                OR
-                    `ban_length` LIKE '0.0'
-            )
-        ) UNION (
-            SELECT
-                NOW() AS time,
-                'Tao' AS `from`,
-                '<a href=\"http://vip.rautakuu.org\">V.I.P</a>' AS comment
-            FROM
-                `drupal_steamids`
-            INNER JOIN hlstats_PlayerUniqueIds ON
-                hlstats_PlayerUniqueIds.uniqueId=drupal_steamids.steamid
-            WHERE
-                hlstats_PlayerUniqueIds.playerId='$player'
-        ) UNION (
-            SELECT
-                    `time`,
-                    `from`,
-                    `comment`
-            FROM
-                    hlstats_Comments
-            WHERE
-                    playerId=$player
-            ORDER BY
-                    `$tblComments->sort` $tblComments->sortorder
-            LIMIT $tblComments->startitem,$tblComments->numperpage
-        )
-    ");
-    $numitems = $db->num_rows($comRes);
-    if ( $numitems >= 1 ) {
-?>
-
-
-<table width="90%" align="center" border=0 cellspacing=0 cellpadding=0>
-<tr>
-        <td width="100%" colspan=3><a name="comments"></a>
-<?php echo $g_options["font_normal"]; ?>&nbsp;<img src="<?php echo $g_options["imgdir"]; ?>/downarrow.gif" width=9 height=6 border=0 align="middle" alt="downarrow.gif">
-<b>&nbsp;Kommentit</b><?php echo $g_options["fontend_normal"];?></td>
-</tr>
-
-<tr>
-        <td width="5%">&nbsp;</td>
-        <td width="95%" colspan=2>&nbsp;<br>
-        <?php
-
-			$tblComments->draw($comRes, $numitems, 100);
-
-        ?></td>
-</tr>
-
-</table><p>
-
-<?php
-}
-?>
-
-<table width="90%" align="center" border=0 cellspacing=0 cellpadding=0>
-<tr>
-        <td width="100%" colspan=3><a name="commentform"></a>
-<?php echo $g_options["font_normal"]; ?>&nbsp;<img src="<?php echo $g_options["imgdir"]; ?>/downarrow.gif" width=9 height=6 border=0 align="middle" alt="downarrow.gif">
-<b>&nbsp;Lis&auml;&auml; Kommentti</b><?php echo $g_options["fontend_normal"];?></td>
-</tr>
-
-<tr>
-        <td width="5%">&nbsp;</td>
-        <td width="95%" colspan=2>&nbsp;<br>
-<form action="<?= $_SERVER['REQUEST_URI']; ?>" method="POST" name="f">
-<table width="100%" align="center" border=0 cellspacing=0 cellpadding=0 bgcolor="#001B73" id="cs-suggest">
-  <tr>
-        <td><table width="100%" border=0 cellspacing=1 cellpadding=4>
-                <tr valign="bottom" bgcolor="#002E8A">
-<td width="65%"><font color="#EEEEEE"><font face="Verdana, Arial, sans-serif" size=1 class="fontSmall">Kommentti</font></font></td>
-<td width="25%"><font color="#EEEEEE"><font face="Verdana, Arial, sans-serif" size=1 class="fontSmall">Nimimerkki</font></font></td>
-<td width="10%" align="center"><font color="#EEEEEE"><font face="Verdana, Arial, sans-serif" size=1 class="fontSmall">L&auml;het&auml;</font></font></td>
-  </tr>
-  <tr>
-<td bgcolor="#15154D"><font face="Verdana, Arial, sans-serif" size=2 class="fontNormal">
-<textarea rows="1" class="fontNormal" style="width:100%; color:#EEEEEE; background-color:#15154D;" wrap="physical" name="comment" maxlength="500"></textarea>
-</td>
-<td bgcolor="#161652"><font face="Verdana, Arial, sans-serif" size=2 class="fontNormal">
-<input autocomplete="off" name="q" class="fontNormal" style="width:100%; color:#EEEEEE; background-color:#161652;" value="<?= $_POST['q']?>" maxlenght="32">
-</font></td>
-<td bgcolor="#15154D"><font face="Verdana, Arial, sans-serif" size=2 class="fontNormal">
-<input type="submit" style="width:100%; color:#EEEEEE; background-color:#15154D;" name="laheta" value="L&auml;het&auml;" onClick='document.f.laheta.value="Odota...";return true'>
-</td>
-</tr>
-</table></td>
-</tr>
-
-</table>
-</form>
-<script>
-   InstallAC(document.f,document.f.q,document.f.laheta,"search","en");
-</script>
-	</td>
 </tr>
 
 </table><p>
@@ -1308,7 +1072,7 @@ uasf();
 			new TableColumn(
 				"teamcount",
 				"Joined",
-				"width=10&align=right&append=+times"
+				"width=10&align=right&append=+"._("times")
 			),
 			new TableColumn(
 				"percent",
@@ -1397,7 +1161,7 @@ uasf();
 			new TableColumn(
 				"rolecount",
 				"Joined",
-				"width=10&align=right&append=+times"
+				"width=10&align=right&append=+"._("times")
 			),
 			new TableColumn(
 				"percent",
@@ -1456,7 +1220,7 @@ uasf();
 	if ($numitems > 0)
 	{
 ?>
-<table width="90%" align="center" border=0 cellspacing=0 cellpadding=0>
+<table width="90%" align="center" border="0" cellspacing="0" cellpadding="0">
 
 <tr>
 	<td width="50%" colspan=2><a name="roles"></a>

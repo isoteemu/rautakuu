@@ -62,6 +62,6 @@ define("PLATFORM", "POSIX");
 
 define("GEOIPDAT", dirname(__FILE__)."/../GeoIP.dat");
 
-define(CACHE_DIR, '/tmp/');
+define("CACHE_DIR", '/tmp/');
 
 ?>

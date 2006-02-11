@@ -88,9 +88,9 @@ if(! function_exists("curl_init")) {
         $player = intval($player);
 
         if(!isset($pquery))
-            $pquery = " playerId='$player'";
+            $pquery = "( playerId='$player' OR uniqueId='$player' )";
         else
-            $pquery .= " OR playerId='$player'";
+            $pquery .= " OR ( playerId='$player' OR uniqueId='$player' )";
     }
     $res = $db->query("
         SELECT
@@ -296,18 +296,52 @@ class getbans_steambans extends getbans {
 
 $bans = "";
 
+if($g_options['useCache']) {
+    $cache_options = array(
+        'cacheDir' => $g_options['cacheDir'],
+        'lifeTime' => 86400,
+        'pearErrorMode' => CACHE_LITE_ERROR_DIE
+    );
+    $b_cache = new Cache_Lite($cache_options);
+} else {
+    class Cache_Fake {
+        function get() { return false; }
+        function save() { return false; }
+    }
+    $b_cache = new Cache_Fake();
+}
+
 foreach($uniqueid as $key => $val) {
 
     $bans .= 'new Array("'.$key.'", "';
 
-    $bansfetch = "";
-    $uasf = new getbans_adminsfi($val);
-    $uasf->url("http://admins.fi/banlist/bans/search/");
-    $bansfetch .= $uasf->result();
+    if(!($bansfetch = $b_cache->get($val,"adminsfi"))) {
 
-    $auria = new getbans_auria($val);
-    $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
-    $bansfetch .= $auria->result();
+        $bansfetch = "";
+
+        $uasf = new getbans_adminsfi($val);
+        $uasf->url("http://admins.fi/banlist/bans/search/");
+
+        /**
+        * @todo make this right(tm). Temporary solution
+        */
+        curl_setopt($uasf->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
+
+        $bansfetch .= $uasf->result();
+
+        $auria = new getbans_auria($val);
+        $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
+
+        /**
+        * @todo make this right(tm). Temporary solution
+        */
+        curl_setopt($auria->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
+
+        $bansfetch .= $auria->result();
+
+        // save to cache
+        $b_cache->save($bansfetch,$val,"adminsfi");
+    }
 
     $bans .= addslashes($bansfetch).'"),';
 }

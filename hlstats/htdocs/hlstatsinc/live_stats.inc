@@ -211,6 +211,7 @@ if (count($server_players) > 0)
 {
     # If we have players, lets create the table
 ?>
+                        <script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
                         <table border="0" width="99%" cellpadding="0">
                             <tr>
                                 <th width="16"></th>
@@ -292,6 +293,7 @@ echo flag($flagimg);
 
                 if (!isset($player['uid'])) {
                     $temp = '<a href="'.$g_options['scripturl'].'?mode=search&amp;q='.HTMLEntities(URLEncode($searchfor), ENT_QUOTES, 'UTF-8').'&amp;st=uniqueid&amp;game='.$server['game'].'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
+                    $temp .= '<script>addPlayer('{URLEncode($searchfor)}');</script>';
                 } else {
                     $db->query("
                                 SELECT
@@ -365,6 +367,14 @@ echo flag($flagimg);
     }
 ?>
                         </table>
+                        <!-- Game is set. Fetch bans -->
+<script language="Javascript1.2">
+<!--
+var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+uasf();
+// -->
+</script>
+
 <?php
 }
 

@@ -39,7 +39,7 @@ $opt_libdir = "./";
 ## No need to edit below this line
 ##
 
-
+use POSIX;
 use Getopt::Long;
 use IO::Socket;
 use DBI;

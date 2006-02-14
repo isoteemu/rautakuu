@@ -20,9 +20,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-use strict;
-no strict 'vars';
-
 ##
 ## Settings
 ##
@@ -41,6 +38,9 @@ $opt_libdir = "./";
 ## No need to edit below this line
 ##
 
+use strict;
+no strict 'vars';
+use POSIX;
 use Getopt::Long;
 use Time::Local;
 use IO::Socket;
@@ -495,7 +495,7 @@ sub getServer
 		SELECT
 			serverId,
 			name,
-            game
+			game
 		FROM
 			hlstats_Servers
 		WHERE
@@ -586,8 +586,9 @@ sub getPlayerInfo
 		my $uniqueid = $3;
 		my $team     = $4;
 		
-		#Don't connect Mr. Console
+		# Don't connect Mr. Console or HLTV, they should not be recorded as players!
 		return 0 if ($uniqueid eq "Console");
+		return 0 if ($uniqueid eq "HLTV");
 		
 		if ($forced_uniqueid)
 		{
@@ -662,7 +663,7 @@ sub getPlayerInfo
 				# Increment number of players on server
 				
 				$g_servers{$s_addr}->{numplayers}++ if (!$haveplayer);
-				&printNotice("NumPlayers: $g_servers{$s_addr}->{numplayers} (Connect)");
+				&printNotice("NumPlayers ($s_addr): $g_servers{$s_addr}->{numplayers} (Connect)");
 
 				delete($g_lan_noplayerinfo_hack->{"$userid"}) if ($g_lan_hack);
 			}
@@ -681,7 +682,7 @@ sub getPlayerInfo
 				delete($g_lan_noplayerinfo_hack->{"$userid"});
 
 				$g_servers{$s_addr}->{numplayers}++ if (!$haveplayer);
-				&printNotice("NumPlayers: $g_servers{$s_addr}->{numplayers} (LAN Connect)");
+				&printNotice("NumPlayers ($s_addr): $g_servers{$s_addr}->{numplayers} (LAN Connect)");
 			}
 			else
 			{
@@ -1074,14 +1075,14 @@ while ($loop = &getLine())
 	}
 	
 	$s_addr = "$s_peerhost:$s_peerport";
-
+	
 	$s_output =~ s/[\r\n\0]//g;	# remove naughty characters
 	$s_output =~ s/\[No.C-D\]//g;	# remove [No C-D] tag
     $s_output =~ s/\[NO.C-D\]//g;	# remove [NO C-D] tag
 	$s_output =~ s/\[OLD.C-D\]//g;	# remove [OLD C-D] tag
 	$s_output =~ s/\[NOCL\]//g;	# remove [NOCL] tag
 	$s_output =~ s/\([12]\)//g;	# strip (1) and (2) from player names
-
+	
 	# Get the server info, if we know the server, otherwise ignore the data
 	if (!$g_servers{$s_addr})
 	{
@@ -1551,7 +1552,7 @@ while ($loop = &getLine())
 				);
 				
 				$g_servers{$s_addr}->{numplayers}-- if ($playerinfo->{"uniqueid"} !~ /PENDING/);
-				&printNotice("NumPlayers: $g_servers{$s_addr}->{numplayers} (Disconnect)");
+				&printNotice("NumPlayers ($s_addr): $g_servers{$s_addr}->{numplayers} (Disconnect)");
 			}
 		}
 		elsif (like($ev_verb, "STEAM USERID validated") || like($ev_verb, "VALVE USERID validated"))
@@ -1636,7 +1637,7 @@ while ($loop = &getLine())
 			);
 		}
 	}
-	elsif ($s_output =~ /^([^"\(]+) "([^"]+)" = "([^"]+)"(.*)$/)
+	elsif ($s_output =~ /^([^"\(]+) "([^"]+)" = "([^"]*)"(.*)$/)
 	{
 		# Prototype: verb "obj_a" = "obj_b"[properties]
 		# Matches:
@@ -1659,7 +1660,7 @@ while ($loop = &getLine())
 			);
 		}
 	}
-	elsif ($s_output =~ /^(Rcon|Bad Rcon): "rcon [^"]+"([^"]+)"\s+(.+)" from "([^"]+)"(.*)$/)
+	elsif ($s_output =~ /^(Rcon|Bad Rcon): "rcon [^"]+"([^"]*)"\s+(.+)" from "([^"]+)"(.*)$/)
 	{
 		# Prototype: verb: "rcon ?..."obj_a" obj_b" from "obj_c"[properties]
 		# Matches:

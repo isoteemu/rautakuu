@@ -22,9 +22,11 @@
 
 # HLstats release version number
 
-$VERSION = "1.32";
+$VERSION = "1.34";
 $g_version = $VERSION;
 
+%PATTERNS = ();
+%NAMES    = ();
 
 ##
 ## Common Functions
@@ -172,21 +174,36 @@ sub getHostGroup
 	# User can define special named hostgroups in hlstats_HostGroups, i.e.
 	# '.adsl.someisp.net' => 'SomeISP ADSL'
 	
-	$result = &queryHostGroups()  unless ($result);
-	$result->execute();
-	
-	while (my($pattern, $name) = $result->fetchrow_array())
+	unless (%PATTERNS)
 	{
-		$pattern = quotemeta($pattern);
+		$result = &queryHostGroups()  unless ($result);
+		$result->execute();
+		
+		my $pid = 0;
+		while (my($pattern, $name) = $result->fetchrow_array())
+		{
+			$PATTERNS{$pid} = $pattern;
+			$NAMES{$pid} = $name;
+			$pid++;
+		}
+	}
+	foreach $pid (keys %PATTERNS)
+ 	{
 		$pattern =~ s/\\\*/[^.]*/g;	# allow basic shell-style globbing in pattern
+		# If is unresolved then check at the beginning...
 		if ($hostname =~ /$pattern$/)
+		{
+			$hostgroup = $name;
+			last;
+		}
+		if (($hostname =~ /^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)$/) && ($hostname =~ /^$pattern/))
 		{
 			$hostgroup = $name;
 			last;
 		}
 	}
 	
-	if (!$hostgroup)
+	if ((!$hostgroup) && ($hostname !~ /^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)$/))
 	{
 		#
 		# Group by last 2 or 3 parts of hostname, i.e. 'max1.xyz.someisp.net' as

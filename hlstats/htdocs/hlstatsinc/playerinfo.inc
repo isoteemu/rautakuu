@@ -19,17 +19,17 @@
 	 * along with this program; if not, write to the Free Software
 	 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	 */
-
+	
 	if(!defined("_HLSTATS")) die("Direct access denied.");
-
+	
     include_once(INCLUDE_PATH."/geoip.inc");
-
+	
 	// Player Details
-
+	
 	$player = intval($HTTP_GET_VARS["player"]);
 	$uniqueid  = strval($HTTP_GET_VARS["uniqueid"]);
 	$game = strval($HTTP_GET_VARS["game"]);
-
+	
 	if (!$player && $uniqueid)
 	{
 		if (!$game)
@@ -37,7 +37,7 @@
 			header("Location: " . $g_options["scripturl"] . "?mode=search&st=uniqueid&q=$uniqueid");
 			exit;
 		}
-
+		
 		$db->query("
 			SELECT
 				playerId
@@ -47,7 +47,7 @@
 				uniqueId='$uniqueid'
 				AND game='$game'
 		");
-
+		
 		if ($db->num_rows() > 1)
 		{
 			header("Location: " . $g_options["scripturl"] . "?mode=search&st=uniqueid&q=$uniqueid&game=$game");
@@ -67,11 +67,12 @@
 	{
 		error("No player ID specified.");
 	}
-
+	
 	$db->query("
 		SELECT
 
 			hlstats_Players.lastName,
+			hlstats_Players.clan,
 			hlstats_Players.fullName,
 			hlstats_Players.email,
 			hlstats_Players.homepage,
@@ -85,22 +86,22 @@
 			hlstats_Players.deaths,
 			IFNULL(kills/deaths, '-') AS kpd,
 			hlstats_Players.suicides,
-                        hlstats_Players.clan,
-			hlstats_Clans.name AS clan_name
-                FROM hlstats_Players
-                LEFT JOIN hlstats_Clans ON
-                        hlstats_Players.clan=hlstats_Clans.clanId
-        WHERE
+			CONCAT(hlstats_Clans.tag, ' ', hlstats_Clans.name) AS clan_name
+		FROM
+			hlstats_Players
+		LEFT JOIN hlstats_Clans ON
+			hlstats_Clans.clanId = hlstats_Players.clan
+		WHERE
             hlstats_Players.playerId='$player'
                 LIMIT 0, 1
 	");
 	if ($db->num_rows() != 1)
 		error("No such player '$player'.");
-
+	
 	$playerdata = $db->fetch_array();
 
 	$db->free_result();
-
+	
 	$pl_name = $playerdata["lastName"];
 	if (strlen($pl_name) > 10)
 	{
@@ -113,15 +114,15 @@
 	$pl_name = ereg_replace(" ", "&nbsp;", htmlspecialchars($pl_name));
 	$pl_shortname = ereg_replace(" ", "&nbsp;", htmlspecialchars($pl_shortname));
 	$pl_urlname = urlencode($playerdata["lastName"]);
-
-
+	
+	
 	$game = $playerdata["game"];
 	$db->query("SELECT name FROM hlstats_Games WHERE code='$game'");
 	if ($db->num_rows() != 1)
 		$gamename = ucfirst($game);
 	else
 		list($gamename) = $db->fetch_row();
-
+	
 	pageHeader(
 		array($gamename, _("Player Details"), $pl_name),
 		array(
@@ -149,7 +150,7 @@
 		<tr>
 			<td>
 				<table width="100%" border=0 cellspacing=1 cellpadding=4>
-
+			
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -174,7 +175,7 @@
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+	
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -191,10 +192,10 @@
 						{
 							echo "(Unknown.)";
 						}
-						echo $g_options["fontend_normal"];
+						echo $g_options["fontend_normal"]; 
 					?></td>
 				</tr>
-
+		
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -214,7 +215,7 @@
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -245,7 +246,7 @@
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -254,14 +255,14 @@
 					?></td>
 					<td><?php
 						echo $g_options["font_normal"];
-                        if ($playerdata["icq"])
-                        {
-                            echo "<a href=\"http://wwp.icq.com/"
-                                . urlencode($playerdata["icq"]) . "\" target=\"_blank\">"
-                                . htmlspecialchars($playerdata["icq"]) . "</a>";
+						if ($playerdata["icq"])
+						{
+							echo "<a href=\"http://wwp.icq.com/"
+								. urlencode($playerdata["icq"]) . "\" target=\"_blank\">"
+								. htmlspecialchars($playerdata["icq"]) . "</a>";
                         } else {
                             echo _("(Not specified.)");
-                        }
+						}
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
@@ -275,7 +276,7 @@
                     <td><?php
                         echo $g_options["font_normal"];
                         if ($jabber = getEmailLink($playerdata["jabber"], 50, "xmpp"))
-                        {
+						{
                             echo $jabber;
                         } else {
                             echo _("(Not specified.)");
@@ -299,11 +300,11 @@
                                 . htmlspecialchars($playerdata["msn"]) . "</a>";
                         } else {
                             echo _("(Not specified.)");
-                        }
-                        echo $g_options["fontend_normal"];
-                    ?></td>
-                </tr>
-
+						}
+						echo $g_options["fontend_normal"];
+					?></td>
+				</tr>
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -351,7 +352,7 @@
 					?></td>
 				</tr>
 
-                <tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
+				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
 						if (MODE == "LAN")
@@ -380,7 +381,7 @@
 								WHERE
 									playerId='$player'
 							");
-
+							
 							$i=0;
 							while (list($uqid) = $db->fetch_row())
 							{
@@ -392,8 +393,8 @@
 						}
 						echo $g_options["fontend_normal"];
 					?></td>
-                </tr>
-
+				</tr>
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
@@ -413,7 +414,7 @@
 								hlstats_Servers.game='$game' AND playerId='$player'
 						");
 						list($lastevent) = $db->fetch_row();
-
+						
 						if ($lastevent)
 						{
 							echo $lastevent;
@@ -434,13 +435,13 @@
 					<td><?php
 						echo $g_options["font_normal"];
 						$db->query("
-							SELECT
+							SELECT  
 								SEC_TO_TIME(SUM(TIME_TO_SEC(time))) AS tTime
 							FROM
 								hlstats_Events_StatsmeTime
 							LEFT JOIN hlstats_Servers ON
 								hlstats_Servers.serverId=hlstats_Events_StatsmeTime.serverId
-							WHERE
+							WHERE   
 								hlstats_Servers.game='$game' AND playerId='$player'
 						");
 						list($tTime) = $db->fetch_row();
@@ -471,7 +472,7 @@
 								hlstats_Events_StatsmeLatency
 							LEFT JOIN hlstats_Servers ON
 								hlstats_Servers.serverId=hlstats_Events_StatsmeLatency.serverId
-							WHERE
+							WHERE   
 								hlstats_Servers.game='$game' AND playerId='$player'
 						");
 						list($av_ping, $av_latency) = $db->fetch_row();
@@ -481,7 +482,7 @@
 						  echo "$av_ping ms";
 						}
 						else
-						{
+						{  
 							echo _("(Unknown.)");
 						}
 				?><?php echo $g_options["fontend_normal"]; ?></td>
@@ -489,7 +490,7 @@
 
 				</table></td>
 		</tr>
-
+		
 		</table></td>
 	<td width="5%">&nbsp;</td>
 	<td width="40%">&nbsp;<br>
@@ -498,13 +499,13 @@
 		<tr>
 			<td>
 				<table width="100%" border=0 cellspacing=1 cellpadding="4">
-
-                                <tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
-                                        <td width="45%"><?php
-	                                       echo $g_options["font_normal"];
+			
+				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
+					<td width="45%"><?php
+						echo $g_options["font_normal"];
                                                echo _("Ranking:");
-                                               echo $g_options["fontend_normal"];
-                                        ?></td>
+						echo $g_options["fontend_normal"];
+					?></td>
                                         <td width="55%" colspan="2"><?php
 
 					       $db->query("
@@ -519,7 +520,7 @@
                                                          OR `ban_length` LIKE '0.0'
                                                     )");
 
-					       echo $g_options["font_normal"];
+						echo $g_options["font_normal"];
 							  if($db->num_rows() >= 1) {
 							    list($ban_reason) = $db->fetch_row();
 							    echo "<b><span style=\"color:red\" title=\"".htmlspecialchars($ban_reason)."\">"._("Banned")."</span> ";
@@ -591,7 +592,7 @@ AND eventTime IS NOT NULL
 							      echo "(piilotettu)";
 							    }
 							  }
-                                               echo $g_options["fontend_normal"];
+						echo $g_options["fontend_normal"];
                                         ?><script language="Javascript1.2" src="<?= $g_options['scripturl'];?>?mode=adminsfi&amp;js"></script>
                                           <?=$g_options["fontend_normal"]?><span id="<?=$player;?>"></span><script language="Javascript1.2">
                                           var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
@@ -599,8 +600,8 @@ AND eventTime IS NOT NULL
                                           uasf();
                                           </script><?=$g_options["fontend_normal"];?>
                                         </td>
-                                </tr>
-
+				</tr>
+				
 
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td width="45%"><?php
@@ -652,7 +653,7 @@ AND eventTime IS NOT NULL
 						echo $playerdata["kills"];
 						$db->query("
 							SELECT
-							        COUNT(*)
+								COUNT(*)
 							FROM
 								hlstats_Events_Frags
 							LEFT JOIN hlstats_Servers ON
@@ -661,11 +662,11 @@ AND eventTime IS NOT NULL
 								hlstats_Servers.game='$game' AND killerId='$player'
 						");
 						list($realkills) = $db->fetch_row();
-						echo " <span title=\"Viimeisen ".DELETEDAYS." päivän aikana\">($realkills*)</span>";
+						echo " <span title=\"Viimeisen ".DELETEDAYS." pÃ¤ivÃ¤n aikana\">($realkills*)</span>";
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td width="45%"><?php
 						echo $g_options["font_normal"];
@@ -678,7 +679,7 @@ AND eventTime IS NOT NULL
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td width="45%"><?php
 						echo $g_options["font_normal"];
@@ -691,7 +692,7 @@ AND eventTime IS NOT NULL
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td width="45%"><?php
 						echo $g_options["font_normal"];
@@ -704,7 +705,7 @@ AND eventTime IS NOT NULL
 						echo $g_options["fontend_normal"];
 					?></td>
 				</tr>
-
+				
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td width="45%"><?php
 						echo $g_options["font_normal"];
@@ -713,7 +714,7 @@ AND eventTime IS NOT NULL
 					?></td>
 					<td width="55%" colspan="2"><?php
 						echo $g_options["font_normal"];
-
+						
 						$db->query("
 							SELECT
 								COUNT(*)
@@ -725,7 +726,7 @@ AND eventTime IS NOT NULL
 								hlstats_Servers.game='$game' AND killerId='$player'
 						");
 						list($playerdata["teamkills"]) = $db->fetch_row();
-
+						
 						echo $playerdata["teamkills"];
 						echo $g_options["fontend_normal"];
 					?></td>
@@ -788,27 +789,27 @@ AND eventTime IS NOT NULL
                                         ?></td>
 				</table></td>
 		</tr>
-
+		
 		</table><br>
-
-
+		
+		
 		<?php
 			echo $g_options["font_normal"];
-
+			
 			echo "&nbsp;<a href=\"" . $g_options["scripturl"]
 				. "?mode=playerhistory&player=$player\"><img "
 				. "src=\"" . $g_options["imgdir"]
 				. "/history.gif\" width=16 height=16 border=0 "
 				. "hspace=3 align=\"middle\" alt=\"history.gif\">"
 				. htmlspecialchars($playerdata["lastName"]) . "'s Event&nbsp;History</a><br>\n";
-
+			
 		?>&nbsp;<a href="<?php echo $g_options["scripturl"]; ?>?mode=search&st=player&q=<?php echo $pl_urlname; ?>"><img src="<?php echo $g_options["imgdir"]; ?>/search.gif" width=16 height=16 hspace=3 border=0 align="middle" alt="search.gif"  rel="nofollow"><?= _("Find other players with the same name");?></a><?php echo $g_options["fontend_normal"]; ?></td>
 </tr>
 
 </table><p>
 
 <?php
-
+	
 	$tblAliases = new Table(
 		array(
 			new TableColumn(
@@ -878,7 +879,7 @@ AND eventTime IS NOT NULL
 			$tblAliases->sort $tblAliases->sortorder
 		LIMIT $tblAliases->startitem,$tblAliases->numperpage
 	");
-
+	
 	$resultCount = $db->query("
 		SELECT
 			COUNT(*)
@@ -887,7 +888,7 @@ AND eventTime IS NOT NULL
 		WHERE
 			playerId=$player
 	");
-
+	
 	list($numitems) = $db->fetch_row($resultCount);
 
 	if ($numitems > 1)
@@ -961,9 +962,9 @@ AND eventTime IS NOT NULL
 			$tblPlayerActions->sort $tblPlayerActions->sortorder,
 			$tblPlayerActions->sort2 $tblPlayerActions->sortorder
 	");
-
+	
 	$numitems = $db->num_rows($result);
-
+	
 	if ($numitems > 0)
 	{
 ?>
@@ -986,8 +987,8 @@ AND eventTime IS NOT NULL
 </table><p>
 <?php
 	}
-
-
+	
+	
 	$tblPlayerPlayerActions = new Table(
 		array(
 			new TableColumn(
@@ -1036,9 +1037,9 @@ AND eventTime IS NOT NULL
 			$tblPlayerPlayerActions->sort $tblPlayerPlayerActions->sortorder,
 			$tblPlayerPlayerActions->sort2 $tblPlayerPlayerActions->sortorder
 	");
-
+	
 	$numitems = $db->num_rows($result);
-
+	
 	if ($numitems > 0)
 	{
 ?>
@@ -1061,7 +1062,7 @@ AND eventTime IS NOT NULL
 </table><p>
 <?php
 	}
-
+	
 	$tblTeams = new Table(
 		array(
 			new TableColumn(
@@ -1095,7 +1096,7 @@ AND eventTime IS NOT NULL
 		"teams_sortorder",
 		"teams"
 	);
-
+	
 	$db->query("
 		SELECT
 			COUNT(*)
@@ -1125,9 +1126,9 @@ AND eventTime IS NOT NULL
 			$tblTeams->sort $tblTeams->sortorder,
 			$tblTeams->sort2 $tblTeams->sortorder
 	");
-
+	
 	$numitems = $db->num_rows($result);
-
+	
 	if ($numitems > 0)
 	{
 ?>
@@ -1150,7 +1151,7 @@ AND eventTime IS NOT NULL
 </table><p>
 <?php
 	}
-
+	
 	$tblRoles = new Table(
 		array(
 			new TableColumn(
@@ -1184,7 +1185,7 @@ AND eventTime IS NOT NULL
 		"roles_sortorder",
 		"roles"
 	);
-
+	
 	$db->query("
 		SELECT
 			COUNT(*)
@@ -1214,9 +1215,9 @@ AND eventTime IS NOT NULL
 			$tblRoles->sort $tblRoles->sortorder,
 			$tblRoles->sort2 $tblRoles->sortorder
 	");
-
+	
 	$numitems = $db->num_rows($result);
-
+	
 	if ($numitems > 0)
 	{
 ?>
@@ -1240,7 +1241,7 @@ AND eventTime IS NOT NULL
 
 <?php
 	}
-
+	
 	$tblWeapons = new Table(
 		array(
 			new TableColumn(
@@ -1279,7 +1280,7 @@ AND eventTime IS NOT NULL
 		"weap_sortorder",
 		"weapons"
 	);
-
+	
 	$result = $db->query("
 		SELECT
 			hlstats_Events_Frags.weapon,
@@ -1321,7 +1322,7 @@ AND eventTime IS NOT NULL
 </table><p>
 <!-- Begin StatsMe Addon 1.0 by JustinHoMi@aol.com -->
 <?php
-
+	
 	$tblWeaponstats = new Table(
 		array(
 			new TableColumn(
@@ -1390,7 +1391,7 @@ AND eventTime IS NOT NULL
 		"weap_sortorder",
 		"weaponstats"
 	);
-
+	
 	$result = $db->query("
 		SELECT
 			hlstats_Events_Statsme.weapon AS smweapon,
@@ -1415,7 +1416,7 @@ AND eventTime IS NOT NULL
 		ORDER BY
 			$tblWeaponstats->sort $tblWeaponstats->sortorder,
 			$tblWeaponstats->sort2 $tblWeaponstats->sortorder
-	");
+	");	
 
 if ($db->num_rows($result) != 0)
 {
@@ -1440,7 +1441,7 @@ if ($db->num_rows($result) != 0)
 <!-- End StatsMe Addon 1.0 by JustinHoMi@aol.com -->
 <?php
 }
-
+	
 	$tblWeaponstats2 = new Table(
 		array(
 			new TableColumn(
@@ -1793,7 +1794,7 @@ if ($db->num_rows($result) != 0)
 		");
 
 	$numitems = $db->num_rows($result);
-
+			
   	if ($numitems > 0)
 		{
 ?>

@@ -293,7 +293,7 @@ echo flag($flagimg);
 
                 if (!isset($player['uid'])) {
                     $temp = '<a href="'.$g_options['scripturl'].'?mode=search&amp;q='.HTMLEntities(URLEncode($searchfor), ENT_QUOTES, 'UTF-8').'&amp;st=uniqueid&amp;game='.$server['game'].'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
-                    $temp .= '<script>addPlayer('{URLEncode($searchfor)}');</script>';
+                    $temp .= '<script>addPlayer(\''.URLEncode($searchfor).'\');</script>';
                 } else {
                     $db->query("
                                 SELECT

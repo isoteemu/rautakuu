@@ -238,7 +238,7 @@ if (count($server_players) > 0)
 			elseif ('0' == $player['ping'])
 				$is_bot = 1;
 		}
-		
+
 		if (1 == $is_bot)
 		{
 ?>
@@ -265,13 +265,6 @@ echo flag($flagimg);
 ?>
 </td>
 <?php
-			if (isset($player['uid']) && MODE == 'Normal') {
-				$searchFor  = $player['uid'];
-				$searchType = 'uniqueid'; 
-			} else {
-				$searchFor = $player['name'];
-				$searchType = 'player';
-			}
 		}
 		foreach ($player_columns as $column)
 		{
@@ -280,9 +273,27 @@ echo flag($flagimg);
 			#  If we have UID - link to UID, else player
 			# Loss = add a %
 			# Connected = Format it
-			if ('name' == $column['column'])
-				$temp = '<a href="'.$g_options['scripturl'].'?mode=search&amp;q='.HTMLEntities(rawurlencode($searchFor), ENT_QUOTES, 'UTF-8').'&amp;st='.$searchType.'&amp;game='.$server['game'].'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
-			elseif ('loss' == $column['column'])
+			if ('name' == $column['column']) {
+                if (isset($player['uid']) && MODE == 'Normal') {
+                    $db->query("
+                                SELECT
+                                    `playerId`
+                                FROM
+                                    `hlstats_PlayerUniqueIds`
+                                WHERE `uniqueId` = '".$player['uid']."'
+                                    AND `game` = '".$server['game']."'
+                                LIMIT 0, 1");
+                    list($playerId) = $db->fetch_row();
+                    if($playerId) {
+                        $temp = '<a href="'.$g_options['scripturl'].'?mode=playerinfo&amp;player='.rawurlencode($playerId).'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
+                        $temp .= '<span id="'.$playerId.'"></span><script>addPlayer("'.$playerId.'");</script>';
+                    } else {
+                       $temp = '<a href="'.$g_options['scripturl'].'?mode=search&amp;q='.HTMLEntities(rawurlencode($searchFor), ENT_QUOTES, 'UTF-8').'&amp;st=player&amp;game='.$server['game'].'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
+                    }
+                } else {
+                    $temp = '<a href="'.$g_options['scripturl'].'?mode=search&amp;q='.rawurlencode($searchfor).'&amp;st=uniqueid&amp;game='.$server['game'].'">'.str_replace(' ', '&nbsp;', HTMLEntities($player['name'], ENT_QUOTES, 'UTF-8')).'</a>';
+                }
+			} elseif ('loss' == $column['column'])
 				$temp = $player['loss'].'%';
 			elseif ('time' == $column['column'])
 				$temp = Format_Time($player['time']);
@@ -342,7 +353,7 @@ echo flag($flagimg);
                         <!-- Game is set. Fetch bans -->
 <script language="Javascript1.2">
 <!--
-var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($game)?>';
+var uri='<?= $g_options['scripturl'];?>?mode=adminsfi&game=<?=urlencode($server['game'])?>';
 uasf();
 // -->
 </script>
@@ -379,7 +390,7 @@ if (count($server_hltv) > 0)
 							</tr>
 <?php
 	}
-?>							
+?>
 						</table>
 <?php
 }
@@ -393,10 +404,10 @@ if ($server_details['players_connecting'] > 0)
 				<tr bgcolor="<?php echo $g_options['table_bgcolor1']; ?>">
 					<td valign="top" class="fontNormal">
 <?php
-# For our main server information area we can grab some 
+# For our main server information area we can grab some
 # bits of information from the rules
 
-# If ClanMod or AMX mod is installed we may know what 
+# If ClanMod or AMX mod is installed we may know what
 # the next map is
 if (isset($server_rules['cm_nextmap']))
 	$server_details['nextmap'] = $server_rules['cm_nextmap'];
@@ -414,7 +425,7 @@ elseif (isset($server_rules['mp_timeleft']))
 	$server_details['timeleft'] = sprintf('%02u:%02u', ($server_rules['mp_timeleft'] / 60), ($server_rules['mp_timeleft'] % 60));
 ?>
                         <?= _("Address");?>: <?php echo $server_details['address']; ?><br>
-                        <?= _("Server Type");?>: <?php echo $server_details['os']; ?>, <?php echo $server_details['type']; ?><br>
+                        <?= _("Server Type");?>: <?php echo $server_details['serveros']; ?>, <?php echo $server_details['servertype']; ?><br>
 <?php
 //
 // Map change. If there is no players, allow changin map from web.
@@ -582,8 +593,8 @@ Server Addons:<br>
 $time = microtime();
 $time = explode(' ', $time);
 $time = $time[1] + $time[0];
-echo '<b>'.round(($time - $start), 6).'</b><br>';
-?>		
+echo '<!--'.round(($time - $start), 6).'-->';
+?>
 					</td>
 				</tr>
 			</table>

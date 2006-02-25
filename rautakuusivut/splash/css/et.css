@@ -1,0 +1,271 @@
+/* kate: space-indent true; encoding utf-8; indent-width 4; */
+* {
+    color:#9D9D9D;
+    font-size: 12px;
+
+    font-family: "Courier new", "Monospace", fixed;
+}
+
+body {
+    position : relative;
+    background-image: url('../img/et/background_mask.jpg');
+    background-color:#000000;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+	text-align:center;
+	margin:0px;
+	padding:0px;
+
+}
+
+#body {
+	padding:15px;
+	max-width:1000px;
+	text-align:center;
+	margin : auto;
+}
+
+a {
+    text-shadow: rgba(0,0,0,.4) 0px 0px 2px; /* Safari/khtml only, but cool */
+}
+
+#header, #header *, a, * {
+    font-size:16px;
+    color:#9D9D9D;
+    font-weight:bold;
+    text-shadow: rgba(0,0,0,.4) 1px 1px 3px; /* Safari/khtml only, but cool */
+}
+
+#header {
+    text-align:center;
+    background-color:#000000;
+    background-image: url('../img/et/background_mask-h.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+    height:37px;
+    width:100%;
+    position:fixed;
+    top:0px;
+    padding-left:0px;
+    padding-right:0px;
+    padding-bottom:0px;
+    border-bottom : 1px solid black;
+    z-index:500;
+}
+
+#header strong {
+    font-weight:bolder;
+}
+
+#title {
+    position:absolute;
+    display: block;
+    background: url('../img/et/rank.png') 10px 2px no-repeat;
+    height:30px;
+    text-align:center;
+    vertical-align:bottom;
+    padding-left:80px;
+    padding-top:6px;
+}
+
+#container {
+    background-image: url('../img/et/background_mask.jpg');
+    background-color:#000000;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+	padding-top:40px;
+}
+
+#logo {
+    width:0px;
+    height:0px;
+    display:none;
+}
+
+
+/**
+ * Koska tausta ei ole valkoinen, piilotetaan
+ */
+#imageTitle {
+    display:none;
+}
+
+#navbuttons {
+    display:none;
+}
+
+.searchbox {
+    display:none;
+}
+
+
+#searchfield input[type=text] {
+    color:#FFB000;
+    background-color:#4C5844;
+    background-image: url('../img/et/background_mask.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center top;
+
+    border-bottom-color : #2D3426;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #23281D;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #2D3426;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #23281D;
+    border-top-style : solid;
+    border-top-width : 1px;
+}
+
+#footer {
+    background-color:#000000;
+    background-image: url('../img/et/background_mask.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+}
+
+#about {
+
+    margin-top:170px;
+
+    color:#9D9D9D;
+
+    background-color : #000000;
+    background-image: url('../img/et/background_mask.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+
+    border-bottom-color : #9D9D9D;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #9D9D9D;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #9D9D9D;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #9D9D9D;
+    border-top-style : solid;
+    border-top-width : 1px;
+    -moz-border-radius: 0;  /* Mozilla */
+    border-radius: 0;       /* CSS 3 */
+}
+
+#about a {
+    padding:3px;
+    color:#9D9D9D;
+    margin-top:5px;
+    margin-bottom:5px;
+    background-color : #393D40;
+    background-image: url('../img/et/background_mask-h.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+	background-position: center top;
+    border-bottom-color : #1E1F21;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #1E1F21;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #1E1F21;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #1E1F21;
+    border-top-style : solid;
+    border-top-width : 1px;
+    text-shadow: rgba(0,0,0,.4) 0px 1px 1px; /* Safari/khtml only, but cool */
+
+}
+
+#about a:hover {
+    padding:3px;
+    color:#ffffff;
+    margin-top:5px;
+    margin-bottom:5px;
+    background-color : #3C4043;
+    background-image:none;
+    text-decoration:none;
+    border-bottom-color : #1E1F21;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
+    border-left-color : #1E1F21;
+    border-left-style : solid;
+    border-left-width : 1px;
+    border-right-color : #1E1F21;
+    border-right-style : solid;
+    border-right-width : 1px;
+    border-top-color : #1E1F21;
+    border-top-style : solid;
+    border-top-width : 1px;
+}
+
+
+#about-left {
+    border-right-color : #9D9D9D;
+    border-right-style : none;
+    border-right-width : 1px;
+}
+
+#about-center {
+    border-right-color : #9D9D9D;
+    border-right-style : none;
+    border-right-width : 1px;
+    border-left-color : #9D9D9D;
+    border-left-style : none;
+    border-left-width : 1px;
+}
+
+#about-right {
+    border-left-color : #9D9D9D;
+    border-left-style : none;
+    border-left-width : 1px;
+}
+
+#copyright {
+
+    position:fixed;
+    bottom:0px;
+
+    background-color : #000000;
+    background-image: url('../img/et/background_mask-h.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center top;
+
+    border-top : 1px solid black;
+
+    padding-top:1px;
+
+    color : #ffffff;
+    width : 100%;
+    text-align : center;
+    height:auto;
+}
+
+#copyright a{
+    color:#9D9D9D;
+}
+
+#ThemeSettings {
+    display:block;
+    position:fixed;
+    text-align:right;
+    right:0px;
+}
+
+#ThemeMenu ul.menu, #ThemeMenu ul.menu * {
+    background-color : #000000;
+    background-image: url('../img/et/background_mask-h.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center top;
+}

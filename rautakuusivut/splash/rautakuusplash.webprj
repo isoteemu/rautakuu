@@ -12,54 +12,55 @@
     <item url="css/" uploadstatus="1" />
     <templates>templates/</templates>
     <toolbars>toolbars/</toolbars>
-    <item url="css/nausicaa.css" />
-    <item url="img/" />
-    <item url="img/nausicaa/" />
-    <item url="img/nausicaa/.svn/" />
-    <item url="img/nausicaa/.svn/prop-base/" />
-    <item url="img/nausicaa/.svn/prop-base/nausicaa_05hi.jpg.svn-base" />
-    <item url="img/nausicaa/.svn/prop-base/nausicaa_05.jpg.svn-base" />
-    <item url="img/nausicaa/.svn/props/" />
-    <item url="img/nausicaa/.svn/props/nausicaa_05hi.jpg.svn-work" />
-    <item url="img/nausicaa/.svn/props/nausicaa_05.jpg.svn-work" />
-    <item url="img/nausicaa/.svn/text-base/" />
-    <item url="img/nausicaa/.svn/text-base/nausicaa_05hi.jpg.svn-base" />
-    <item url="img/nausicaa/.svn/text-base/nausicaa_05.jpg.svn-base" />
-    <item url="img/nausicaa/.svn/tmp/" />
-    <item url="img/nausicaa/.svn/tmp/prop-base/" />
-    <item url="img/nausicaa/.svn/tmp/props/" />
-    <item url="img/nausicaa/.svn/tmp/text-base/" />
-    <item url="img/nausicaa/.svn/tmp/wcprops/" />
-    <item url="img/nausicaa/.svn/wcprops/" />
-    <item url="img/nausicaa/.svn/wcprops/nausicaa_05hi.jpg.svn-work" />
-    <item url="img/nausicaa/.svn/wcprops/nausicaa_05.jpg.svn-work" />
-    <item url="img/nausicaa/.svn/dir-wcprops" />
-    <item url="img/nausicaa/.svn/empty-file" />
-    <item url="img/nausicaa/.svn/entries" />
-    <item url="img/nausicaa/.svn/format" />
-    <item url="img/nausicaa/.svn/README.txt" />
-    <item url="img/nausicaa/nausicaa_05hi.jpg" />
-    <item url="img/nausicaa/nausicaa_05.jpg" />
-    <item url="img/bg-grad.jpg" />
-    <item url="img/bg-grad.png" />
-    <item url="img/binocular.gif" />
-    <item url="img/binocular.png" />
-    <item url="img/cleardot.gif" />
-    <item url="img/cs.gif" />
-    <item url="img/cs.png" />
-    <item url="img/horde.gif" />
-    <item url="img/horde.png" />
-    <item url="img/mantis.gif" />
-    <item url="img/mantis.png" />
-    <item url="img/pc.gif" />
-    <item url="img/rautakuu.gif" />
-    <item url="img/rautakuu.png" />
-    <item url="img/spacer.gif" />
-    <item url="img/tao.gif" />
-    <item url="img/tao.png" />
-    <item url="js/" />
-    <item url="js/styleswitcher.js" />
-    <item url="css/cs.css" />
-    <item url="conf.inc.php" />
+    <item url="css/nausicaa.css" uploadstatus="1" />
+    <item url="img/" uploadstatus="1" />
+    <item url="img/nausicaa/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/prop-base/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/prop-base/nausicaa_05hi.jpg.svn-base" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/prop-base/nausicaa_05.jpg.svn-base" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/props/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/props/nausicaa_05hi.jpg.svn-work" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/props/nausicaa_05.jpg.svn-work" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/text-base/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/text-base/nausicaa_05hi.jpg.svn-base" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/text-base/nausicaa_05.jpg.svn-base" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/tmp/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/tmp/prop-base/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/tmp/props/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/tmp/text-base/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/tmp/wcprops/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/wcprops/" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/wcprops/nausicaa_05hi.jpg.svn-work" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/wcprops/nausicaa_05.jpg.svn-work" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/dir-wcprops" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/empty-file" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/entries" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/format" uploadstatus="1" />
+    <item url="img/nausicaa/.svn/README.txt" uploadstatus="1" />
+    <item url="img/nausicaa/nausicaa_05hi.jpg" uploadstatus="1" />
+    <item url="img/nausicaa/nausicaa_05.jpg" uploadstatus="1" />
+    <item url="img/bg-grad.jpg" uploadstatus="1" />
+    <item url="img/bg-grad.png" uploadstatus="1" />
+    <item url="img/binocular.gif" uploadstatus="1" />
+    <item url="img/binocular.png" uploadstatus="1" />
+    <item url="img/cleardot.gif" uploadstatus="1" />
+    <item url="img/cs.gif" uploadstatus="1" />
+    <item url="img/cs.png" uploadstatus="1" />
+    <item url="img/horde.gif" uploadstatus="1" />
+    <item url="img/horde.png" uploadstatus="1" />
+    <item url="img/mantis.gif" uploadstatus="1" />
+    <item url="img/mantis.png" uploadstatus="1" />
+    <item url="img/pc.gif" uploadstatus="1" />
+    <item url="img/rautakuu.gif" uploadstatus="1" />
+    <item url="img/rautakuu.png" uploadstatus="1" />
+    <item url="img/spacer.gif" uploadstatus="1" />
+    <item url="img/tao.gif" uploadstatus="1" />
+    <item url="img/tao.png" uploadstatus="1" />
+    <item url="js/" uploadstatus="1" />
+    <item url="js/styleswitcher.js" uploadstatus="1" />
+    <item url="css/cs.css" uploadstatus="1" />
+    <item url="conf.inc.php" uploadstatus="1" />
+    <item url="css/et.css" />
   </project>
 </webproject>

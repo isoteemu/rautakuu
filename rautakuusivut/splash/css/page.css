@@ -299,6 +299,11 @@ ul.menu li:hover > ul {
 /**
  * Theme settings
  */
+#ThemeSettings {
+    text-align:right;
+
+    display:block;
+}
 
 #ThemeMenu {
    display: none;

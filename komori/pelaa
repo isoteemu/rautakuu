@@ -99,7 +99,10 @@ function valitsePeli {
 
         # Etsit�n steam
         if [ "${PELIT[$index]}" = "cstrike" ]; then
-            STEAMAPP=$(find $HOME/.transgaming/ -type f -name STEAM.exe 2>/dev/null)
+            if [ ! $(which cedega 2>/dev/null) ]; then
+                initDoFail
+            fi
+            STEAMAPP=$(find $HOME/.transgaming/ -type f -name Steam.exe 2>/dev/null)
             if [ -z "$STEAMAPP" ]; then
                 initDoFail
             else
@@ -233,6 +236,12 @@ function init {
             dcop kopete KopeteIface setAway 'Pelaamassa $game' && initDoSuccess
         fi
 
+        if  dcop | grep -q "rsibreak"; then
+            initDo "Pysäytetään RSIBreak" "rsibreak"
+            dcop rsibreak actions suspend && initDoSuccess
+        fi
+
+
 #
 # Dö nöt wörk
 #
@@ -243,6 +252,13 @@ function init {
 #                dcop kmail kmail-mainwindow#1 setUpdatesEnabled false && initDoSuccess
 #            fi
 #        fi
+
+        if  dcop | grep -q "kmail"; then
+            if [ "$(dcop kmail kmail-mainwindow#1 updatesEnabled)" = "true" ]; then
+                initDo "Pysäytetään kmailin päivitykset" "kmail"
+                dcop kmail kmail-mainwindow#1 setUpdatesEnabled false && initDoSuccess
+            fi
+        fi
 
         if dcop | grep -q "kwin"; then
             if [ "$(dcop kwin KWinInterface kompmgrIsRunning)" = "true" ]; then
@@ -334,6 +350,8 @@ function initEnd {
         if [ $PROG = "background" ]; then dcop kdesktop KBackgroundIface setBackgroundEnabled true; fi
         if [ $PROG = "kmail" ]; then dcop kmail kmail-mainwindow#1 setUpdatesEnabled true; fi
         if [ $PROG = "kcompmgr" ]; then dcop kwin KWinInterface startKompmgr; fi
+        if [ $PROG = "rsibreak" ]; then dcop rsibreak actions resume; fi
+        if [ $PROG = "kmail" ]; then dcop kmail kmail-mainwindow#1 setUpdatesEnabled true; fi
         if [ $PROG = "3DFreq" ]; then
             echo -n " ($FREQTWO,$FREQTHREE)"
             nvidia-settings -a GPU3DClockFreqs=$FREQTWO,$FREQTHREE > /dev/null

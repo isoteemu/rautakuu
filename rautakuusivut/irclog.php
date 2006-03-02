@@ -922,6 +922,13 @@ function scrollme(){
 }
 
         </script>
+<?php
+if($_GET['css']) {
+    echo '
+    <link rel="stylesheet" href="'.addslashes(htmlspecialchars($_GET['css'])).'" type="text/css" media="all" />
+    ';
+}
+?>
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">

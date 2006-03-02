@@ -887,7 +887,7 @@ function requesterInit() {
 function init() {
     /* Older operas < 9.00-pr1 can't scroll if scrollbars
      * are set invisible in css */
-    (!window.opera)
+    if (!window.opera)
         document.body.style.overflow='hidden';
 
     var table=document.createElement("table");

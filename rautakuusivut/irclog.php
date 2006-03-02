@@ -615,8 +615,8 @@ if(isset($_GET['time'])) {
 <html>
     <head>
         <title><?= htmlspecialchars($_GET['channel']);?> IRC viestit</title>
-        <meta http-equiv="Content-Language" content="fi">
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta http-equiv="Content-Language" content="fi" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <style>
 body {
     font-family: Monospace;
@@ -856,13 +856,16 @@ function getTimer() {
 }
 
 function setStyle(tag) {
+    /* Jos haluat rivin näkymään kokonaan,
+     * kommentoi/poista seuraava rivi */
     tag.style.wordWrap="break-word";
+
     tag.style.whiteSpace="pre";
     tag.style.zIndex="5";
 }
 
 function setText(tag,text) {
-    tag.innerText = text;
+//    tag.innerText = text;
     tag.innerHTML = text;
 }
 
@@ -882,8 +885,14 @@ function requesterInit() {
 }
 
 function init() {
-    document.body.style.overflow='hidden';
+    /* Older operas < 9.00-pr1 can't scroll if scrollbars
+     * are set invisible in css */
+    (!window.opera)
+        document.body.style.overflow='hidden';
+
     var table=document.createElement("table");
+    table.style.paddingBottom="5px";    // Firefox hack
+
     _appendId=document.createElement("tbody");
     table.appendChild(_appendId);
     var toAppend=document.getElementById("foo");
@@ -908,7 +917,7 @@ function scrollme(){
     var mypos=window.innerHeight+window.pageYOffset;
     if (mypos<document.getElementById("foo").offsetHeight) {
         window.scrollBy(0,2);
-        setTimeout("scrollme()",50)
+        setTimeout("scrollme()",50);
     }
 }
 

@@ -93,6 +93,10 @@ if ($globals != 1) {
  }
 
 if(isset($_SERVER['PATH_INFO'])) {
+  if(substr($_SERVER['PATH_INFO'], -1) != "/") {
+    header("HTTP/1.1 301 Moved Permanently");
+    header("Location: ".$_SERVER['REQUEST_URI']."/");
+  }
   $pathParts = explode("/", $_SERVER['PATH_INFO']);
   foreach($pathParts as $pathPart) {
     if(strstr($pathPart, ",")) {
@@ -823,7 +827,7 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
     if(! pageNotFound()) {
         // Now, as all main content edition is done, do ETag header.
         // It takes resouces, but can save time in page loading.
-        if(!$etag) $etag = md5($content);
+        if(!$etag) $etag = crc32($content);
         header("ETag: ".$etag);
     }
 
@@ -894,7 +898,9 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
 
     // Compress content
     if($g_options['doGzip'])
-        $content = gzipencode($content);
+        $content = gzipencode($content, $etag);
+        // as we use crc32 anyway in etag, there is no point of calculating it again
+        // in gzipencode(),
 
     die($content);
 }
@@ -905,11 +911,12 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
  * - But then, we couldn't manipulate contents of it so easily,
  *   which is primary reason to use ob
  */
-function gzipencode($content) {
+function gzipencode($content, $crc=null) {
     header('Content-Encoding: gzip');
+    if($crc===null) $crc = crc32($content);
     $content = "\x1f\x8b\x08\x00\x00\x00\x00\x00".
     substr(gzcompress($content, 3), 0, - 4). // substr -4 isn't needed
-    pack('V', crc32($content)).              // crc32 and
+    pack('V', $crc).              // crc32 and
     pack('V', strlen($content));             // size are ignored by all the browsers i have tested
 
     return $content;

@@ -71,7 +71,7 @@ Getopt::Long::Configure ("bundling");
 sub printEvent
 {
 	my ($code, $description) = @_;
-	
+
 	if ($g_debug > 0)
 	{
 		print localtime(time) . "" unless ($ev_timestamp);
@@ -90,7 +90,7 @@ sub printEvent
 sub printNotice
 {
 	my ($notice) = @_;
-	
+
 	if ($g_debug > 1)
 	{
 		print ">> $notice\n";
@@ -109,13 +109,13 @@ sub recordEvent
 	my $table = shift;
 	my $getid = shift;
 	my @coldata = @_;
-	
+
 	my @cols = @{$g_eventTables{$table}};
 	my $lastid = -1;
-	
+
 	my $insertType = "";
 	$insertType = " DELAYED" if ($db_lowpriority);
-	
+
 	my $query = "
 		INSERT$insertType INTO
 			hlstats_Events_$table
@@ -124,12 +124,12 @@ sub recordEvent
 				serverId,
 				map"
 	;
-	
+
 	foreach $i (@cols)
 	{
 		$query .= ",\n$i";
 	}
-	
+
 	$query .= "
 			)
 		VALUES
@@ -138,25 +138,25 @@ sub recordEvent
 			'$g_servers{$s_addr}->{id}',
 			'$g_servers{$s_addr}->{map}'"
 	;
-	
+
 	for $i (@coldata)
 	{
 		$query .= ",\n'" . &quoteSQL($i) . "'";
 	}
-	
+
 	$query .= "
 		)
 	";
-	
+
 	my $result = &doQuery($query);
-	
+
 	if ($getid)
 	{
 		$result = &doQuery("SELECT LAST_INSERT_ID()");
 		($lastid) = $result->fetchrow_array;
 		return $lastid;
 	}
-	
+
 	$result->finish;
 }
 
@@ -165,17 +165,17 @@ sub recordEvent
 # array calcSkill (int killerSkill, int victimSkill, string weapon)
 #
 # Returns an array, where the first index contains the killer's new skill, and
-# the second index contains the victim's new skill. 
+# the second index contains the victim's new skill.
 #
 
 sub calcSkill
 {
 	my ($killerSkill, $victimSkill, $weapon) = @_;
 	my @newSkill;
-	
+
 	$killerSkill = 1 if ($killerSkill < 1);
 	$victimSkill = 1 if ($victimSkill < 1);
-	
+
 	if ($g_debug > 2)
 	{
 		&printNotice("Begin calcSkill: killerSkill=$killerSkill");
@@ -204,11 +204,11 @@ sub calcSkill
 		$modifier = 1.00;
 	}
 	$result->finish;
-	
+
 	# Calculate the new skills
 	my $killerSkillChange = ($victimSkill / $killerSkill) * 5 * $modifier;
 	my $victimSkillChange = ($victimSkill / $killerSkill) * 5 * $modifier;
-	
+
 	if ($killerSkillChange > $g_skill_maxchange)
 	{
 		&printNotice("Capping killer skill change of $killerSkillChange to $g_skill_maxchange") if ($g_debug > 2);
@@ -219,14 +219,14 @@ sub calcSkill
 		&printNotice("Capping victim skill change of $victimSkillChange to $g_skill_maxchange") if ($g_debug > 2);
 		$victimSkillChange = $g_skill_maxchange;
 	}
-	
+
 	$killerSkill += $killerSkillChange;
 	$victimSkill -= $victimSkillChange;
-	
+
 	# we want int not float
 	$killerSkill = sprintf("%d", $killerSkill + 0.5);
 	$victimSkill = sprintf("%d", $victimSkill + 0.5);
-	
+
 	if ($g_debug > 2)
 	{
 		&printNotice("End calcSkill: killerSkill=$killerSkill");
@@ -247,17 +247,17 @@ sub calcSkill
 sub rewardTeam
 {
 	my ($team, $reward, $actionid) = @_;
-	
+
 	my $player;
-	
+
 	&printNotice("Rewarding team \"$team\" with \"$reward\" skill for action \"$actionid\" ...");
-	
+
 	foreach $player (values(%g_players))
 	{
 		my $player_team = $player->get("team");
 		my $player_server = $player->get("server");
 		my $player_timestamp = $player->get("timestamp");
-		
+
 		if ($player_team eq $team && $player_server eq $s_addr
 			&& ($ev_unixtime - $player_timestamp < 120))
 		{
@@ -265,14 +265,14 @@ sub rewardTeam
 			{
 				&printNotice("Rewarding " . $player->getInfoString() . " with \"$reward\" skill for action \"$actionid\"");
 			}
-			
+
 			&recordEvent(
 				"TeamBonuses", 0,
 				$player->get("playerid"),
 				$actionid,
 				$reward
 			);
-			
+
 			$player->increment("skill", $reward, 1);
 			$player->updateDB();
 		}
@@ -325,7 +325,7 @@ sub getPlayerId
 sub updatePlayerProfile
 {
 	my ($player, $field, $value) = @_;
-	
+
 	unless ($player)
 	{
 		&printNotice("updatePlayerInfo: Bad player");
@@ -338,7 +338,7 @@ sub updatePlayerProfile
 	{
 		$value = "";
 	}
-	
+
 	my $playerName = &abbreviate($player->get("name"));
 	my $playerId   = $player->get("playerid");
 
@@ -350,7 +350,7 @@ sub updatePlayerProfile
 		WHERE
 			playerId='$playerId'
 	");
-	
+
 	&rcon("say SET command successful for '$playerName'.");
 	return 1;
 }
@@ -379,11 +379,11 @@ sub updatePlayerProfile
 sub getClanId
 {
 	my ($name) = @_;
-	
+
 	my $clanTag  = "";
 	my $clanName = "";
 	my $clanId   = 0;
-	
+
 	my $result = &doQuery("
 		SELECT
 			pattern,
@@ -395,19 +395,19 @@ sub getClanId
 			pattern_length DESC,
 			id
 	");
-	
+
 	while ( my($pattern, $position) = $result->fetchrow_array)
 	{
 		my $regpattern = quotemeta($pattern);
 		$regpattern =~ s/([A-Za-z0-9]+[A-Za-z0-9_-]*)/\($1\)/; # to find clan name from tag
 		$regpattern =~ s/A/./g;
 		$regpattern =~ s/X/.?/g;
-		
+
 		if ($g_debug > 2)
 		{
 			&printNotice("regpattern=$regpattern");
 		}
-		
+
 		if ((($position eq "START" || $position eq "EITHER") && $name =~ /^($regpattern).+/i) ||
 			(($position eq "END"   || $position eq "EITHER") && $name =~ /.+($regpattern)$/i))
 		{
@@ -415,13 +415,13 @@ sub getClanId
 			{
 				&printNotice("pattern \"$regpattern\" matches \"$name\"! 1=\"$1\" 2=\"$2\"");
 			}
-			
+
 			$clanTag  = $1;
 			$clanName = $2;
 			last;
 		}
 	}
-	
+
 	unless ($clanTag)
 	{
 		return 0;
@@ -464,7 +464,7 @@ sub getClanId
 		";
 		$result = &doQuery($query);
 		$result->finish;
-		
+
 		$result = &doQuery("SELECT LAST_INSERT_ID()");
 		($clanId) = $result->fetchrow_array;
 
@@ -514,7 +514,7 @@ sub getServer
 	else
 	{
 		$result->finish;
-		
+
 		return 0;
 	}
 }
@@ -529,7 +529,7 @@ sub getServer
 sub sameTeam
 {
 	my ($team1, $team2) = @_;
-	
+
 	if ($team1 eq $team2)
 	{
 		if ($team1 ne "" && $team1 ne "Unassigned")
@@ -556,7 +556,7 @@ sub getPlayerInfoString
 {
 	my ($player) = shift;
 	my @ident = @_;
-	
+
 	if ($player)
 	{
 		return $player->getInfoString();
@@ -585,11 +585,11 @@ sub getPlayerInfo
 		my $userid   = $2;
 		my $uniqueid = $3;
 		my $team     = $4;
-		
+
 		# Don't connect Mr. Console or HLTV, they should not be recorded as players!
 		return 0 if ($uniqueid eq "Console");
 		return 0 if ($uniqueid eq "HLTV");
-		
+
 		if ($forced_uniqueid)
 		{
 			$uniqueid = $forced_uniqueid;
@@ -635,15 +635,15 @@ sub getPlayerInfo
 		{
 			$haveplayer = 0;
 		}
-		
+
 		if ($haveplayer &&
 			$g_players{"$s_addr/$userid"}->get("uniqueid") eq $uniqueid)
 		{
 			my $player = $g_players{"$s_addr/$userid"};
-			
+
 			$player->set("name", $name);
 			$player->set("team", $team);
-			
+
 			$player->updateTimestamp();
 		}
 		else
@@ -651,7 +651,7 @@ sub getPlayerInfo
 			if ($g_mode ne "LAN" || $forced_uniqueid)
 			{
 				# Add the player to our hash of player objects
-				
+
 				$g_players{"$s_addr/$userid"} = new HLstats_Player(
 					server => $s_addr,
 					userid => $userid,
@@ -659,9 +659,9 @@ sub getPlayerInfo
 					name => $name,
 					team => $team
 				);
-				
+
 				# Increment number of players on server
-				
+
 				$g_servers{$s_addr}->{numplayers}++ if (!$haveplayer);
 				&printNotice("NumPlayers ($s_addr): $g_servers{$s_addr}->{numplayers} (Connect)");
 
@@ -689,7 +689,7 @@ sub getPlayerInfo
 				&printNotice("No player object available for player \"$name\" <U:$userid>");
 			}
 		}
-		
+
 		return {
 			name     => $name,
 			userid   => $userid,
@@ -714,7 +714,7 @@ sub getProperties
 {
 	my ($propstring) = @_;
 	my %properties;
-	
+
 	while ($propstring =~ s/^\s*\((\S+)(?: "([^"]+)")?\)//)
 	{
 		if (defined($2))
@@ -726,12 +726,12 @@ sub getProperties
 			$properties{$1} = 1; # boolean property
 		}
 	}
-	
+
 	return %properties;
 }
 
 
-# 
+#
 # boolean like (string subject, string compare)
 #
 # Returns true if 'subject' equals 'compare' with optional whitespace.
@@ -740,7 +740,7 @@ sub getProperties
 sub like
 {
 	my ($subject, $compare) = @_;
-	
+
 	if ($subject =~ /^\s*\Q$compare\E\s*$/)
 	{
 		return 1;
@@ -850,7 +850,7 @@ if ($opt_configfile && -r $opt_configfile)
 {
 	$conf = ConfigReaderSimple->new($opt_configfile);
 	$conf->parse();
-	
+
 	%directives = (
 		"DBHost",			"db_host",
 		"DBUsername",		"db_user",
@@ -873,7 +873,7 @@ if ($opt_configfile && -r $opt_configfile)
 		"MinPlayers",		"g_minplayers",
 		"SkillMaxChange",	"g_skill_maxchange"
 	);
-	
+
 	&doConf($conf, %directives);
 }
 else
@@ -918,16 +918,16 @@ if ($opt_version)
 	print "hlstats.pl (HLstats) $g_version\n"
 		. "Real-time player and clan rankings and statistics for Half-Life\n"
 		. "Copyright (C) 2001  Simon Garner\n\n";
-	
+
 	print "Using ConfigReaderSimple module version $ConfigReaderSimple::VERSION\n";
 	if ($g_rcon)
 	{
 		print "Using KKrcon module version $KKrcon::VERSION\n";
 	}
-	
+
 	print "\nThis is free software; see the source for copying conditions.  There is NO\n"
 		. "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n";
-	
+
 	exit(0);
 }
 
@@ -950,7 +950,7 @@ print "++ HLstats $g_version starting...\n\n";
 if ($g_stdin)
 {
 	print "-- UDP listen socket disabled, reading log data from STDIN.\n";
-	
+
 	if (!$g_server_ip || !$g_server_port)
 	{
 		print "-> ERROR: Must specify source of STDIN data using --server-ip and --server-port\n";
@@ -968,13 +968,13 @@ else
 {
 	if ($s_ip) { $ip = $s_ip . ":"; } else { $ip = "port "; }
 	print "-- Opening UDP listen socket on $ip$s_port ... ";
-	
+
 	$s_socket = IO::Socket::INET->new(
 		Proto=>"udp",
 		LocalAddr=>"$s_ip",
 		LocalPort=>"$s_port"
 	) or die ("\nCan't setup UDP socket on $ip$s_port: $!\n");
-	
+
 	print "opened OK\n";
 }
 
@@ -1029,7 +1029,9 @@ print "connected OK\n";
 	"StatsmeLatency",
 		["playerId", "ping"],
 	"StatsmeTime",
-		["playerId", "time"]
+		["playerId", "time"],
+    "Chat",
+        ["playerId", "type", "message"]
 );
 
 # Finding all tables for auto optimisation
@@ -1073,28 +1075,28 @@ while ($loop = &getLine())
 		$s_peerhost = $s_socket->peerhost;
 		$s_peerport = $s_socket->peerport;
 	}
-	
+
 	$s_addr = "$s_peerhost:$s_peerport";
-	
+
 	$s_output =~ s/[\r\n\0]//g;	# remove naughty characters
 	$s_output =~ s/\[No.C-D\]//g;	# remove [No C-D] tag
     $s_output =~ s/\[NO.C-D\]//g;	# remove [NO C-D] tag
 	$s_output =~ s/\[OLD.C-D\]//g;	# remove [OLD C-D] tag
 	$s_output =~ s/\[NOCL\]//g;	# remove [NOCL] tag
 	$s_output =~ s/\([12]\)//g;	# strip (1) and (2) from player names
-	
+
 	# Get the server info, if we know the server, otherwise ignore the data
 	if (!$g_servers{$s_addr})
 	{
 		$g_servers{$s_addr} = &getServer($s_peerhost, $s_peerport);
-		
+
 		if (!$g_servers{$s_addr})
 		{
 			&printEvent(997, "UNRECOGNISED SERVER: " . $s_output);
 			next;
 		}
 	}
-	
+
 	# Get the datestamp (or complain)
 	if ($s_output =~ s/^.*L (\d\d)\/(\d\d)\/(\d{4}) - (\d\d):(\d\d):(\d\d):\s*//)
 	{
@@ -1104,9 +1106,9 @@ while ($loop = &getLine())
 		$ev_hour  = $4;
 		$ev_min   = $5;
 		$ev_sec   = $6;
-		
+
 		$ev_time  = "$ev_hour:$ev_min:$ev_sec";
-		
+
 		if ($g_timestamp)
 		{
 			$ev_timestamp = "$ev_year-$ev_month-$ev_day $ev_time";
@@ -1129,7 +1131,7 @@ while ($loop = &getLine())
 	}
 
 	# Now we parse the events.
-	
+
 	my $ev_type   = 0;
 	my $ev_status = "";
 	my $ev_team   = "";
@@ -1141,7 +1143,7 @@ while ($loop = &getLine())
 	my $ev_properties = "";
 	my %ev_properties = ();
 	my %ev_player = ();
-	
+
 	if ($s_output =~ /^"([^"]+)" ([^"\(]+) "([^"]+)" [^"\(]+ "([^"]+)"(.*)$/)
 	{
 		# Prototype: "player" verb "obj_a" ?... "obj_b"[properties]
@@ -1150,22 +1152,22 @@ while ($loop = &getLine())
 		#  9. Injuring
 		# 10. Player-Player Actions
 		# 11. Player Objectives/Actions
-		
+
 		$ev_player = $1;
 		$ev_verb   = $2; # killed; attacked; triggered
 		$ev_obj_a  = $3; # victim; action
 		$ev_obj_b  = $4; # weapon; victim
 		$ev_properties = $5;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "killed"))
 		{
 			my $killerinfo = &getPlayerInfo($ev_player);
 			my $victiminfo = &getPlayerInfo($ev_obj_a);
-			
+
 			$ev_type = 8;
-			
+
 			if ($killerinfo && $victiminfo)
 			{
 				$ev_status = &doEvent_Frag(
@@ -1184,9 +1186,9 @@ while ($loop = &getLine())
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
 			my $victiminfo = &getPlayerInfo($ev_obj_b);
-			
+
 			$ev_type = 10;
-			
+
 			if ($playerinfo && $victiminfo)
 			{
 				$ev_status = &doEvent_PlayerPlayerAction(
@@ -1235,7 +1237,7 @@ while ($loop = &getLine())
 				if ($ev_properties{"weapon"} eq "hegrenade") {
 					$ev_properties{"weapon"} = "grenade";
 				}
-	
+
 				$ev_status = &doEvent_Statsme(
 					$playerinfo->{"userid"},
 					$ev_properties{"weapon"},
@@ -1259,7 +1261,7 @@ while ($loop = &getLine())
 				if ($ev_properties{"weapon"} eq "hegrenade") {
 					$ev_properties{"weapon"} = "grenade";
 				}
-	
+
 				$ev_status = &doEvent_Statsme2(
 					$playerinfo->{"userid"},
 					$ev_properties{"weapon"},
@@ -1335,24 +1337,24 @@ while ($loop = &getLine())
 		#  7. Change Name
 		# 11. Player Objectives/Actions
 		# 14. a) Chat; b) Team Chat
-		
+
 		$ev_player = $1;
 		$ev_verb   = $2;
 		$ev_obj_a  = $3;
 		$ev_properties = $4;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "connected, address"))
 		{
 			my $ipAddr = $ev_obj_a;
 			my $playerinfo;
-			
+
 			if ($ipAddr =~ /([\d.]+):(\d+)/)
 			{
 				$ipAddr = $1;
 			}
-			
+
 			if ($g_mode eq "LAN")
 			{
 				$playerinfo = &getPlayerInfo($ev_player, $ipAddr);
@@ -1361,9 +1363,9 @@ while ($loop = &getLine())
 			{
 				$playerinfo = &getPlayerInfo($ev_player);
 			}
-			
+
 			$ev_type = 1;
-			
+
 			if ($playerinfo)
 			{
 				if (($playerinfo->{"uniqueid"} =~ /PENDING/) || ($playerinfo->{"uniqueid"} =~ /VALVE_ID_LAN/))
@@ -1388,9 +1390,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "committed suicide with"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 4;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_Suicide(
@@ -1402,9 +1404,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "joined team"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 5;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_TeamSelection(
@@ -1416,9 +1418,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "changed role to"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 6;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_RoleSelection(
@@ -1430,9 +1432,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "changed name to"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 7;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_ChangeName(
@@ -1444,9 +1446,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "triggered"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 11;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_PlayerAction(
@@ -1458,9 +1460,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "triggered a"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 11;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_PlayerAction(
@@ -1472,9 +1474,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "say"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 14;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_Chat(
@@ -1487,9 +1489,9 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "say_team"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			$ev_type = 14;
-			
+
 			if ($playerinfo)
 			{
 				$ev_status = &doEvent_Chat(
@@ -1506,21 +1508,21 @@ while ($loop = &getLine())
 		# Matches:
 		#  2. Enter Game
 		#  3. Disconnection
-		
+
 		$ev_player = $1;
 		$ev_verb   = $2;
 		$ev_properties = $3;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "entered the game"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			if ($playerinfo)
 			{
 				$ev_type = 2;
-				
+
 				$ev_status = &doEvent_EnterGame(
 					$playerinfo->{"userid"},
 					$ev_obj_a
@@ -1530,7 +1532,7 @@ while ($loop = &getLine())
 		elsif (like($ev_verb, "disconnected"))
 		{
 			my $playerinfo = &getPlayerInfo($ev_player);
-			
+
 			if ($playerinfo)
 			{
 				$ev_type = 3;
@@ -1546,21 +1548,21 @@ while ($loop = &getLine())
 						server => $s_addr
 					};
 				}
-				
+
 				$ev_status = &doEvent_Disconnect(
 					$playerinfo->{"userid"}
 				);
-				
+
 				$g_servers{$s_addr}->{numplayers}-- if ($playerinfo->{"uniqueid"} !~ /PENDING/);
 				&printNotice("NumPlayers ($s_addr): $g_servers{$s_addr}->{numplayers} (Disconnect)");
 			}
 		}
 		elsif (like($ev_verb, "STEAM USERID validated") || like($ev_verb, "VALVE USERID validated"))
-		{               
+		{
 			my $playerinfo = &getPlayerInfo($ev_player);
 
-			if ($playerinfo)        
-			{                       
+			if ($playerinfo)
+			{
 				$ev_type = 1;
 
 				if ( ($g_preconnect->{$playerinfo->{"userid"}}->{"name"} eq $playerinfo->{"name"})
@@ -1572,22 +1574,22 @@ while ($loop = &getLine())
 					);
 				}
 			}
-		}       
+		}
 	}
 	elsif ($s_output =~ /^Team "([^"]+)" ([^"\(]+) "([^"]+)" [^"\(]+ "([^"]+)" [^"\(]+(.*)$/)
 	{
 		# Prototype: Team "team" verb "obj_a" ?... "obj_b" ?...[properties]
 		# Matches:
 	    # 16. Round-End Team Score Report
-		
+
 		$ev_team   = $1;
 		$ev_verb   = $2;
 		$ev_obj_a  = $3;
 		$ev_obj_b  = $4;
 		$ev_properties = $5;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "scored"))
 		{
 			$ev_type = 16;
@@ -1604,14 +1606,14 @@ while ($loop = &getLine())
 		# Matches:
 	    # 12. Team Objectives/Actions
 		# 15. Team Alliances
-		
+
 		$ev_team   = $1;
 		$ev_verb   = $2;
 		$ev_obj_a  = $3;
 		$ev_properties = $4;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "triggered"))
 		{
 			$ev_type = 12;
@@ -1642,14 +1644,14 @@ while ($loop = &getLine())
 		# Prototype: verb "obj_a" = "obj_b"[properties]
 		# Matches:
 	    # 17. b) Server cvar "var" = "value"
-		
+
 		$ev_verb   = $1;
 		$ev_obj_a  = $2;
 		$ev_obj_b  = $3;
 		$ev_properties = $4;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "Server cvar"))
 		{
 			$ev_type = 17;
@@ -1665,15 +1667,15 @@ while ($loop = &getLine())
 		# Prototype: verb: "rcon ?..."obj_a" obj_b" from "obj_c"[properties]
 		# Matches:
 	    # 20. a) Rcon; b) Bad Rcon
-		
+
 		$ev_verb   = $1;
 		$ev_obj_a  = $2; # password
 		$ev_obj_b  = $3; # command
 		$ev_obj_c  = $4; # ip:port
 		$ev_properties = $5;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "Rcon"))
 		{
 			$ev_type = 20;
@@ -1702,13 +1704,13 @@ while ($loop = &getLine())
 		# 13. World Objectives/Actions
 		# 19. a) Loading map; b) Started map
 		# 21. Server Name
-		
+
 		$ev_verb   = $1;
 		$ev_obj_a  = $2;
 		$ev_properties = $3;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "World triggered"))
 		{
 			$ev_type = 13;
@@ -1746,12 +1748,12 @@ while ($loop = &getLine())
 		# Matches:
 	    # 17. a) Server cvars start; c) Server cvars end
 		# 18. a) Log file started; b) Log file closed
-		
+
 		$ev_verb   = $1;
 		$ev_properties = $2;
-		
+
 		%ev_properties = &getProperties($ev_properties);
-		
+
 		if (like($ev_verb, "Server cvars start"))
 		{
 			$ev_type = 17;
@@ -1786,9 +1788,9 @@ while ($loop = &getLine())
 		# Prototype: [ADMIN] obj_a
 		# Matches:
 	    # Admin Mod messages
-		
+
 		$ev_obj_a  = $1;
-		
+
 		$ev_type = 500;
 		$ev_status = &doEvent_Admin(
 			"Admin Mod",
@@ -1800,10 +1802,10 @@ while ($loop = &getLine())
 		# Prototype: [ADMIN] obj_a
 		# Matches:
 	    # Admin Mod messages
-		
+
 		$ev_obj_a  = $1;
 		$ev_obj_b  = $2;
-		
+
 		$ev_type = 500;
 		$ev_status = &doEvent_Admin(
 			"Admin Mod",
@@ -1811,7 +1813,7 @@ while ($loop = &getLine())
 			$ev_obj_a
 		);
 	}
-	
+
 
 	if ($ev_type)
 	{
@@ -1832,13 +1834,13 @@ EOT
 			{
 				print "property: \"$key\" = \"$value\"\n";
 			}
-			
+
 			while (my($key, $value) = each(%ev_player))
 			{
 				print "player $key = \"$value\"\n";
 			}
 		}
-		
+
 		if ($ev_status ne "")
 		{
 			&printEvent($ev_type, $ev_status);
@@ -1853,32 +1855,32 @@ EOT
 		# Unrecognised event
 		&printEvent(999, "UNRECOGNISED: " . $s_output);
 	}
-	
-	
-	
-	
+
+
+
+
 	# Clean up
-	
+
 	while ( my($pl, $player) = each(%g_players) )
 	{
 		if ( ($ev_unixtime - $player->{timestamp}) > 600 )
 		{
 			# we delete any player who is inactive for over 10 mins (600 sec)
 			# - they probably disconnected silently somehow.
-			
+
 			&printEvent(400, "Auto-disconnecting " . $player->getInfoString() .
 				" for idling (" . ($ev_unixtime - $player->get("timestamp")) . " sec)");
-			
+
 			my($server) = split(/\//, $pl);
 			$g_servers{$s_addr}->{numplayers}-- if ($playerinfo->{"uniqueid"} !~ /PENDING/);
 			&printNotice("NumPlayers: $g_servers{$s_addr}->{numplayers} (Auto-Disconnect)");
-			
+
 			$player->updateDB();
 			delete($g_players{$pl});
 		}
 	}
-	
-	
+
+
 	# Delete events over $g_deletedays days old, at every 500th iteration of the main loop
 
 	if ($c % 500 == 0 && $g_deletedays)
@@ -1887,10 +1889,10 @@ EOT
 		{
 			print "\n-- Cleaning up database: deleting events older than $g_deletedays days ...\n";
 		}
-		
+
 		my $deleteType = "";
 		$deleteType = " LOW_PRIORITY" if ($db_lowpriority);
-		
+
 		foreach $eventTable (keys(%g_eventTables))
 		{
 			if ($g_debug > 0)
@@ -1910,7 +1912,7 @@ EOT
 				print "OK\n";
 			}
 		}
-		
+
 		if ($g_debug > 0)
 		{
 			print "-- Database cleanup complete.\n\n";
@@ -1923,28 +1925,28 @@ EOT
 		{
 			print "\n-- Optimizing database: Optimizing tables...\n";
 		}
-		
+
 		foreach $table (@g_allTables)
 		{
 			if ($g_debug > 0)
 			{
 				print "-> $table ... "
 			}
-			
+
 			&doQuery("
 				OPTIMIZE TABLE $table
 			");
-			
+
 			if ($g_debug > 0)
 			{
 				print "OK\n";
 			}
 		}
-		
+
 		if ($g_debug > 0)
 		{
 			print "-- Database optimization complete.\n\n";
-		}		
+		}
 	}
 	$c++;
 	$c = 1 if ($c > 500000);

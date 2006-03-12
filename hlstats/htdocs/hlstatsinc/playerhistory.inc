@@ -42,7 +42,6 @@ if(!defined("_HLSTATS")) die("Direct access denied.");
 
     $playerdata = $db->fetch_array();
 
-
     $pl_name = $playerdata["lastName"];
     if (strlen($pl_name) > 10)
     {
@@ -63,46 +62,41 @@ if(!defined("_HLSTATS")) die("Direct access denied.");
     else
         list($gamename) = $db->fetch_row();
 
-
     pageHeader(
-        array($gamename, "Event History", $pl_name),
+        array($gamename, _("Event History"), $pl_name),
         array(
             $gamename=>$g_options["scripturl"] . "?game=$game",
-            "Player Rankings"=>$g_options["scripturl"] . "?mode=players&amp;game=$game",
-            "Player Details"=>$g_options["scripturl"] . "?mode=playerinfo&amp;player=$player",
-            "Event History"=>""
-        ),
-        $playername
+            _("Player Rankings")=>$g_options["scripturl"] . "?mode=players&amp;game=$game",
+            _("Player Details")=>$g_options["scripturl"] . "?mode=playerinfo&amp;player=$player",
+            _("Event History")=>""
+        )
     );
-
-    flush();
-
 
     $table = new Table(
         array(
             new TableColumn(
                 "eventTime",
-                "Date",
+                _("Date"),
                 "width=20"
             ),
             new TableColumn(
                 "eventType",
-                "Type",
+                _("Type"),
                 "width=10&align=center"
             ),
             new TableColumn(
                 "eventDesc",
-                "Description",
+                _("Description"),
                 "width=40&sort=no&append=.&embedlink=yes"
             ),
             new TableColumn(
                 "serverName",
-                "Server",
+                _("Server"),
                 "width=20"
             ),
             new TableColumn(
                 "map",
-                "Map",
+                _("Map"),
                 "width=10"
             )
         ),
@@ -378,6 +372,21 @@ if(!defined("_HLSTATS")) die("Direct access denied.");
             'Suicide',
             <table>.eventTime,
             CONCAT('I committed suicide with \"', weapon, '\"'),
+            hlstats_Servers.name,
+            <table>.map
+        FROM
+            <table>
+        LEFT JOIN hlstats_Servers ON
+            hlstats_Servers.serverId = <table>.serverId
+        WHERE
+            <table>.playerId=$player
+    ");
+
+    insertEvents("Chat", "
+        SELECT
+            'Say',
+            <table>.eventTime,
+            CONCAT('I said \"', message, '\"'),
             hlstats_Servers.name,
             <table>.map
         FROM

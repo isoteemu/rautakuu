@@ -1,4 +1,5 @@
 <?php
+// kate: hilight
 
 function hlstats_help($section = 'admin/help#hlstats') {
     $output = '';
@@ -34,6 +35,14 @@ function hlstats_menu($may_cache){
     'access'   => user_access('hlstats'),
     'type'     => MENU_LOCAL_TASK,
     'weight'   => -10
+  );
+  $items[] = array(
+    'path'     => 'hlstats/players',
+    'title'    => t('VIP Players'),
+    'callback' => 'hlstats_page',
+    'access'   => user_access('hlstats'),
+    'type'     => MENU_DEFAULT_LOCAL_TASK,
+    'weight'   => -11
   );
   $items[] = array(
     'path'     => 'hlstats/general',
@@ -146,32 +155,34 @@ function hlstats_search ($op = 'search',  $keys = null) {
     }
 }
 
-function hlstats_user($type, &$edit, &$user, $category = NULL) {
+function hlstats_user($type, &$edit, &$cuser, $category = NULL) {
 
-    global $base_url;
+    global $user, $base_url;
 
     switch ($type) {
         case 'update':
         case 'insert':
-            if(!empty($edit['access']) && user_access('administer admins')) {
-                $acl = "";
-                foreach($edit['access'] AS $attr ) {
-                    $acl .= $attr;
-                }
-                if(empty($acl)) $acl = "z";
+            if(!empty($edit['access'])) {
+                $acl = _hlstats_admin_access($edit,$user,$cuser);
             }
+
             if(!empty($edit['steamid'])) {
-                if(!isset($acl)) $acl = _hlstats_fetch_access($user->uid);
-                _hlstats_steamid_push($user->uid,$edit['steamid'],$acl);
+                if(empty($edit['expire']) || !user_access('administer admins')) {
+                    $edit['expire'] = _hlstats_fetch_expire($user->uid);
+                }
+                // Double check that date is in correct format
+                if($edit['expire'] != "0000/00/00 00:00:00")
+                    $edit['expire'] = strftime("%Y/%m/%d %H:%M:%S", strtotime($edit['expire']));
+                if(!isset($acl)) $acl = _hlstats_fetch_access($cuser->uid);
+                _hlstats_steamid_push($cuser->uid,$edit['steamid'],$edit['expire'],$acl);
             }
             break;
 
         case 'form':
-            if($category == "server" ) {
-                $access = _hlstats_fetch_access($user->uid);
-                $data   = _hlstats_steamid_form($user->uid);
-                $data  .= _hlstats_admins_form($user->uid,$access,user_access('administer admins'));
-                return array(array('title' => sprintf('<a href="%s">Counter-Strike</a>',variable_get("hlstats_url", "http://rautakuu.org/hlstats/hlstats.php")), 'data' => $data, 'weight' => 4));
+            if($category == "csserver" ) {
+                $data  = _hlstats_steamid_form($cuser->uid);
+                $data .= _hlstats_admin_form($edit,$user,$cuser);
+                return array(array('title' => 'Counter-Strike', 'data' => $data, 'weight' => 4));
             }
             break;
 
@@ -189,7 +200,7 @@ function hlstats_user($type, &$edit, &$user, $category = NULL) {
                     $stealeruid  = db_result($checkDupe);
                     if(db_num_rows($steamExists) < 1) {
                         form_set_error('steamid',t("Rautakuun pelaajatietokannasta ei löytynyt kyseistä SteamIDtä. Joko kirjoitit SteamIDn väärin, tai et ole koskaan pelannut rautakuussa."));
-                    } elseif(db_num_rows($checkDupe) != 0 && $stealeruid != $user->uid) {
+                    } elseif(db_num_rows($checkDupe) != 0 && $stealeruid != $cuser->uid) {
                         $stealerpl  = db_result($steamExists);
                         $stealerln  = variable_get("hlstats_url", "http://rautakuu.org/hlstats/hlstats.php").'?mode=playerinfo&amp;player='.$stealerpl;
                         $stealer    = user_load(array("uid"=>$stealeruid));
@@ -211,7 +222,7 @@ function hlstats_user($type, &$edit, &$user, $category = NULL) {
 }
 
 function hlstats_categories() {
-    return array(array('name' => "server", 'title' => "Counter-Strike", 'weight' =>4));
+    return array(array('name' => "csserver", 'title' => "Counter-Strike", 'weight' =>4));
 }
 
 function _hlstats_steamid_form($uid) {
@@ -226,7 +237,7 @@ function _hlstats_steamid_form($uid) {
     return $output;
 }
 
-function _hlstats_admins_form($uid,$edit,$editable=false) {
+function _hlstats_admins_form_form($uid,$edit,$editable=false) {
     //    form_checkbox($title, $name, $value = 1, $checked = FALSE, $description = NULL, $attributes = NULL, $required = FALSE)
     //  form_checkboxes($title, $name, $values, $options, $description = NULL, $attributes = NULL, $required = FALSE)
     if($editable!=true) $attributes = array('disabled' => 'disabled');
@@ -250,73 +261,69 @@ function _hlstats_admins_form($uid,$edit,$editable=false) {
         'k' => t("access to sv_password cvar (by amx_cvar command)"),
         'l' => t("access to amx_rcon command and rcon_password cvar (by amx_cvar command"),
         'u' => t("menu access"),
+        't' => t("Can grant access rights to other players"),
         'z' => t("user (no admin)")
     );
     return form_checkboxes("Flags","access",$checked,$options,"Important: Do not use 'z' for admins.",$attributes,false);
-
-    /*
-    $header = array(
-        array('data' => t("Flag")),
-        array('data' => t("Purpose"))
-    );
-    $rows   = array();
-    $rows[] = array(
-        array('data' => form_checkboxes("a","access",1,$edit['a'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("immunity (can't be kicked/baned/slayed/slaped and affected by other commmands)")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("b","access",1,$edit['b'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("reservation (can join on reserved slots)")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("c","access",1,$edit['c'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_kick command")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("d","access",1,$edit['d'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_ban and amx_unban commands")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("e","access",1,$edit['e'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_slay and amx_slap commands")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("f","access",1,$edit['f'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_map command")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("g","access",1,$edit['g'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_cvar command (not all cvars will be available)")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("h","access",1,$edit['h'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_cfg command")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("i","access",1,$edit['i'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_chat and other chat commands")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("j","access",1,$edit['j'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("amx_vote and other vote commands")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("k","access",1,$edit['k'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("access to sv_password cvar (by amx_cvar command)")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("u","access",1,$edit['u'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("menu access")),
-    );
-    $rows[] = array(
-        array('data' => form_checkboxes("l","access",1,$edit['l'],null,$attributes,false), 'class' => 'title'),
-        array('data' => t("access to amx_rcon command and rcon_password cvar (by amx_cvar command)")),
-    );
-    return theme('table', $header, $rows);
-    */
 }
 
-function _hlstats_steamid_push($uid, $steamid, $access="z") {
+function _hlstats_admin_access(&$edit,&$user,&$cuser) {
+    $denymsg = false;
+    if(!empty($edit['access'])) {
+        $acl = "";
+        if(user_access('administer admins')) {
+            foreach($edit['access'] AS $attr ) {
+                $acl .= $attr;
+            }
+        } else {
+            $giveraccess = _hlstats_fetch_access($user->uid);
+            if($giveraccess['t'] == 1) {
+                foreach($edit['access'] AS $attr ) {
+                    if(isset($giveraccess[$attr]) && $giveraccess[$attr] == 1) {
+                        $acl .= $attr;
+                    } else {
+                        $denymsg .= " - $attr ";
+                    }
+                }
+            } else {
+                drupal_set_message(t("Sinulla ei ole oikeuksia muokata, oikeuksia."),'error');
+            }
+        }
+        if(empty($acl)) $acl = "ju";
+    }
+
+    if($denymsg) {
+        drupal_set_message(t("Voit ainoastaan antaa oikeuksia, joita itselläsi on. Extra oikeudet jätettiin huomiotta $denymsg"),'error');
+    }
+
+    return $acl;
+}
+
+function _hlstats_admin_form(&$edit,&$user,&$cuser) {
+    $access = _hlstats_fetch_access($cuser->uid);
+    $expire = _hlstats_fetch_expire($cuser->uid);
+    $myac   = _hlstats_fetch_access($user->uid);
+
+    if(user_access('administer admins') || $myac['t'] == 1)
+        $editadmin = true;
+    else
+        $editadmin = false;
+
+    $data  .= _hlstats_admins_form_form($cuser->uid,$access,$editadmin);
+    $data  .= _hlstats_admins_expire_form($cuser->uid,$expire,user_access('administer admins'));
+    return $data;
+}
+
+function _hlstats_admins_expire_form($uid,$edit,$editable=false) {
+    // Milloin oikeudet expireoituu
+    //var cal1x = new CalendarPopup("testdiv1");
+    if($editable!=true) $attributes = array('disabled' => 'disabled');
+    if(!$edit) $edit = "0000-00-00 00:00:00";
+    return form_textfield(t("Oikeudet expiroituu"), "expire", $edit, 40, 60, t("ISO päivämäärä, jolloin oikeudet palautuvat vanhoiksi. <a href=\"http://fi.php.net/manual/en/function.strtotime.php\">Katso formaatin ohjeita.</a>"),$attributes);
+}
+
+
+function _hlstats_steamid_push($uid, $steamid, $expire, $access="z") {
     if(is_array($access)) {
         $str ="";
         foreach($access AS $key => $val) {
@@ -326,12 +333,13 @@ function _hlstats_steamid_push($uid, $steamid, $access="z") {
     }
     if(empty($access)) $access = "z";
 
-    watchdog('hlstats', t("Henkilölle ID:%id päivitettiin SteamIDksi %steamid ja oikeuksiksi %acl", array("%id"=>$uid,"%steamid"=>$steamid,"%acl"=>$access)));
+    watchdog('hlstats', t("Henkilölle ID:%id päivitettiin SteamIDksi %steamid, oikeuksiksi %acl, ja umputumiseksi %exp", array("%id"=>$uid,"%steamid"=>$steamid,"%acl"=>$access,"%exp"=>$exp)));
 
     _hlstats_db(STEAMID_PUSH, array(
         "steamid" => $steamid,
         "uid"     => $uid,
-        "access"  => $access
+        "access"  => $access,
+        "expire"  => $expire,
     ));
 }
 
@@ -385,10 +393,114 @@ function hlstats_page() {
             if(count($edit) > 0) _hlstats_save_options($edit, $user->uid);
             echo theme("page",hlstats_form_style($hlstats));
             break;
+        case "players" :
+            if(arg(2)) {
+                $edit['steamid'] = db_result(_hlstats_db(STEAMID_GET, array(arg(2))));
+
+                if(!$edit['steamid']) {
+                    drupal_set_message(t("Henkilö ei ole asettanut SteamID:tä"),"error");
+                    drupal_goto("hlstats/players");
+                } else {
+                    if(!empty($edit['access'])) {
+                        $acl = _hlstats_admin_access($edit,$user,$cuser);
+
+                        if(empty($edit['expire']) || !user_access('administer admins')) {
+                            $edit['expire'] = _hlstats_fetch_expire($user->uid);
+                        }
+                        // Check that date is in correct format
+                        if($edit['expire'] != "0000/00/00 00:00:00")
+                            $edit['expire'] = strftime("%Y/%m/%d %H:%M:%S", strtotime($edit['expire']));
+
+                        _hlstats_steamid_push(arg(2),$edit['steamid'],$edit['expire'],$acl);
+                        drupal_set_message(t("Oikeudet tallennettu"));
+                    }
+                }
+                echo theme("page",_hlstats_page_rights($edit,$user,arg(2)));
+            } else {
+                echo theme("page",_hlstats_page_players());
+            }
+            break;
+        case "rights" :
+            echo theme("page","<h2>CASE</h2>"._hlstats_page_rights($edit, $user));
+            break;
         default :
             echo theme("page",print_r($_POST,1));
             break;
     }
+}
+
+function _hlstats_page_players() {
+
+    drupal_set_title(t("VIP Players"));
+
+    $header = array(
+        array('data' => t("Pelaaja")),
+        array('data' => t("Skilli")),
+        array('data' => t("Hyffe")),
+        array('data' => t("Oikeudet")),
+    );
+
+    if(module_exist("buddylist")) {
+        $header[count($header)]['colspan']++;
+    }
+
+    $admins  = array();
+    $players = array();
+
+    $res = _hlstats_db(HLSTATS_GET_VIP_PLAYERS);
+    while ($row = db_fetch_array($res)) {
+
+        if(isset($admins[$row['uid']]) || isset($players[$row['uid']])) continue;
+
+        $user = user_load(array('uid' => $row['uid']));
+        if(!$user->uid) continue;
+
+        $jag = array(
+            array('data' => "&nbsp;".l($user->name,"user/".$user->uid)),
+            array('data' => '<a href="'.variable_get('hlstats_url', 'http://rautakuu.org/hlstats/').'?mode=playerinfo&amp;player='.$row['playerId'].'">'.$row['skill'].'&nbsp;</a>','align'=>'right'),
+            array('data' => number_format($row['amount']).'&nbsp;','align'=>'right'),
+            array('data' => "&nbsp;".l($row['access'], "hlstats/players/".$user->uid),'align'=>'center')
+        );
+
+        if(module_exist("buddylist")) $jag[] = array('data'=>l(t('Lisää kaveriksi'),'buddy/add/'.$user->uid));
+
+        if($row['access'] == "z" || $row['access'] == "j" || $row['access'] == "u" || $row['access'] == "ju") {
+            $players[$row['uid']] = $jag;
+        } else {
+            $admins[$row['uid']] = $jag;
+        }
+    }
+
+    $output  = "";
+    $output .= form_group(t("Adminit"),theme('table', $header, $admins));
+    $output .= form_group(t("VIP Pelaajat"),theme('table', $header, $players));
+
+    return $output;
+}
+
+function _hlstats_page_rights(&$edit,&$user,$uid) {
+    if(!$uid) {
+        drupal_set_message(t("Ei ole määritelty käyttäjää"),"error");
+        drupal_goto("hlstats/players");
+    }
+
+    $cuser = user_load(array('uid'=>$uid));
+    if(!$cuser->uid) {
+        drupal_set_message(t("Virheellinen käyttäjä"),"error");
+        drupal_goto("hlstats/players");
+    }
+    $ac = _hlstats_fetch_access($user->uid);
+    if($ac['t'] == 0 && !user_access('administer admins')) {
+        $attributes = array('disabled' => 'disabled');
+    }
+
+    drupal_set_title(t("VIP Pelaajat » oikeudet » %name",array("%name"=>$cuser->name)));
+    $data  = _hlstats_admin_form($edit,$user,$cuser);
+
+    $data .= form_submit(t("Talenna oikeudet"),"save",$attributes);
+    $form  = form($data,"post", url("hlstats/players/".$cuser->uid));
+
+    return $form;
 }
 
 function hlstats_form_server($hlstats) {
@@ -511,7 +623,9 @@ function hlstats_page_status($hlstats,$command) {
 
     drupal_set_title(t("Hlstλts » Server Status » %name", array("%name" => $hlstats['name'])));
 
-    $header = array(array('data' => t("Server Status"), 'colspan' => 2));
+    $header = array(
+        array('data' => t("Server Status")),
+    );
     $rows   = array();
     $rows[] = array(
         array('data' => t("Address").":", 'class' => 'title'),
@@ -589,8 +703,8 @@ function &_hlstats_validate_server(&$hlstats) {
 
     $hlstats['statusurl'] = htmlspecialchars($hlstats['statusurl']);
 
-    if(!isset($hlstats['rcon_password'])) {
-        drupal_set_message("rcon_password",t("Rcon salasana ei ole pakollinen, mutta hlstatsin toiminnallisuus kärsii ilman sitä."));
+    if(empty($hlstats['rcon_password'])) {
+        drupal_set_message(t("Rcon salasana ei ole pakollinen, mutta hlstatsin toiminnallisuus kärsii ilman sitä."));
     } else {
         if(!_hlstats_test_server_rcon($hlstats)) {
             form_set_error("rcon_password",t("Serverin RCON salasanaa ei voitu vahvistaa. Tarkista RCON tai jätä kenttä tyhjäksi"));
@@ -699,7 +813,12 @@ function _hlstats_fetch_server($uid=null) {
     return $hlstats;
 }
 
-function _hlstats_fetch_access($uid) {
+function _hlstats_fetch_access($uid, $reload=false) {
+
+    static $accesses;
+    if(isset($accesses[$uid]) && $reload == false) {
+        return $accesses[$uid];
+    }
 
     $flags = array(
         'a' => 0,
@@ -714,6 +833,7 @@ function _hlstats_fetch_access($uid) {
         'j' => 0,
         'k' => 0,
         'l' => 0,
+        't' => 0,
         'u' => 0,
         'z' => 0
     );
@@ -731,9 +851,22 @@ function _hlstats_fetch_access($uid) {
             $flags['z'] = 1;
         }
     } else {
-        $flags['z'] = 1;
+        $flags['j'] = 1;
+        $flags['u'] = 1;
     }
+    $accesses[$uid] = $flags;
+
     return $flags;
+}
+
+function _hlstats_fetch_expire($uid) {
+    $res = _hlstats_db(HLSTATS_EXPIRE_FETCH,array($uid));
+    if(db_num_rows($res) >= 1 ) {
+        $expire = db_result($res);
+    } else {
+        $expire = "0000/00/00 00:00:00";
+    }
+    return $expire;
 }
 
 function _hlstats_save_options($edit,$uid) {
@@ -783,14 +916,20 @@ function &_hlstats_db($do, $params=array()) {
             $res = db_query("SELECT `source` FROM {hlstats_Games} WHERE `code` = '{$params[0]}'");
             break;
         case HLSTATS_ACCESS_FETCH :
-            $res = db_query("SELECT access FROM {drupal_steamids} WHERE uid = '%d' ORDER BY `updated` DESC LIMIT 1", $params[0]);
+            $res = db_query("SELECT access FROM {drupal_steamids} WHERE uid = '%d' AND ( expire = '0000/00/00 00:00:00' OR expire > NOW() ) ORDER BY `updated` DESC LIMIT 1", $params[0]);
+            break;
+        case HLSTATS_EXPIRE_FETCH :
+            $res = db_query("SELECT IFNULL(expire,'0000/00/00 00:00:00') FROM {drupal_steamids} WHERE uid = '%d' AND `expire` > NOW() ORDER BY `updated` DESC LIMIT 1", $params[0]);
             break;
         case STEAMID_GET :
             $res = db_query("SELECT steamid FROM {drupal_steamids} WHERE uid = '%d' ORDER BY `updated` DESC LIMIT 1", $params[0]);
             break;
         case STEAMID_PUSH :
-            $res = db_query("INSERT INTO {drupal_steamids} (steamid, uid, access, updated) VALUES ('%s', '%d', '%s', NOW())",$params["steamid"], $params["uid"], $params['access']);
+            $res = db_query("INSERT INTO {drupal_steamids} (steamid, uid, access, updated, expire) VALUES ('%s', '%d', '%s', NOW(), '%s')",$params["steamid"], $params["uid"], $params['access'], $params['expire']);
             //db_query("FLUSH {drupal_steamids}");
+            break;
+        case HLSTATS_GET_VIP_PLAYERS :
+            $res = db_query("SELECT `uid`, `access`, IFNULL(`amount`,'0') AS amount, skill, hlstats_Players.playerId AS playerId FROM `drupal_steamids` LEFT JOIN `bank` ON drupal_steamids.steamid=bank.sid INNER JOIN hlstats_PlayerUniqueIds ON  drupal_steamids.steamId=hlstats_PlayerUniqueIds.uniqueId INNER JOIN `hlstats_Players` ON hlstats_PlayerUniqueIds.playerId=hlstats_Players.playerId WHERE expire = '0000/00/00 00:00:00' OR expire > NOW() ORDER BY drupal_steamids.updated DESC");
             break;
         case STEAMID_SEARCH :
             $res = db_query("SELECT playerId FROM hlstats_PlayerUniqueIds WHERE `uniqueId` LIKE '%s' LIMIT 1", $params[0]);

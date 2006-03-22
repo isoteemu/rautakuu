@@ -14,18 +14,21 @@ function rautakuu_auth_init() {
     } elseif ($edit['name'] && $edit['pass']) {
 
         $uname =& $edit['name'];
-        $usql = "SELECT accountuser.password FROM users INNER JOIN accountuser ON accountuser.username=users.name WHERE accountuser.password IS NOT NULL AND users.mail LIKE '%@rautakuu.org' AND users.name='$uname'";
+        $usql = "SELECT accountuser.md5 AS hordepw, users.pass AS drupalpw FROM users INNER JOIN accountuser ON accountuser.username=users.name WHERE accountuser.md5 IS NOT NULL AND users.mail LIKE '%@rautakuu.org' AND users.name='{$edit['name']}'";
         $acpwres = db_query($usql);
 
         if ( db_num_rows($acpwres) >= 1 ) {
             // Löytyi käyttäjä, Syncataan salasana.
-            $pass = db_result($acpwres);
+            $passobj = db_fetch_object($acpwres);
             //watchdog("user", "Synced password: $uname (Rautakuu)", l(t("edit user"), "admin/user/edit/$user->uid"));
             //user_save($account, array('pass' => $pass));
-            db_query("UPDATE users SET pass='%s' WHERE 1 AND name='%s'", md5($pass), $uname);
+            if($passobj->hordepw != $passobj->drupalpw) {
+                db_query("UPDATE users SET pass='%s' WHERE 1 AND name='%s'", $passobj->hordepw, $uname);
+                watchdog("user", "Synced password", l(t("edit user"), "admin/user/edit/$user->uid"));
+            }
         } else {
             // Tarkistetaan onko yleinen rautakuun käyttäjä
-            $ucres = db_query("SELECT password FROM accountuser WHERE username='{$uname}'");
+            $ucres = db_query("SELECT md5 FROM accountuser WHERE username='{$uname}'");
             if ( db_num_rows($ucres) >= 1 ) {
 
                 $ueres = db_query("SELECT init, pass FROM {users} WHERE name='{$uname}'");
@@ -45,7 +48,7 @@ function rautakuu_auth_init() {
 
                 // ... on. Lisätään drupaliin. ja annetaan lisärooliksi 4 (moderaattori)
                 $pass = db_result($ucres);
-                $user = user_save($account, array('name' => $uname, 'pass' => $pass, 'mail' => "$uname@rautakuu.org", 'init' => "$uname@rautakuu.org", 'status' => 1, 'roles' => array(_user_authenticated_id(),4)));
+                $user = user_save($account, array('name' => $uname, 'pass' => $edit['pass'], 'mail' => "$uname@rautakuu.org", 'init' => "$uname@rautakuu.org", 'status' => 1, 'roles' => array(_user_authenticated_id(),4)));
                 watchdog("user", "new user: $user->name (Rautakuu)", l(t("edit user"), "admin/user/edit/$user->uid"));
                 drupal_goto('user');
             }

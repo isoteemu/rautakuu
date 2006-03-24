@@ -1,5 +1,5 @@
 <?php
-// kate: hilight
+// kate: space-indent true; encoding utf-8; indent-width 4; syntax PHP/PHP;
 
 function hlstats_help($section = 'admin/help#hlstats') {
     $output = '';

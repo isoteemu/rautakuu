@@ -71,7 +71,7 @@
 			new TableColumn(
 				"lastName",
 				"Nimi",
-				"width=35&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")."&append=.".rawurlencode("<span id=\"%k\"></span><script>addPlayer('%k');</script>")
+				"width=35&flag=1&link=" . urlencode("mode=playerinfo&amp;player=%k")."&append=.".rawurlencode(" <span id=\"%k\"></span><script>addPlayer('%k');</script>")
 			),
 			new TableColumn(
 				"skill",
@@ -119,7 +119,7 @@
             hlstats_Players.deaths,
             hlstats_Events_Connects.ipAddress AS ip,
             IFNULL(kills/deaths, '-') AS kpd,
-                IF(".MINACTIVITY." > (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))), ((100/".MINACTIVITY.") * (".MINACTIVITY." - (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))))), 0) as activity,
+            IF(".MINACTIVITY." > (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))), ((100/".MINACTIVITY.") * (".MINACTIVITY." - (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(MAX(hlstats_Events_PlayerActions.eventTime))))), 0) as activity,
             hlstats_Old_Rank.skill AS old_skill
 		FROM
 			hlstats_Players
@@ -135,12 +135,14 @@
 			AND hlstats_Players.kills >= $minkills
             GROUP BY
                 hlstats_Events_Connects.playerId
+            HAVING activity >= 0
 		ORDER BY
 			$table->sort $table->sortorder,
 			$table->sort2 $table->sortorder,
 			lastName ASC,
             hlstats_Events_Connects.eventTime DESC
-		LIMIT $table->startitem,$table->numperpage
+		LIMIT
+        $table->startitem,$table->numperpage
 	");
 
 	$resultCount = $db->query("

@@ -42,12 +42,14 @@ $jag = $_SERVER['HTTP_HOST'].dirname($_SERVER['SCRIPT_NAME']);
 if(substr($jag,-1) != "/") $jag .= "/";
 echo $jag; ?>" />
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
-    <title>Rautakuu [dot] org :: HLstats<?php
+    <title>Rautakuu [dot] org :: HLstλts<?php
         foreach ($title as $t)
         {
             echo " » $t";
         }
     ?></title>
+    <?php $faviconimg = getImage("/player"); ?>
+    <link rel="icon" href="<?=$faviconimg['url'];?>" type="image/gif" >
     <style type="text/css">
     <!--
         .fontNormal
@@ -166,42 +168,31 @@ echo $jag; ?>" />
             background-color:<?=$g_options["table_bgcolor2"];?>;
         }
 
-        #messages {
-            color: <?= $g_options["table_head_text"]; ?>;
-            font-family: Verdana, Arial, sans-serif;
-            padding:15px;
+        #overlay {
+            width:100%;
+            height:100%;
+            z-index: 100;
+            top:0;
+            left:0;
+            bottom:0;
             position:fixed;
-
-            top:0px;
-            left:200px;
-            right:200px;
-
-            z-index:5000;
-
-            margin:0px auto;
             display:none;
-            text-align:left;
+            <?php $overlayimg = getImage("/overlay"); ?>
+            background-image: url('<?=$overlayimg['url'];?>');
+            text-align:center;
         }
 
-        #messages div {
-            width: 400px;
-            margin: 0px auto;
-            height: 22px;
-            min-height: 22px;
-            padding: 8px 10px 8px 46px;
-
-            background-color:<?=$g_options["table_bgcolor1"];?>;
-            border: 1px solid <?=$g_options["table_border"]; ?>;
+        /* IE */
+        * html #overlay{
+            background-color: #333;
+            back\ground-color: transparent;
+            <?php $spacerimg = getImage("/spacer"); ?>
+            background-image: url('<?=$spacerimg['url'];?>');
+            filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src="<?=$overlayimg['url'];?>", sizingMethod="scale");
         }
 
-        #messages div.loading {
-<?php
-    $loadingimg = getImage("/loading");
-?>
-            background: url('<?=$loadingimg['url'];?>') 6px 3px no-repeat;
-            background-color:<?=$g_options["table_bgcolor1"];?>;
-
-            border: 1px solid <?=$g_options["table_border"]; ?>;
+        #overlay img {
+            padding:20px;
         }
 
         .table {
@@ -250,6 +241,7 @@ $db->query("
 while(list($to, $cto) = $db->fetch_row()) {
   echo "\n\t<meta http-equiv=\"Link\" content=\"&lt;".$to."&gt;; rel=prefetch\" />";
  }
+sleep(5);
 ?>
 <script type="text/javascript">
 <!--
@@ -260,26 +252,25 @@ while(list($to, $cto) = $db->fetch_row()) {
 loadingimg = new Image();
 loadingimg.src = '<?=$loadingimg['url'];?>';
 
-function nextpageLoading() {
-    msgbox('<div class="loading"><?= _("Generating page...");?></div>');
-}
+var oldTitle = document.title;
 
-function msgbox(msg) {
-    document.getElementById("messages").innerHTML=msg;
-    document.getElementById("messages").style.display='block';
+function nextpageLoading(msg) {
+    document.getElementById("overlay").style.display='block';
+    document.getElementById("overlay").setAttribute('title', msg);
+    document.title = msg;
     setTimeout('hideMessageBox()', 8000);
 }
 
 function hideMessageBox() {
-    if(document.getElementById("messages")) {
-        document.getElementById("messages").style.display='none';
-        document.getElementById("messages").innerHTML='';
+    if(document.getElementById("overlay")) {
+        document.getElementById("overlay").style.display='none';
+        document.title = oldTitle;
     }
 }
 
 function jump(url) {
-    nextpageLoading();
     window.location=url;
+    setTimeout('nextpageLoading("<?= _("Generating page...");?>")', 500);
 }
 
 // -->
@@ -293,7 +284,8 @@ function jump(url) {
     vlink="<?php echo $g_options["body_vlink"]; ?>"
     alink="<?php echo $g_options["body_alink"]; ?>"
     onLoad="hideMessageBox();">
-<span id="messages"></span>
+<?php $loadingimg = getImage("/loading"); ?>
+<div id="overlay" onClick="hideMessageBox();"><img src="<?= $loadingimg['url']; ?>" align="center"></div>
 <table width="100%"  border="0" cellspacing="0" cellpadding="0">
 <tr><td width="100%">
 <table width="99%" align="center" border="0" cellspacing="0" cellpadding="0">
@@ -315,7 +307,7 @@ function jump(url) {
 <tr valign="top">
     <td width="100%">
 
-        <table width="100%" border=0 cellspacing=0 cellpadding=4 bgcolor="<?php echo $g_options["location_bgcolor"]; ?>">
+        <table width="100%" border="0" cellspacing="0" cellpadding="4" bgcolor="<?php echo $g_options["location_bgcolor"]; ?>">
 
         <tr valign="middle">
             <td width="100%"><?php echo $g_options["font_normal"]; ?><font color="<?php echo $g_options["location_text"]; ?>">&nbsp;&nbsp;&nbsp;<?php if ($g_options["sitename"] && $g_options["siteurl"])
@@ -323,7 +315,7 @@ function jump(url) {
         echo "<a href=\"" . $g_options["siteurl"] . "\" style=\"color: " . $g_options["location_link"] . "\">" . $g_options["sitename"] . "</a> » ";
     }
 
-    echo "<a href=\"" . $g_options["scripturl"] . "\" style=\"color: " . $g_options["location_link"] . "\">HLstats</a>";
+    echo "<a href=\"" . $g_options["scripturl"] . "\" style=\"color: " . $g_options["location_link"] . "\">HLstλts</a>";
 
     $i=0;
     foreach ($location as $l=>$url)

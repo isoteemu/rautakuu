@@ -104,7 +104,7 @@ if(isset($_SERVER['PATH_INFO'])) {
       $val=substr($pathPart, strpos($pathPart,",")+1);
       $HTTP_GET_VARS[$key] = $val;
       if(!isset($$key)) {
-    $$key = $val;
+        $$key = $val;
       }
     }
   }

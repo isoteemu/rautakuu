@@ -64,7 +64,7 @@ function uasf() {
     requesterInit();
     if(!getXMLHTTPResult()) {
         // If got not ready or other crap, wait sec and retry.
-        setTimeout("uasf()", 5000);
+        setTimeout("uasf()", 8000);
     }
 }
 
@@ -201,7 +201,7 @@ class getbans_amxbans extends getbans {
         $str = parent::getBan();
         $str = $this->utfify($str);
 
-        preg_match('%<td[^>]*>.*(Active.bans|Aktiiviset.bannit).*</td>.*<table[^>]*class=\'listtable\'[^>]*>(.*)</table>%mU', $str, $sec);
+        preg_match('%<td[^>]*>.*(Active.bans|Aktiiviset.bannit).*</td>.*<table[^>]*class=\'listtable\'[^>]*>(.*)</table>%miU', $str, $sec);
         preg_match('|<tr[^>]*onClick=\"document\.location.=.\'(.[^\']*)\';\"[^>]*>|mU', $sec[2], $rows);
 
         $rows = array_slice($rows,1);
@@ -267,9 +267,27 @@ class getbans_auria extends getbans_amxbans {
         if(count($rows) >= 1) {
             $img = getImage("/auria");
             if($img) {
-                return '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned by Auria Pelikaista").'"><img src="'.$img['url'].'" '.$img['size'].' alt="Auria" border="0" hspace="3" /></a>';
+                return '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned at Auria Pelikaista").'"><img src="'.$img['url'].'" '.$img['size'].' alt="Auria" border="0" hspace="3" /></a>';
             } else {
-                return  '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned by Auria Pelikaista").'"><sup>Auria</sup></a>';
+                return  '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned at Auria Pelikaista").'"><sup>Auria</sup></a>';
+            }
+        }
+    }
+}
+
+class getbans_surffi extends getbans_amxbans {
+    function getbans_surffi($steamid) {
+        $this->getbans_amxbans($steamid);
+    }
+
+    function result() {
+        $rows = $this->getBan();
+        if(count($rows) >= 1) {
+            $img = getImage("/surffi");
+            if($img) {
+                return '<a href="http://pelit.surffi.net'.$rows[0].'" title="'._("Banned at Pelit SurffiNET").'"><img src="'.$img['url'].'" '.$img['size'].' alt="SurffiNET" border="0" hspace="3" /></a>';
+            } else {
+                return  '<a href="http://pelit.surffi.net'.$rows[0].'" title="'._("Banned at Pelit SurffiNET").'"><sup>Surffi</sup></a>';
             }
         }
     }
@@ -292,6 +310,43 @@ class getbans_steambans extends getbans {
         $str = $this->utfify($str);
     }
 
+}
+
+function rautakuuvip($id) {
+    global $db;
+    $res = $db->query("
+        SELECT
+            `uid`, IFNULL(`access`,'z') AS `access`
+        FROM
+            `drupal_steamids`
+        WHERE
+            `steamid` LIKE '$id' AND (
+                `expire` > NOW() OR `expire` = '00-00-00 00:00:00'
+            )
+        ORDER BY
+            `updated` DESC
+    ");
+
+    if ($db->num_rows($res) > 0) {
+        list($uid, $access) = $db->fetch_row();
+        switch($access) {
+            case "j"  :
+            case "u"  :
+            case "z"  :
+            case "ju" :
+                $img = "gaim";
+                $alt = "VIP";
+                break;
+            default :
+                $img = "fedora";
+                $alt = "VIP :: Admin";
+                break;
+        }
+
+        return '<a href="http://vip.rautakuu.org/user/'.$uid.'" title="Rautakuu [dot] org :: '.$alt.'"><img src="hlstatsimg/'.$img.'.png" border="0" alt="VIP" width="16" height="16" hspace="3" /></a>';
+    } else {
+        return "";
+    }
 }
 
 $bans = "";
@@ -319,6 +374,9 @@ foreach($uniqueid as $key => $val) {
 
         $bansfetch = "";
 
+        $bansfetch .= rautakuuvip($val);
+
+        // Admins.fi
         $uasf = new getbans_adminsfi($val);
         $uasf->url("http://admins.fi/banlist/bans/search/");
 
@@ -329,6 +387,7 @@ foreach($uniqueid as $key => $val) {
 
         $bansfetch .= $uasf->result();
 
+        // Auria
         $auria = new getbans_auria($val);
         $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
 
@@ -338,6 +397,17 @@ foreach($uniqueid as $key => $val) {
         curl_setopt($auria->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
 
         $bansfetch .= $auria->result();
+
+        // Surffi.net
+        $surffi = new getbans_surffi($val);
+        $surffi->url("http://pelit.surffi.net/ban4/ban_search.php");
+
+        /**
+        * @todo make this right(tm). Temporary solution
+        */
+        curl_setopt($surffi->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
+
+        $bansfetch .= $surffi->result();
 
         // save to cache
         $b_cache->save($bansfetch,$val,"adminsfi");

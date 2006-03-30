@@ -37,7 +37,7 @@ $db->free_result();
 pageHeader(array($gamename), array($gamename=>""));
 ?>
 
-<table width="90%" align="center" border=0 cellspacing=0 cellpadding=0>
+<table width="90%" align="center" border="0" cellspacing="0" cellpadding="0">
 
 <tr>
     <td><?php echo $g_options["font_normal"]; ?>&nbsp;<img src="<?php echo $g_options["imgdir"]; ?>/downarrow.gif" width=9 height=6 border=0 align="middle" alt="downarrow.gif"><b>&nbsp;Sections</b><?php echo $g_options["fontend_normal"];?><p>

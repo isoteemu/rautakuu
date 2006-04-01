@@ -123,6 +123,8 @@ class getbans {
     var $steamid;
     var $url;
 
+    var $icon;
+
     // List some browser, for backup.
     var $browsers = array(
         "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)",
@@ -138,8 +140,9 @@ class getbans {
 
     var $browser;
 
-    function getbans($steamid) {
-        $this->steamid = urlencode(strval($steamid));
+    function __construct($steamid,$icon) {
+        $this->steamid = strval($steamid);
+        $this->icon = $icon;
 
         // Init curl
         $this->curl = curl_init();
@@ -183,18 +186,71 @@ class getbans {
     }
 
     function result() {
-        return $this->getBan();
+        global $_adminsfi_fetches, $db;
+
+        $res = $db->query("SELECT `checked`, `result` FROM hlstats_Adminsfi_Cache WHERE `uniqueId` = '".$this->steamid."' AND `group` = '{$this->icon}'");
+
+
+        if($db->num_rows($res) < 1) {
+            $ban = $this->getBan();
+            $this->_saveBan($ban);
+        } else {
+            list($time,$ban) = $db->fetch_row($res);
+
+            // 86400s = 60*60*24 = 1d
+            if(strtotime($time) < ( time()-86400 ) && $_adminsfi_fetches <= 3) {
+                $ban = $this->getBan();
+                $this->_saveBan($ban);
+                $_adminsfi_fetches++;
+            }
+        }
+
+        if(!empty($ban)) {
+            return $this->isBanned($ban);
+        }
     }
 
+    function isBanned($url="#") {
+        $img = getImage("/".$this->icon);
+        if($img) {
+            return '<a href="'.$url.'" title="'.sprintf(_("Banned by %s"),$this->icon).'"><img src="'.$img['url'].'" '.$img['size'].' alt="'.$this->icon.'" border="0" hspace="3" /></a>';
+        } else {
+            return '<a href="'.$url.'" title="'.sprintf(_("Banned by %s"),$this->icon).'"><sup>'.$this->icon.'</sup></a>';
+        }
+    }
+
+    function _saveBan($ban="null") {
+        global $db;
+        $res = $db->query("SELECT * FROM hlstats_Adminsfi_Cache WHERE `uniqueId` = '{$this->steamid}' AND `group` = '{$this->icon}'");
+        if($db->num_rows($res)) {
+            $db->query("
+                UPDATE
+                    hlstats_Adminsfi_Cache
+                SET
+                    `uniqueId`= '{$this->steamid}',
+                    `group`   = '{$this->icon}',
+                    `checked` = NOW(),
+                    `result`  = '".addslashes($ban)."'
+            ");
+        } else {
+            $db->query("
+                INSERT INTO
+                    hlstats_Adminsfi_Cache
+                    (`uniqueId`, `group`, `checked`, `result`)
+                VALUES
+                    ('{$this->steamid}','{$this->icon}',NOW(),'".addslashes($ban)."')
+            ");
+        }
+    }
 }
 
 class getbans_amxbans extends getbans {
-    function getbans_amxbans($steamid) {
-        $this->getbans($steamid);
+    function __construct($steamid,$icon) {
+        parent::__construct($steamid,$icon);
 
         // amxbans uses POST.
         curl_setopt($this->curl, CURLOPT_POST, 1);
-        curl_setopt($this->curl, CURLOPT_POSTFIELDS, "steamid=".$this->steamid);
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, "steamid=".urlencode($this->steamid));
     }
 
     function getBan() {
@@ -204,23 +260,27 @@ class getbans_amxbans extends getbans {
         preg_match('%<td[^>]*>.*(Active.bans|Aktiiviset.bannit).*</td>.*<table[^>]*class=\'listtable\'[^>]*>(.*)</table>%miU', $str, $sec);
         preg_match('|<tr[^>]*onClick=\"document\.location.=.\'(.[^\']*)\';\"[^>]*>|mU', $sec[2], $rows);
 
-        $rows = array_slice($rows,1);
-        return $rows;
+        //$rows = array_slice($rows,1);
+        if(!empty($rows[1])) {
+            preg_match("%^http://([^/]*).*$%i",$this->url, $urlreg);
+            return "http://".$urlreg[1].$rows[1];
+        }
+        return;
     }
 }
 
 class getbans_adminsfi extends getbans {
 
-    function getbans_adminsfi($steamid) {
+    function __construct($steamid,$icon) {
 
         // Init parent
-        $this->getbans($steamid);
+        parent::__construct($steamid,$icon);
 
         // Admins.fi uses only POST method.
         curl_setopt($this->curl, CURLOPT_POST, 1);
 
         // Define post variables. Only steamID for now. But for future, use : as field separator
-        curl_setopt($this->curl, CURLOPT_POSTFIELDS, "search=".$this->steamid);
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, "search=".urlencode($this->steamid));
 
         // Referer, in case they start checking this.
         curl_setopt($this->curl, CURLOPT_REFERER, "http://admins.fi/banlist/bans");
@@ -236,75 +296,29 @@ class getbans_adminsfi extends getbans {
         // first row is crap. Delete it
         $rows = array_slice($rows,1);
 
-        if(count($rows) != 1) {
-            // Propably no matches (Good for him) or too many.
-            return "<!-- count(\$rows) != 1 ".count($rows)." -->";
-        }
+        if(count($rows) != 1)
+            return; // Propably no matches (Good for him) or too many.
+
 
         preg_match('|<td>.*<a href=\"(.[^\"]*)\".*>.*</a>.*</td>|U',$rows[0][0],$uasfID);
 
         // First result is TD, second is ID link, which is what we want.
-        if(!isset($uasfID[1])) {
-            return "<!-- !isset(\$uasfID[1]) -->";
-        }
+        if(!isset($uasfID[1]))
+            return;
 
-        $img = getImage("/uasf_24");
-        if($img) {
-            return '<a href="'.$uasfID[1].'" title="'._("Banned by United Admins Society of Finland").'"><img src="'.$img['url'].'" '.$img['size'].' alt="UASF" border="0" hspace="3" /></a>';
-        } else {
-            return  '<a href="'.$uasfID[1].'" title="'._("Banned by United Admins Society of Finland").'"><sup>UASF</sup></a>';
-        }
+        return $uasfID[1];
     }
 }
 
-class getbans_auria extends getbans_amxbans {
-    function getbans_auria($steamid) {
-        $this->getbans_amxbans($steamid);
-    }
-
-    function result() {
-        $rows = $this->getBan();
-        if(count($rows) >= 1) {
-            $img = getImage("/auria");
-            if($img) {
-                return '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned at Auria Pelikaista").'"><img src="'.$img['url'].'" '.$img['size'].' alt="Auria" border="0" hspace="3" /></a>';
-            } else {
-                return  '<a href="http://area51.pelikaista.net'.$rows[0].'" title="'._("Banned at Auria Pelikaista").'"><sup>Auria</sup></a>';
-            }
-        }
-    }
-}
-
-class getbans_surffi extends getbans_amxbans {
-    function getbans_surffi($steamid) {
-        $this->getbans_amxbans($steamid);
-    }
-
-    function result() {
-        $rows = $this->getBan();
-        if(count($rows) >= 1) {
-            $img = getImage("/surffi");
-            if($img) {
-                return '<a href="http://pelit.surffi.net'.$rows[0].'" title="'._("Banned at Pelit SurffiNET").'"><img src="'.$img['url'].'" '.$img['size'].' alt="SurffiNET" border="0" hspace="3" /></a>';
-            } else {
-                return  '<a href="http://pelit.surffi.net'.$rows[0].'" title="'._("Banned at Pelit SurffiNET").'"><sup>Surffi</sup></a>';
-            }
-        }
-    }
-}
-
-class getbans_hlstatsx extends getbans {
-    function getbans_hlstatsx($steamid) {
-        $this->getbans($steamid);
-    }
-}
-
+/**
+ * @TODO
+ */
 class getbans_steambans extends getbans {
     function getbans_steambans($steamid) {
         $this->getbans($steamid);
     }
 
-    function result() {
+    function result($icon) {
         $this->url($this->url()."&".urlencode($this->steamid));
         $str = $this->getBan();
         $str = $this->utfify($str);
@@ -345,73 +359,36 @@ function rautakuuvip($id) {
 
         return '<a href="http://vip.rautakuu.org/user/'.$uid.'" title="Rautakuu [dot] org :: '.$alt.'"><img src="hlstatsimg/'.$img.'.png" border="0" alt="VIP" width="16" height="16" hspace="3" /></a>';
     } else {
-        return "";
+        return '';
     }
 }
 
 $bans = "";
 
-if($g_options['useCache']) {
-    $cache_options = array(
-        'cacheDir' => $g_options['cacheDir'],
-        'lifeTime' => 86400,
-        'pearErrorMode' => CACHE_LITE_ERROR_DIE
-    );
-    $b_cache = new Cache_Lite($cache_options);
-} else {
-    class Cache_Fake {
-        function get() { return false; }
-        function save() { return false; }
-    }
-    $b_cache = new Cache_Fake();
-}
-
 foreach($uniqueid as $key => $val) {
 
     $bans .= 'new Array("'.$key.'", "';
+    $bansfetch = "";
 
-    if(!($bansfetch = $b_cache->get($val,"adminsfi"))) {
+    $bansfetch .= rautakuuvip($val);
 
-        $bansfetch = "";
+    // Admins.fi
+    $uasf = new getbans_adminsfi($val,'admins.fi');
+    $uasf->url("http://admins.fi/banlist/bans/search/");
 
-        $bansfetch .= rautakuuvip($val);
+    $bansfetch .= $uasf->result();
+    // Auria
+    $auria = new getbans_amxbans($val,'auria');
+    $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
 
-        // Admins.fi
-        $uasf = new getbans_adminsfi($val);
-        $uasf->url("http://admins.fi/banlist/bans/search/");
+    $bansfetch .= $auria->result();
 
-        /**
-        * @todo make this right(tm). Temporary solution
-        */
-        curl_setopt($uasf->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
+    // Surffi.net
+    $surffi = new getbans_amxbans($val,'surffi');
+    $surffi->url("http://pelit.surffi.net/ban4/ban_search.php");
 
-        $bansfetch .= $uasf->result();
-
-        // Auria
-        $auria = new getbans_auria($val);
-        $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
-
-        /**
-        * @todo make this right(tm). Temporary solution
-        */
-        curl_setopt($auria->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
-
-        $bansfetch .= $auria->result();
-
-        // Surffi.net
-        $surffi = new getbans_surffi($val);
-        $surffi->url("http://pelit.surffi.net/ban4/ban_search.php");
-
-        /**
-        * @todo make this right(tm). Temporary solution
-        */
-        curl_setopt($surffi->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
-
-        $bansfetch .= $surffi->result();
-
-        // save to cache
-        $b_cache->save($bansfetch,$val,"adminsfi");
-    }
+    curl_setopt($surffi->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
+    $bansfetch .= $surffi->result();
 
     $bans .= addslashes($bansfetch).'"),';
 }
@@ -433,5 +410,5 @@ $hlstatsx->url("http://www.hlstatsx.com/vacbans?&banlist_filter_type=steam_id");
 $bans .= $hlstatsx->result();
 */
 
-
+die($bans);
 pageFooter($bans,false,86400);

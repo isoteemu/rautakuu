@@ -227,10 +227,11 @@ class getbans {
                 UPDATE
                     hlstats_Adminsfi_Cache
                 SET
-                    `uniqueId`= '{$this->steamid}',
-                    `group`   = '{$this->icon}',
                     `checked` = NOW(),
                     `result`  = '".addslashes($ban)."'
+                WHERE
+                    `uniqueId`= '{$this->steamid}' AND
+                    `group`   = '{$this->icon}'
             ");
         } else {
             $db->query("
@@ -410,5 +411,4 @@ $hlstatsx->url("http://www.hlstatsx.com/vacbans?&banlist_filter_type=steam_id");
 $bans .= $hlstatsx->result();
 */
 
-die($bans);
 pageFooter($bans,false,86400);

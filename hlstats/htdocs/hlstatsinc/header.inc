@@ -241,7 +241,6 @@ $db->query("
 while(list($to, $cto) = $db->fetch_row()) {
   echo "\n\t<meta http-equiv=\"Link\" content=\"&lt;".$to."&gt;; rel=prefetch\" />";
  }
-sleep(5);
 ?>
 <script type="text/javascript">
 <!--

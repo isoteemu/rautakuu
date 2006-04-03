@@ -4,16 +4,7 @@
 // Storage driver. currently supported:
 // * DB - uses pear DB layer
 // * logfile - reads messages from logfile
-$storage = "logfile";
-
-// "throtling".
-// If system is near this AVG load, (%80),
-// fetching new messages are delayed.
-// Set $loadavg to false if throtling is not wanted
-// (eg, in windows enviroment, it does not work).
-$loadavg = 4;
-$delaytime = 5;
-$maxdelay = 10;
+$storage = "DB";
 
 //
 // logfile storage
@@ -44,6 +35,27 @@ $startrows = 20;
 // Default channel
 $channel = "#rautakuu";
 
+// "throtling".
+// If system is near this AVG load, (%80),
+// fetching new messages are delayed.
+// Set $loadavg to false if throtling is not wanted
+// (eg, in windows enviroment, it does not work).
+$loadavg = 4;
+$delaytime = 5;
+$maxdelay = 10;
+
+
+// Scrolling method.
+// As RSL whished, if you don't want to use smooth scrolling,
+// set this to false, so windows allways moves to bottom without
+// smooth scrolling
+$smoothscrolling = (string) "true";
+if(isset($_GET['smoothscroll']) && ( $_GET['smoothscroll'] == "true" || $_GET['smoothscroll'] == "false" )) {
+    $smoothscrolling = (string) $_GET['smoothscroll'];
+}
+
+// The code part
+
 header("Content-Type: text/html;charset=utf-8");
 if( function_exists("putenv")) putenv('LANG="fi_FI.UTF-8');
 if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
@@ -56,7 +68,7 @@ if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 )
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
-    //Vérification des bornes...
+    //VÃÂ©rification des bornes...
     /*
     for($i=0;$i<=2;$i++) {
         $tablo[$i]=bornes($tablo[$i],0,255);
@@ -108,7 +120,7 @@ function irc2html($texte){
 
         switch($ord){
             case "10":
-                //->Retour à la ligne, fermer toutes les balises ouvertes
+                //->Retour ÃÂ  la ligne, fermer toutes les balises ouvertes
                 if($is_bold) {$buffer.= "</b>";$is_bold=false;}
                 if($is_under) {$buffer.= "</u>";$is_under=false;}
                 if($is_fg) {$buffer.= "</span>";$is_fg=false;}
@@ -250,7 +262,6 @@ function getMessagesDB(&$pos, $channel) {
             FROM
                 `ircmsg`
             WHERE
-                `channel` = '@GLOBAL' OR
                 `channel` = '{$channel}'
             ORDER BY
                 `time` DESC, `key` DESC
@@ -265,7 +276,6 @@ function getMessagesDB(&$pos, $channel) {
             WHERE
                 `key` > '{$pos}' AND
                 (
-                    `channel` = '@GLOBAL' OR
                     `channel` = '{$channel}'
                 )
             ORDER BY
@@ -604,6 +614,13 @@ if(isset($_GET['time'])) {
         }
     }
 
+    /**
+     * Konqueror want's to cache, and won't return real result
+     * in xmlHttp. Not suitable, not at all...
+     */
+    header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+
     die(getMessages($_GET['channel'], $_GET['time']));
 }
 
@@ -641,7 +658,7 @@ a:hover {
 }
 
 #fadevert {
-    background-image:url("/rautakuu/towhite-vert.png");
+    background-image:url("http://teemu.sivut.rautakuu.org/rautakuu/towhite-vert.png");
     background-repeat:repeat-y;
     background-position:right center;
     z-index:20;
@@ -653,7 +670,7 @@ a:hover {
 }
 
 #fadehori {
-    background-image:url("/rautakuu/towhite-hori.png");
+    background-image:url("http://teemu.sivut.rautakuu.org/rautakuu/towhite-hori.png");
     background-repeat:repeat-x;
     background-position:center top;
     z-index:21;
@@ -664,23 +681,19 @@ a:hover {
     right:0;
     position:fixed;
 }
-/*
-#irssi {
-    background-image:url("/rautakuu/irssilogo.jpg");
-    background-repeat:no-repeat;
-    background-position:right bottom;
-    bottom:0;
-    right:0;
-    width:100%;
-    height:100%;
-    position:fixed;
-}
-*/
 
 #container {
     width:100%;
     height:100%;
     position:absolute;
+}
+
+#container table {
+    background-image:url("http://teemu.sivut.rautakuu.org/rautakuu/irssilogo.jpg");
+    background-repeat:no-repeat;
+    background-position:right bottom;
+    background-attachment: fixed;
+    padding-bottom: 20px;
 }
 
 #foo {
@@ -694,6 +707,8 @@ var topuri = "<?= $_SERVER['REQUEST_URI'] ?>?time=";
 
 var channelparam = "&amp;channel=<?= urlencode($_GET['channel']); ?>";
 
+var smoothScroll = <?= $smoothscrolling; ?>;
+
 var xmlResult = <?= getMessages($_GET['channel']);?>
 
 var xmlHttp = null;
@@ -704,17 +719,16 @@ var _appendId = "viestit";
 
 var nickColors = new Array();
 
-// Estää tupla refreshauksen
+// EstÃÂ¤ÃÂ¤ tupla refreshauksen
 var _refreshing = false;
 
 function getXMLHTTPResult() {
     if(_refreshing==true) {
         return false;
     } else if(xmlHttp&&xmlHttp.readyState!=0) {
-        xmlHttp.abort();
         requesterInit();
     } else if(!xmlHttp) {
-        // Turhaa edes yrittää
+        // Turhaa edes yrittÃÂ¤ÃÂ¤
         _refreshing = true;
     } else {
         if(_refreshing == false ) {
@@ -732,19 +746,20 @@ function parseResult() {
     if(xmlHttp.readyState==4&&xmlHttp.responseText) {
         xmlResult = eval(xmlHttp.responseText);
         buildLayout();
-        _refreshing = false;
+        requesterInit();
     }
+    _refreshing = false;
 }
 
 function buildLayout() {
 
     if(xmlResult[1].length < 1) return;
 
-    // kertoo sen hetkisen työskentely divin.
+    // kertoo sen hetkisen tyÃÂ¶skentely divin.
     var workTR = null;
 
     for( var f=0; f<xmlResult[1].length; ++f) {
-        // Array alkaa sijotuksella 0 niinp�+1:ht�ei tarvita
+        // Array alkaa sijotuksella 0 niinpÃ¯Â¿Â½+1:htÃ¯Â¿Â½ei tarvita
 
         workTR=document.createElement("TR");
         setStyle(workTR);
@@ -805,10 +820,10 @@ function buildLayout() {
         }
         */
         workTR.appendChild(msgTD);
-
         _appendId.appendChild(workTR);
+
+        scrollme();
     }
-    scrollme();
     getSleepTimer();
 }
 
@@ -856,7 +871,7 @@ function getTimer() {
 }
 
 function setStyle(tag) {
-    /* Jos haluat rivin näkymään kokonaan,
+    /* Jos haluat rivin nÃÂ¤kymÃÂ¤ÃÂ¤n kokonaan,
      * kommentoi/poista seuraava rivi */
     tag.style.wordWrap="break-word";
 
@@ -870,6 +885,14 @@ function setText(tag,text) {
 }
 
 function requesterInit() {
+    if(xmlHttp) {
+        xmlHttp.onreadystatechange = function() {} // IE bug
+        xmlHttp.abort();
+        xmlHttp = null;
+    }
+
+    _refreshing = false;
+
     try{
        xmlHttp=new ActiveXObject("Msxml2.XMLHTTP")
     } catch(e){
@@ -891,7 +914,6 @@ function init() {
         document.body.style.overflow='hidden';
 
     var table=document.createElement("table");
-    table.style.paddingBottom="5px";    // Firefox hack
 
     _appendId=document.createElement("tbody");
     table.appendChild(_appendId);
@@ -905,7 +927,7 @@ function init() {
     mainLoop();
 }
 
-// T��kutsuu itse�n uudestaan ja uudestaan ja uudestaan...
+// TÃ¯Â¿Â½Ã¯Â¿Â½kutsuu itseÃ¯Â¿Â½n uudestaan ja uudestaan ja uudestaan...
 mainLoop=function() {
     if(_refreshing == false ) {
         getXMLHTTPResult();
@@ -914,10 +936,19 @@ mainLoop=function() {
 }
 
 function scrollme(){
+    /* Uuuh, crappy IE. How do I love it... <3<3<3 */
+    if(!window.innerHeight) {
+        window.scrollTo(0,document.getElementById("foo").offsetHeight);
+        return;
+    }
     var mypos=window.innerHeight+window.pageYOffset;
     if (mypos<document.getElementById("foo").offsetHeight) {
-        window.scrollBy(0,2);
-        setTimeout("scrollme()",50);
+        if(smoothScroll == true) {
+            window.scrollBy(0,2);
+            setTimeout("scrollme()",50);
+        } else {
+            window.scrollTo(0,mypos);
+        }
     }
 }
 
@@ -932,8 +963,7 @@ if($_GET['css']) {
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">
-            <!--<div id="irssi"></div>-->
-            <div id="foo"><noscript>Sorry peipe, tämä vaatii javascriptin :/</noscript></div>
+            <div id="foo"><noscript>Sorry peipe, tÃÂ¤mÃÂ¤ vaatii javascriptin :/</noscript></div>
             <div id="fadevert" style="bottom:0px;"><img src="#" height="0" widht="0"></div>
             <div id="fadehori" style="top:0px;"><img src="#" height="0" widht="0"></div>
         </div>

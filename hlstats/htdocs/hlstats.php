@@ -21,6 +21,65 @@
    * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+function profile_timer() {
+        static $start;
+        list($usec, $sec) = explode(" ", microtime());
+        $now = ((float)$usec + (float)$sec);
+        if(!isset( $start )) {
+            $start = $now;
+        }
+        $timed = $now - $start;
+        return $timed;
+}
+
+function profile($dump = false) {
+    static $profile, $prevtimer;
+    // Return the times stored in profile, then erase it
+    if ($dump) {
+        function profile_sort($array_in) {
+            $multiarray = array();
+            $array_out = array();
+            $loopvalue = 0;
+
+            $multicount = count($array_in) - 1;
+            for($i = 0; $i <= $multicount; $i++) {
+                    array_push($multiarray, $array_in[$i]['took']);
+            }
+
+            arsort($multiarray,SORT_NUMERIC);
+            reset($multiarray);
+
+            while (list ($key, $val) = each ($multiarray)) {
+                    $array_out[$loopvalue] = $array_in[$key];
+                    $loopvalue++;
+            }
+
+            return $array_out;
+        }
+
+        $temp = profile_sort($profile);
+        unset($profile);
+        return $temp;
+    }
+
+    $temp = debug_backtrace();
+    //if($temp[0]['function'] == "profile") unset($temp[0]);
+    $now = profile_timer();
+    if(count($temp) >= 1) {
+        $now = profile_timer();
+        $took = $now-$prevtimer;
+        $c = $temp[0];
+        unset($temp[0]);
+        $profile[] = array_merge($c, array('took'=>$took,'timer'=>$now,'callstack'=>$temp));
+
+    }
+    $prevtimer = $now;
+}
+
+//register_tick_function("profile");
+
+//declare(ticks=1) {
+
 define("_HLSTATS", 1);
 
 // INCLUDE_PATH - Filesystem path to the hlstatsinc directory. This path can
@@ -113,7 +172,7 @@ if(isset($_SERVER['PATH_INFO'])) {
 header("Content-Type: text/html; charset=utf-8");
 
 // Set Finnish locale
-setlocale(LC_ALL, "fi_FI");
+setlocale(LC_ALL, "fi_FI.UTF8");
 
 // Check PHP configuration
 
@@ -828,7 +887,14 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         // Now, as all main content edition is done, do ETag header.
         // It takes resouces, but can save time in page loading.
         if(!$etag) $etag = crc32($content);
-        header("ETag: ".$etag);
+        header("ETag: \"".$etag."\"");
+
+
+
+        // Set locale for time
+        setlocale(LC_TIME, "C");
+        if(!$modified) $modified = gmdate("D, d M Y H:i:s")." GMT";
+        header("Last-Modified: ".$modified);
     }
 
     // Cacheammeko...
@@ -846,6 +912,7 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $tosave = $content;
         $tosave = '<?php $g_options["noFormatUrlParams"]=true;?>'.$tosave;
         $tosave = '<?php $etag="'.$etag.'";?>'.$tosave;
+        $tosave = '<?php $modified="'.$modified.'";?>'.$tosave;
 
         // If footer was not wantet to be show, save that option to cached file.
         if($footer==false) $tosave = '<?php $footer=false; ?>'.$tosave;
@@ -1161,25 +1228,20 @@ function getImage ($filename)
 
   $url = $g_options["imgdir"] . $filename;
 
-  if ($g_options["imgpath"])
-    {
-      $path = $g_options["imgpath"] . $filename;
-    }
-  else
-    {
-      // figure out absolute path of image
+    if ($g_options["imgpath"]) {
+        $path = $g_options["imgpath"] . $filename;
+    } else {
+        // figure out absolute path of image
+$path = $url;
 
-      if (!ereg("^/", $g_options["imgdir"]))
-    {
-      ereg("(.+)/[^/]+$", $_SERVER["SCRIPT_NAME"], $regs);
-      $path = $regs[1] . "/" . $url;
-    }
-      else
-    {
-      $path = $url;
-    }
+        if (!ereg("^/", $g_options["imgdir"])) {
+            ereg("(.+)/[^/]+$", $_SERVER["SCRIPT_NAME"], $regs);
+            $path = $regs[1] . "/" . $url;
+        } else {
+            $path = $url;
+        }
 
-      $path = $_SERVER["DOCUMENT_ROOT"] . $path;
+        $path = $_SERVER["DOCUMENT_ROOT"] . $path;
     }
 
   // check if image exists
@@ -1345,6 +1407,15 @@ if (!in_array($mode, $modes))
 
 include(INCLUDE_PATH . "/$mode.inc");
 
+
+
+/*
+} // PROFILE
+
+echo "<pre>";
+print_r(profile(true));
+echo "</pre>";
+*/
 pageFooter();
 
 ?>

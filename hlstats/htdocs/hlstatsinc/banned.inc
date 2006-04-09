@@ -62,6 +62,11 @@ $table = new Table(
             "width=7&align=right"
         ),
         new TableColumn(
+            "admin_nick",
+            _("Banned by"),
+            "width=15"
+        ),
+        new TableColumn(
             "previous_bans",
             _("Prev"),
             "width=3&align=right"
@@ -70,16 +75,6 @@ $table = new Table(
             "skill",
             _("Points"),
             "width=8&align=right"
-        ),
-        new TableColumn(
-            "kills",
-            "Kills",
-            "width=8&align=right"
-        ),
-        new TableColumn(
-            "playerId",
-            _("Player ID"),
-            "width=7&align=right&sort=no"
         )
     ),
     "playerId",
@@ -108,7 +103,6 @@ $result = $db->query("
         amx_bans.server_name,
         COUNT(amx_banhistory.player_id) AS previous_bans,
         hlstats_Players.skill,
-        hlstats_Players.kills,
         hlstats_Players.playerId
     FROM
         amx_bans

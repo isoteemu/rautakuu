@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>b0rg testi</title>
+    <style>
+    * {
+        font-family: Monospace;
+    }
+    input {
+        border: 1px solid rgb(000,000,000);
+        background-color: green;
+        color: black;
+    }
+
+    /* Tämä luokka asetetaan input kentälle, jos se on vaadittu mutta tyhjä */
+    .requiredMissing {
+        border: 1px dashed rgb(250,000,000);
+        background-color: yellow;
+        color: red;
+    }
+    </style>
+    <!-- Maaginen scripti -->
+    <script src="b0rg.php"></script>
+  </head>
+  <body>
+    <form method="post" action="b0rg.php">
+      <!-- Nimi kenttä on vaadittu, koska siinä on rel="required" -->
+      Nimi:   <input type="text" name="nimi" rel="required" /><br />
+      <!-- Puhelin kenttää ei ole vaadittu -->
+      Puhe:   <input type="text" name="puhelin" /><br />
+      Mail:   <input type="text" name="email" rel="required" /><br />
+      Viesti: <input type="text" name="viesti" /><br />
+      <!-- Jos haluaisin, voisin ohjata edelleen jollekkin toiselle sivulle
+        <input type="hidden" name="redir" value="bsod.html" />
+      -->
+      <!-- Lähetys nappula O_o -->
+      <input type="submit" name="lähetä">
+    </form>
+  </body>
+</html>

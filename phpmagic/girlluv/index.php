@@ -40,12 +40,12 @@ if( function_exists("mb_internal_encoding")) mb_internal_encoding("UTF-8");
 // luotavien Thumbnailien koko (px)
 $conf['thumbsize'] = 150;
 
-// Käytetääkö�nopeampaa vai luetettavampaa cachen varmistusta.
+// Käytetääkö nopeampaa vai luetettavampaa cachen varmistusta.
 // (ero, md5 nimestä vs. md5 sisällöstä)
-$conf['accurate']  = true;
+$conf['accurate']  = false;
 
 //
-// Tyyli m�ritteet
+// Tyyli määritteet
 //
 
 $style['bgcolor']  = "#333333"; // taustaväri
@@ -171,7 +171,7 @@ class thumbnail
         if( $conf['accurate'] ) {
             $fname = md5_file($this->img["name"]).".jpeg";
         } else {
-            $fname = md5($this->img["name"]).".jpeg";
+            $fname = $this->img["name"]."-".filemtime($this->img["name"]).".jpeg";
         }
         $save = $path.$fname;
 

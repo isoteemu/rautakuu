@@ -134,11 +134,7 @@ class thumbnail
         global $conf;
         if( $path == "" ) $path = backSlash(dirname(__FILE__)).$conf["thumbs"];
         $path = backSlash( $path );
-        if( $conf['accurate'] ) {
-            $fname = md5_file($this->img["name"]).".jpeg";
-        } else {
-            $fname = md5($this->img["name"]).".jpeg";
-        }
+        $fname = $this->_filename();
         $save = $path.$fname;
 
         if( file_exists( $save )) return $fname;
@@ -168,11 +164,7 @@ class thumbnail
         global $conf;
         if( $path == "" ) $path = backSlash(dirname(__FILE__)).$conf["thumbs"];
         $path = backSlash( $path );
-        if( $conf['accurate'] ) {
-            $fname = md5_file($this->img["name"]).".jpeg";
-        } else {
-            $fname = $this->img["name"]."-".filemtime($this->img["name"]).".jpeg";
-        }
+        $fname = $this->_filename();
         $save = $path.$fname;
 
         if( file_exists( $save )) return $fname;
@@ -190,11 +182,21 @@ class thumbnail
         if( function_exists("imagesavealpha")) {
             imagesavealpha($this->img["des"], true);
         }
-        if( imageJPEG($this->img["des"], $save, "75") ) {
+        if( imagePNG($this->img["des"], $save) ) {
             return $fname;
         } else {
             return false;
         }
+    }
+
+    function _filename() {
+        global $conf;
+        if( $conf['accurate'] ) {
+            $fname = md5_file($this->img["name"]).".png";
+        } else {
+            $fname = removeExt(basename($this->img["name"]))."-".filemtime($this->img["name"]).".png";
+        }
+        return $fname;
     }
 }
 
@@ -263,6 +265,14 @@ function timer() {
     }
     $timed = $now - $start;
     return $timed;
+}
+
+/**
+ * Remove extension part from filename
+ */
+function removeExt($str) {
+        $noext = preg_replace('/(.+)\..*$/', '$1', $str);
+        return $noext;
 }
 
 //

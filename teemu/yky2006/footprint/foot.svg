@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg1385"
+   sodipodi:version="0.32"
+   inkscape:version="0.43"
+   sodipodi:docbase="/home/teemu/yky2006/footprint"
+   sodipodi:docname="foot.svg"
+   inkscape:export-filename="/home/teemu/yky2006/footprint/foot.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs3">
+    <linearGradient
+       id="linearGradient2427">
+      <stop
+         id="stop2429"
+         offset="0"
+         style="stop-color:#000000;stop-opacity:1;" />
+      <stop
+         id="stop2431"
+         offset="1"
+         style="stop-color:#ffffff;stop-opacity:1;" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient2357">
+      <stop
+         id="stop2359"
+         offset="0"
+         style="stop-color:#ffffff;stop-opacity:0.57627118;" />
+      <stop
+         id="stop2361"
+         offset="1"
+         style="stop-color:#ffffff;stop-opacity:0;" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient2323">
+      <stop
+         style="stop-color:#b77200;stop-opacity:1;"
+         offset="0"
+         id="stop2325" />
+      <stop
+         id="stop2331"
+         offset="0.80434783"
+         style="stop-color:#b87300;stop-opacity:1;" />
+      <stop
+         style="stop-color:#925b00;stop-opacity:1;"
+         offset="1"
+         id="stop2327" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient2286">
+      <stop
+         style="stop-color:#f2b600;stop-opacity:1;"
+         offset="0"
+         id="stop2288" />
+      <stop
+         style="stop-color:#f2b700;stop-opacity:0.56302524;"
+         offset="1"
+         id="stop2290" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient2278">
+      <stop
+         style="stop-color:#000000;stop-opacity:0.22033899;"
+         offset="0"
+         id="stop2280" />
+      <stop
+         style="stop-color:#ffff00;stop-opacity:0;"
+         offset="1"
+         id="stop2282" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2286"
+       id="radialGradient2292"
+       cx="280.93054"
+       cy="516.2782"
+       fx="280.93057"
+       fy="516.2782"
+       r="71.311101"
+       gradientTransform="matrix(2.387372,5.656955,-4.011568,1.75708,1764.655,-2047.222)"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2323"
+       id="radialGradient2329"
+       cx="229.83766"
+       cy="515.25171"
+       fx="229.83767"
+       fy="515.25171"
+       r="87.388102"
+       gradientTransform="matrix(3.926588,1.117401,-1.744064,6.128709,328.295,-3039.012)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2278"
+       id="linearGradient2386"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.498053,-5.02191e-17,5.19203e-17,0.514925,-157.7494,513.6367)"
+       x1="16.634579"
+       y1="359.23523"
+       x2="125.2283"
+       y2="506.31357" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2357"
+       id="linearGradient2388"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.5442,-5.48721e-17,5.29516e-17,0.525153,-47.63742,624.2204)"
+       x1="259.89777"
+       y1="599.85449"
+       x2="133.73158"
+       y2="471.62918" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2427"
+       id="linearGradient2425"
+       x1="94.408768"
+       y1="939.95728"
+       x2="-27.832832"
+       y2="818.9256"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     inkscape:document-units="mm"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.68566442"
+     inkscape:cx="563.57168"
+     inkscape:cy="579.81997"
+     inkscape:current-layer="g2337"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1112"
+     inkscape:window-height="820"
+     inkscape:window-x="1749"
+     inkscape:window-y="229" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/GPL/2.0/" />
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Teemu Autto</dc:title>
+          </cc:Agent>
+        </dc:creator>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/GPL/2.0/">
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Reproduction" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Distribution" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/Notice" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/ShareAlike" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/SourceCode" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g2337">
+      <path
+         sodipodi:nodetypes="cccccsccc"
+         id="path76"
+         d="M 687.95083,369.28876 C 642.02417,474.60939 589.47374,570.71275 553.24993,751.89077 C 504.92497,940.18417 311.86283,948.53845 231.37487,757.58878 C 202.85508,653.30075 114.05944,537.84434 76.671548,420.40413 C 44.752657,342.06276 85.329794,290.21917 188.36996,296.25393 C 262.74705,302.71099 285.41413,239.42164 329.99139,186.7972 C 363.84523,146.832 414.21299,149.79866 442.92222,194.10009 C 460.58024,211.75811 473.27065,301.32026 596.40872,265.9901 C 651.01253,259.40915 715.20635,315.09168 687.95083,369.28876 z "
+         style="fill:url(#radialGradient2329);fill-opacity:1;stroke:#000000;stroke-width:13.00353622;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="ccccccccc"
+         id="path75"
+         d="M 583.91133,317.7304 C 631.93304,297.93449 682.72899,314.45926 672.01342,371.49268 C 622.1442,487.38864 578.26172,559.71362 547.57163,711.44333 C 503.3214,885.02199 329.40945,901.95143 285.71449,742.69135 C 276.67347,663.03799 173.92176,514.43279 130.0244,429.6126 C 99.301351,377.89039 129.50376,336.84202 181.8165,352.2068 C 228.73924,356.499 299.65129,315.48139 341.3655,247.87076 C 360.82372,197.01402 415.05672,199.78665 446.83301,258.24969 C 454.75044,301.28142 494.80307,343.488 583.91133,317.7304 z "
+         style="fill:url(#radialGradient2292);fill-opacity:1;stroke:none" />
+      <g
+         id="g2381"
+         transform="matrix(0.941031,0.33832,-0.33832,0.941031,482.8985,-38.47148)">
+        <path
+           style="fill:#000000;fill-opacity:0.44102562;fill-rule:evenodd;stroke:none;stroke-width:0.7086615;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1"
+           d="M -150.96783,720.14677 C -150.96783,720.14677 -95.410525,701.21721 -29.64258,701.21721 C 36.125365,701.21721 113.18622,717.84948 113.18622,717.84948 C 113.18622,717.84948 93.403909,763.34981 93.403909,828.40289 C 93.403909,893.45597 104.54834,948.72807 104.54834,948.72807 C 104.54834,948.72807 81.855565,939.33991 -21.294963,938.58939 C -123.03356,937.84914 -150.07456,945.69052 -150.07456,945.69052 C -150.07456,945.69052 -147.30251,882.47575 -147.30251,817.42267 C -147.30251,752.36959 -150.96783,720.14677 -150.96783,720.14677 z "
+           id="rect2433"
+           sodipodi:nodetypes="cscscscsc" />
+        <rect
+           y="698.61603"
+           x="-149.46451"
+           height="240.6192"
+           width="243.26335"
+           id="rect2341"
+           style="opacity:1;fill:#ffff00;fill-opacity:1;fill-rule:nonzero;stroke:url(#linearGradient2425);stroke-width:0.7086615;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+        <rect
+           y="698.61603"
+           x="-149.46451"
+           height="123.90093"
+           width="121.15809"
+           id="rect2353"
+           style="opacity:1;fill:url(#linearGradient2386);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.77165353;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+        <rect
+           y="804.5603"
+           x="-43.520237"
+           height="134.67491"
+           width="137.31911"
+           id="rect2343"
+           style="opacity:1;fill:url(#linearGradient2388);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.77165353;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+        <text
+           xml:space="preserve"
+           style="font-size:26.0000248px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Garamond"
+           x="-131.18533"
+           y="761.95978"
+           id="text2455"
+           sodipodi:linespacing="125%"
+           transform="matrix(0.999995,3.080049e-3,-3.080049e-3,0.999995,0,0)"><tspan
+             sodipodi:role="line"
+             id="tspan2457"
+             x="-131.18533"
+             y="761.95978"
+             style="font-size:26.0000248px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond">Linux Esittelypäivä</tspan><tspan
+             sodipodi:role="line"
+             x="-131.18533"
+             y="794.45981"
+             style="font-size:26.0000248px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond"
+             id="tspan2465" /></text>
+        <text
+           xml:space="preserve"
+           style="font-size:21.99999619px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Garamond"
+           x="-130.06871"
+           y="805.87921"
+           id="text1363"
+           sodipodi:linespacing="125%"
+           transform="matrix(0.999995,3.080394e-3,-3.080394e-3,0.999995,0,0)"><tspan
+             sodipodi:role="line"
+             x="-130.06871"
+             y="805.87921"
+             style="font-size:21.99999619px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond"
+             id="tspan1367">Mitä avoimet ohjelmat</tspan><tspan
+             sodipodi:role="line"
+             x="-130.06871"
+             y="833.37921"
+             style="font-size:21.99999619px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond"
+             id="tspan1371">ovat?</tspan><tspan
+             sodipodi:role="line"
+             x="-130.06871"
+             y="860.8792"
+             style="font-size:21.99999619px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond"
+             id="tspan1373" /><tspan
+             sodipodi:role="line"
+             x="-130.06871"
+             y="888.3792"
+             style="font-size:21.99999619px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Garamond"
+             id="tspan1375"> - Beeta-sali klo 13:30</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>

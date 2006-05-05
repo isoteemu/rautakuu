@@ -92,15 +92,15 @@ if [ $(which artsshell 2>/dev/null) ]; then
     artsshell suspend > /dev/null 2>&1 && initDoSuccess
 fi
 
-if [ $(which amixer 2>/dev/null) ]; then
-    initDo "Asetetaan ‰‰nen tasot"
-    (
-        amixer set Master,0 75%,75% unmute    > /dev/null
-        amixer set PCM,0 75%,75% unmute       > /dev/null
-        amixer set Line,0 75%,75% mute captur   > /dev/null
-        #amixer set Capture,0 75%,75% captur   > /dev/null
-    ) && initDoSuccess || initDoFail
-fi
+#if [ $(which amixer 2>/dev/null) ]; then
+#    initDo "Asetetaan ‰‰nen tasot"
+#    (
+#        amixer set Master,0 75%,75% unmute    > /dev/null
+#        amixer set PCM,0 75%,75% unmute       > /dev/null
+#        amixer set Line,0 75%,75% mute captur   > /dev/null
+#        #amixer set Capture,0 75%,75% captur   > /dev/null
+#    ) && initDoSuccess || initDoFail
+#fi
 
 # Asetetaan away viesti
 if dcop | grep -q "kopete"; then
@@ -117,7 +117,7 @@ if dcop | grep -q "kdedesktop"; then
 fi
 
 initDo "K‰ynnistet‰‰n X"
-xinit $HOME/bin/myth.sh -- :1 -layout "DVDMax-50" -dpi 78
+xinit $HOME/bin/myth.sh -- :1 -layout "DVDMax-50"
 
 # X sessio sammunut. Asetetaan Online
 dcop | grep -q "kopete" && dcop kopete KopeteIface setAvailable

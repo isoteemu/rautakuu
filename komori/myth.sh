@@ -5,24 +5,26 @@
 export LC_ALL="fi_FI.UTF-8"
 
 xsetroot -solid black
-if [ -x /usr/lib/xscreensaver/glmatrix ]; then
-    (
-        /usr/lib/xscreensaver/glmatrix -root -delay 15000 &
-        xpid=$!
-        sleep 1
-        renice 20 $xpid
-    ) &
-else
-    xsetbg -fullscreen -onroot '/home/teemu/Documents/Pics/wallpapers/chii1.jpg' &
-fi
+#if [ -x /usr/lib/misc/xscreensaver/glslideshow ]; then
+#    (
+#        /usr/lib/misc/xscreensaver/glslideshow -root -duration 300 -pan 30 -delay 74522 -clip &
+#        xpid=$!
+#        sleep 1
+#        renice 19 $xpid
+#    ) &
+#else
+#    xsetbg -fullscreen -onroot '/home/teemu/Documents/Pics/wallpapers/chii1.jpg' &
+#fi
+
+#xsetbg -fullscreen -onroot '/usr/share/mythtv/themes/G.A.N.T./bkg/grey.jpeg' &
 
 xset s noblank &
 xset s off &
 xset -dpms &
 
-if [ "$(hostname)" = "isoteemu" ]; then
-    setxkbmap -model microsoftmult -layout fi -variant basic
-fi
+#if [ "$(hostname)" = "isoteemu" ]; then
+#    setxkbmap -model microsoftmult -layout fi -variant basic
+#fi
 
 
 if [ $(which evilwm 2> /dev/null) ]; then
@@ -34,6 +36,10 @@ elif [ $(which kwin 2> /dev/null) ]; then
         dcopserver && kwin
     ) &
 fi
+
+#if [ -f /usr/share/mythtv/mytharchive/intro/pal_mythtv_intro.mpg ]; then
+#    xine -B --no-splash -pfqh /usr/share/mythtv/mytharchive/intro/pal_mythtv_intro.mpg &
+#fi
 
 if [ $(which xvattr 2> /dev/null) ]; then
     #xvattr -a XV_COLORKEY -v 66048 &

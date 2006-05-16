@@ -127,7 +127,6 @@
   <WeakSeparator/>
   <Action name="toolbar_url_combo" />
   <Action name="go_url" />
-  <WeakSeparator/>
   <Merge/>
   <WeakSeparator/>
   <Action name="back" />

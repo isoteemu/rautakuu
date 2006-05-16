@@ -1,0 +1,11 @@
+<!DOCTYPE kpartgui>
+<kpartplugin library="libsearchbarplugin" version="3" name="searchbar" >
+ <ToolBar newline="true" noMerge="1" name="locationToolBar" fullWidth="true" >
+  <Separator/>
+  <text>Search Toolbar</text>
+  <Action name="toolbar_search_bar" />
+ </ToolBar>
+ <ActionProperties>
+  <Action icon="find" name="focus_search_bar" />
+ </ActionProperties>
+</kpartplugin>

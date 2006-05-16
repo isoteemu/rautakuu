@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xbel>
+<xbel>
+ <bookmark icon="connect_established" href="javascript:void((function()%7Blocation.href%3Dlocation.href.replace(/%5Ehttp%5C%3A%5C/%5C/(%5B%5E%5C/%5C%40%5D%2B)%5C/(?:)/,&quot;http://&quot;+&quot;$1&quot;.replace(&quot;\:&quot;,&quot;.&quot;)+&quot;.nyud.net:8090/&quot;);})())" >
+  <title>Coralize</title>
+  <desc>Avaa sivu Coral Cachen kautta</desc>
+ </bookmark>
+ <folder folded="no" icon="bookmark_folder" >
+  <title>del.icio.us</title>
+  <bookmark showintoolbar="no" icon="connect_creating" href="javascript:location.href%3D%27http%3A//del.icio.us/post?v=4;url='+encodeURIComponent(location.href)+';title='+encodeURIComponent(document.title)" >
+   <title>Del.icio.us - Post</title>
+   <desc>Lähetä sivu del.icio.us:siin</desc>
+  </bookmark>
+  <bookmark netscapeinfo="ADD_DATE=&quot;1141813853&quot; LAST_VISIT=&quot;0&quot; LAST_MODIFIED=&quot;1&quot;" icon="www" href="javascript:location.href%3D%27http%3A//del.icio.us/url?v=4;url='+encodeURIComponent(location.href)" >
+   <title>Del.icio.us - Related</title>
+   <desc>Katso Del.icio.us:sin related sivut</desc>
+  </bookmark>
+ </folder>
+</xbel>

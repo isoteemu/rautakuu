@@ -17,7 +17,7 @@ $logfile = "/home/isoteemu/irclogs/QuakeNET/#rautakuu.log";
 $startoffsetbytes = 2048;
 
 // Format of logfile. Currently supported:
-// * mirc - For those who use m-IRC (or only compatible logfile)
+// * mirc - For those who use m-IRC (or compatible logfile format)
 // * irssi - For default irssi logfiles
 // * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
 $logfileformat = "irssi";
@@ -68,7 +68,7 @@ if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 )
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
-    //VÃÂ©rification des bornes...
+    //VÃÂÃÂ©rification des bornes...
     /*
     for($i=0;$i<=2;$i++) {
         $tablo[$i]=bornes($tablo[$i],0,255);
@@ -120,7 +120,7 @@ function irc2html($texte){
 
         switch($ord){
             case "10":
-                //->Retour ÃÂ  la ligne, fermer toutes les balises ouvertes
+                //->Retour ÃÂÃÂ  la ligne, fermer toutes les balises ouvertes
                 if($is_bold) {$buffer.= "</b>";$is_bold=false;}
                 if($is_under) {$buffer.= "</u>";$is_under=false;}
                 if($is_fg) {$buffer.= "</span>";$is_fg=false;}
@@ -703,9 +703,9 @@ a:hover {
         </style>
         <script>
 
-var topuri = "<?= $_SERVER['REQUEST_URI'] ?>?time=";
+var topuri = "http://<?= $_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'] ?>?time=";
 
-var channelparam = "&amp;channel=<?= urlencode($_GET['channel']); ?>";
+var channelparam = "&channel=<?= urlencode($_GET['channel']); ?>";
 
 var smoothScroll = <?= $smoothscrolling; ?>;
 
@@ -719,7 +719,7 @@ var _appendId = "viestit";
 
 var nickColors = new Array();
 
-// EstÃÂ¤ÃÂ¤ tupla refreshauksen
+// EstÃÂÃÂ¤ÃÂÃÂ¤ tupla refreshauksen
 var _refreshing = false;
 
 function getXMLHTTPResult() {
@@ -728,7 +728,7 @@ function getXMLHTTPResult() {
     } else if(xmlHttp&&xmlHttp.readyState!=0) {
         requesterInit();
     } else if(!xmlHttp) {
-        // Turhaa edes yrittÃÂ¤ÃÂ¤
+        // Turhaa edes yrittÃÂÃÂ¤ÃÂÃÂ¤
         _refreshing = true;
     } else {
         if(_refreshing == false ) {
@@ -755,11 +755,11 @@ function buildLayout() {
 
     if(xmlResult[1].length < 1) return;
 
-    // kertoo sen hetkisen tyÃÂ¶skentely divin.
+    // kertoo sen hetkisen tyÃÂÃÂ¶skentely divin.
     var workTR = null;
 
     for( var f=0; f<xmlResult[1].length; ++f) {
-        // Array alkaa sijotuksella 0 niinpÃ¯Â¿Â½+1:htÃ¯Â¿Â½ei tarvita
+        // Array alkaa sijotuksella 0 niinpÃÂ¯ÃÂ¿ÃÂ½+1:htÃÂ¯ÃÂ¿ÃÂ½ei tarvita
 
         workTR=document.createElement("TR");
         setStyle(workTR);
@@ -871,7 +871,7 @@ function getTimer() {
 }
 
 function setStyle(tag) {
-    /* Jos haluat rivin nÃÂ¤kymÃÂ¤ÃÂ¤n kokonaan,
+    /* Jos haluat rivin nÃÂÃÂ¤kymÃÂÃÂ¤ÃÂÃÂ¤n kokonaan,
      * kommentoi/poista seuraava rivi */
     tag.style.wordWrap="break-word";
 
@@ -927,7 +927,7 @@ function init() {
     mainLoop();
 }
 
-// TÃ¯Â¿Â½Ã¯Â¿Â½kutsuu itseÃ¯Â¿Â½n uudestaan ja uudestaan ja uudestaan...
+// TÃÂ¯ÃÂ¿ÃÂ½ÃÂ¯ÃÂ¿ÃÂ½kutsuu itseÃÂ¯ÃÂ¿ÃÂ½n uudestaan ja uudestaan ja uudestaan...
 mainLoop=function() {
     if(_refreshing == false ) {
         getXMLHTTPResult();
@@ -963,7 +963,7 @@ if($_GET['css']) {
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">
-            <div id="foo"><noscript>Sorry peipe, tÃÂ¤mÃÂ¤ vaatii javascriptin :/</noscript></div>
+            <div id="foo"><noscript><p lang="fi">Sorry peipe, vaatii javascriptin :/</p><p>Sorry baby, this depends on Javascript</p></noscript></div>
             <div id="fadevert" style="bottom:0px;"><img src="#" height="0" widht="0"></div>
             <div id="fadehori" style="top:0px;"><img src="#" height="0" widht="0"></div>
         </div>

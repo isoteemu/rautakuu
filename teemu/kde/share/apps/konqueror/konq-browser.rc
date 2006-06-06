@@ -31,7 +31,6 @@
   </Menu>
   <Menu noMerge="1" name="view" >
    <text>&amp;View</text>
-   <Action name="go_most_often" />
    <ActionList name="viewmode" />
    <Separator/>
    <Merge/>
@@ -103,8 +102,6 @@
   <Separator name="separator_0" />
   <ActionList name="viewmode_toolbar" />
   <ActionList name="fullscreen" />
-  <WeakSeparator/>
-  <Action name="animated_logo" />
  </ToolBar>
  <ToolBar newline="false" hidden="true" index="1" name="extraToolBar" >
   <text>Extra Toolbar</text>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xbel>
+<xbel>
+ <folder folded="no" icon="bookmark_folder" >
+  <title>comics</title>
+  <bookmark icon="favicons/www.bobandgeorge.com" href="http://www.bobandgeorge.com/" >
+   <title>Bob and George, the Comic Strip!</title>
+   <info>
+    <metadata owner="http://www.kde.org" >
+     <time_added>1146177269</time_added>
+     <time_visited>1149462418</time_visited>
+     <visit_count>132</visit_count>
+    </metadata>
+   </info>
+  </bookmark>
+  <bookmark icon="www" href="http://fanboys-online.com/" >
+   <title>F@NB0Y$, the Comic Strip</title>
+   <info>
+    <metadata owner="http://www.kde.org" >
+     <time_added>1149533070</time_added>
+     <time_visited>1149533070</time_visited>
+     <visit_count>1</visit_count>
+    </metadata>
+   </info>
+  </bookmark>
+  <bookmark icon="favicons/www.myextralife.com" href="http://www.myextralife.com/" >
+   <title>EXTRALIFE - Web comic for geeks, gamers, and stuff like that</title>
+   <info>
+    <metadata owner="http://www.kde.org" />
+   </info>
+  </bookmark>
+  <bookmark icon="www" href="http://www.rpg-tv.com/" >
+   <title>http://www.rpg-tv.com/, the Comic Strip</title>
+   <info>
+    <metadata owner="http://www.kde.org" />
+   </info>
+  </bookmark>
+ </folder>
+ <bookmark icon="www" href="http://mightylegends.zapto.org/dvd/dvdauthor_howto_print.html" >
+  <title>Howto author AVI->DVD with menus using Linux only !</title>
+  <info>
+   <metadata>
+    <time_added>1096645762</time_added>
+    <time_visited>1097067830</time_visited>
+    <visit_count>8</visit_count>
+   </metadata>
+  </info>
+ </bookmark>
+ <bookmark icon="www" href="http://zebra.fh-weingarten.de/%7Emaxi/html/transcode-users/2004-01/msg00193.html" >
+  <title>Re: [transcode-users] NTSC to PAL DVD Conversion</title>
+ </bookmark>
+ <bookmark icon="www" href="http://localhost/phpmyadmin/index.php?lang=en-iso-8859-1&amp;server=1" >
+  <title>localhost >> localhost >> mythconverg >> videometadata | phpMyAdmin 2.6.0-pl2</title>
+  <info>
+   <metadata owner="http://www.kde.org" >
+    <time_added>1099951266</time_added>
+    <time_visited>1147311293</time_visited>
+    <visit_count>444</visit_count>
+   </metadata>
+  </info>
+ </bookmark>
+ <bookmark icon="favicons/www.google.com" href="http://www.google.com/webhp?complete=1&amp;hl=en" >
+  <title>Google</title>
+  <info>
+   <metadata owner="http://www.kde.org" >
+    <time_added>1102736980</time_added>
+    <time_visited>1136146825</time_visited>
+    <visit_count>3756</visit_count>
+   </metadata>
+  </info>
+ </bookmark>
+ <bookmark icon="favicons/www.debian.org" href="http://www.debian.org/distrib/packages#search_packages" >
+  <title>Debian -- Packages (2)</title>
+  <info>
+   <metadata owner="http://www.kde.org" >
+    <time_added>1148669389</time_added>
+    <time_visited>1148669415</time_visited>
+    <visit_count>6</visit_count>
+   </metadata>
+  </info>
+ </bookmark>
+ <bookmark icon="favicons/s4.travian.com" href="http://s4.travian.com/berichte.php?id=13300925" >
+  <title>Travian</title>
+  <info>
+   <metadata owner="http://www.kde.org" />
+  </info>
+ </bookmark>
+</xbel>

@@ -10,7 +10,7 @@ if( $init==true ) {
     $plugin->addRule('prefix', "vote ");
 
     if(!isset($vote)) $vote = array();
-    $vote['ongoing'] = false;
+    $vote[$plugin->line->channel]['ongoing'] = false;
     return;
 }
 
@@ -21,13 +21,13 @@ switch( $voteCmd ) {
 
     case "result" :
     case "tulos"  :
-        if ($vote['ongoing'] == true && $vote['time'] > time()) {
+        if ($vote[$plugin->line->channel]['ongoing'] == true && $vote[$plugin->line->channel]['time'] > time()) {
             $plugin->message("{$plugin->line->nick}: Äänestys ei ole vielä päättynyt.");
             break;
         }
-        if( $vote['ongoing'] == true ) $vote['ongoing'] = false;
-        $plugin->message("{$plugin->line->nick}: Äänestys oli: \"".$vote['topic']."\"");
-        if(($yes = count($vote['votes']['yes'])) > ($no = count($vote['votes']['no']))) {
+        if( $vote[$plugin->line->channel]['ongoing'] == true ) $vote[$plugin->line->channel]['ongoing'] = false;
+        $plugin->message("{$plugin->line->nick}: Äänestys oli: \"".$vote[$plugin->line->channel]['topic']."\"");
+        if(($yes = count($vote[$plugin->line->channel]['votes']['yes'])) > ($no = count($vote[$plugin->line->channel]['votes']['no']))) {
             $plugin->message("Äänestyksen tulos: Kyllä voitti äänin ".$yes."/".($yes+$no).".");
         } else {
             $plugin->message("Äänestyksen tulos: Ei voitti äänin ".$no."/".($yes+$no).".");
@@ -41,15 +41,15 @@ switch( $voteCmd ) {
     case "N"  :
     case "e"  :
     case "E"  :
-        if($vote['ongoing'] != true) {
+        if($vote[$plugin->line->channel]['ongoing'] != true) {
             $plugin->message("{$plugin->line->nick}: Äänestyksiä ei ole menossa.");
             break;
         }
-        if(isset($vote['votes']['no'][$plugin->line->nick]) || isset($vote['votes']['yes'][$plugin->line->nick])) {
+        if(isset($vote[$plugin->line->channel]['votes']['no'][$plugin->line->nick]) || isset($vote[$plugin->line->channel]['votes']['yes'][$plugin->line->nick])) {
             $plugin->message("{$plugin->line->nick}: Olet jo äänestänyt.");
             break;
         }
-        $vote['votes']['no'][$plugin->line->nick] = true;
+        $vote[$plugin->line->channel]['votes']['no'][$plugin->line->nick] = true;
         break;
 
     case "yes"   :
@@ -58,29 +58,29 @@ switch( $voteCmd ) {
     case "Y"     :
     case "K"     :
     case "k"     :
-        if($vote['ongoing'] != true) {
+        if($vote[$plugin->line->channel]['ongoing'] != true) {
             $plugin->message("{$plugin->line->nick}: Äänestyksiä ei ole menossa.");
             break;
         }
-        if(isset($vote['votes']['no'][$plugin->line->nick]) || isset($vote['votes']['yes'][$plugin->line->nick])) {
+        if(isset($vote[$plugin->line->channel]['votes']['no'][$plugin->line->nick]) || isset($vote[$plugin->line->channel]['votes']['yes'][$plugin->line->nick])) {
             $plugin->message("{$plugin->line->nick}: Olet jo äänestänyt.");
             break;
         }
-        $vote['votes']['yes'][$plugin->line->nick] = true;
+        $vote[$plugin->line->channel]['votes']['yes'][$plugin->line->nick] = true;
         break;
 
     default :
-        if($vote['ongoing'] == true) {
+        if($vote[$plugin->line->channel]['ongoing'] == true) {
             $plugin->message("{$plugin->line->nick}: Tuntematon äänestys komento. Äänestä joko kyllä tai ei.");
             break;
         }
         if(substr($voteCmd, -1) == "?") {
-            $vote['ongoing']      = true;
-            $vote['topic']        = $voteCmd;
-            $vote['votes']        = array();
-            $vote['votes']['yes'] = array();
-            $vote['votes']['no']  = array();
-            $vote['time']         = (time()+180);
+            $vote[$plugin->line->channel]['ongoing']      = true;
+            $vote[$plugin->line->channel]['topic']        = $voteCmd;
+            $vote[$plugin->line->channel]['votes']        = array();
+            $vote[$plugin->line->channel]['votes']['yes'] = array();
+            $vote[$plugin->line->channel]['votes']['no']  = array();
+            $vote[$plugin->line->channel]['time']         = (time()+180);
             $plugin->message("Uusi äänestys: {$voteCmd}");
         } else {
             $plugin->message("{$plugin->line->nick}: Tuntematon komento.");
@@ -88,14 +88,16 @@ switch( $voteCmd ) {
         break;
 }
 
-if($vote['ongoing'] == true && $vote['time'] < time()) {
+if($vote[$plugin->line->channel]['ongoing'] == true && $vote[$plugin->line->channel]['time'] < time()) {
     $plugin->message("{$plugin->line->nick}: Vote on umpeutunut. Kiitoksia osallistuneille.");
-    if(($yes = count($vote['votes']['yes'])) > ($no = count($vote['votes']['no']))) {
+    if(($yes = count($vote[$plugin->line->channel]['votes']['yes'])) > ($no = count($vote[$plugin->line->channel]['votes']['no']))) {
         $plugin->message("Äänestyksen tulos: Kyllä voitti äänin ".$yes."/".($yes+$no).".");
     } else {
         $plugin->message("Äänestyksen tulos: Ei voitti äänin ".$no."/".($yes+$no).".");
     }
-    $vote['ongoing'] = false;
+    $vote[$plugin->line->channel]['ongoing'] = false;
 }
+
+$plugin->irc->flushBuffer();
 
 ?>

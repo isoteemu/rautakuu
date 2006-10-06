@@ -219,9 +219,9 @@ if(preg_match('/^pinky ([^\s]+)(.*)$/', $plugin->line->msg, $act)) {
 				asort($mathstack['stats'][$channel]);
 				$i = 1;
 				$to = $plugin->line->channel != $plugin->irc->botNick ? $plugin->line->channel : $act[2];
-				$plugin->irc->_send(sprintf('PRIVMSG %s :Sija | Pelaaja      | Aika', $top));
+				$plugin->irc->_send(sprintf('PRIVMSG %s :Sija | Pelaaja      | Aika', $to));
 				foreach($mathstack['stats'][$channel] as $who => $time) {
-					$plugin->irc->_send(sprintf('PRIVMSG %s :[ %2d ] %-12s | %ds.', $to, $i, $who, $time));
+					$plugin->irc->_send(sprintf('PRIVMSG %s :[%3d ] %-12s | %ds.', $to, $i, $who, $time));
 					$i++;
 				}
 			} else {

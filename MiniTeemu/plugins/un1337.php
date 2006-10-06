@@ -10,21 +10,22 @@ if( $init==true ) {
 $teinix = array(
     'omg',
 //    'imac',
-    '\b1o1\b',
+    '(^|\s)1o1(\s|$)',
+    '(^|\s)lål(\s|$)',
 //    'l[\w\d]l\b',
-    '\bl[\w\d]l\b',
-    '\bevo(\b|tatte|t{1,2}a{1,})',
+    '(^|\s)l[\w\d]l(\s|$)',
+    '(^|\s)(s)evo(\s|$|tatte|t{1,2}a{1,})',
     'stfu',
     'rofl',
     'noob',
     'n00b',
-    'xD',
+    '(^|\s)xD($|\s)',
 //    'munq',
 //    'ihq',
 //    'vinq',
 //    'parq',
 //    'itq',
-    '[^\b]Q\b',
+    '[^\s]+Q(\s|$)',
 );
 
 $byes = array(
@@ -54,8 +55,8 @@ $matches = array();
 
 if (preg_match($regex, $plugin->line->msg, $matches)) {
     $bye =& $byes[array_rand($byes)];
-    irc::trace("Teinixiä havaittu:{$matches[2]} in {$plugin->line->msg}");
-    $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} :Teinixiä, $bye ({$matches[2]})");
+    irc::trace("Teinixiä havaittu: ".$matches[0]." in {$plugin->line->msg}");
+    $plugin->irc->send("KICK {$plugin->line->channel} {$plugin->line->nick} :Teinixiä, $bye ({$matches[0]})");
 }
 
 ?>

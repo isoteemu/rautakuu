@@ -200,7 +200,7 @@ class log {
 
             // Init own error handler
             $log->setErrorHandler();
-            $log->_loadSession();
+            //$log->_loadSession();
         }
         return $log;
     }

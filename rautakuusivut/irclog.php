@@ -571,6 +571,36 @@ function getMessages($channel="#rautakuu",$time=null) {
             break;
     }
 
+    if(function_exists('json_encode')) {
+    	// Format for json_encode
+    	$times	= array();
+    	$act	= array();
+    	$nicks	= array();
+    	$mesgs	= array();
+    	foreach($results as $row) {
+    		$times[]	= $row['time'];
+    		$act[]		= $row['action'];
+    		$nicks[]	= $row['nick'];
+    		$mesgs[]	= $row['msg'];
+    	} 
+    	return json_encode(array(
+    		$time,
+    		$times,
+    		$act,
+    		$nicks,
+    		$mesgs
+    	));	
+    } else {
+    	return json_fallback($results, $time);
+    }
+}
+
+function json_fallback($results, $time) {
+	$times 		= '';
+	$actions 	= '';
+	$nicks 		= '';
+	$mesgs		= '';
+
     foreach($results as $row) {
         $times .= '"'.$row['time'].'",';
         $actions .= '"'.$row['action'].'",';
@@ -586,8 +616,10 @@ function getMessages($channel="#rautakuu",$time=null) {
     $nicks = substr($nicks,0,strlen($nicks)-1);
     $mesgs = substr($mesgs,0,strlen($mesgs)-1);
 
-    return "new Array(\"{$time}\", new Array({$times}), new Array({$actions}), new Array({$nicks}), new Array({$mesgs}));";
+    return '["'.$time.'",['.$times.'],['.$actions.'],['.$nicks.'],['.$mesgs.']]';
+
 }
+
 
 /**
  * This function calculates load avarage for linux system.
@@ -723,7 +755,7 @@ var channelparam = "&channel=<?= urlencode($_GET['channel']); ?>";
 
 var smoothScroll = <?= $smoothscrolling; ?>;
 
-var xmlResult = <?= getMessages($_GET['channel']);?>
+var xmlResult = <?= getMessages($_GET['channel']);?>;
 
 var xmlHttp = null;
 

@@ -921,7 +921,7 @@ function createCookie(name,value,days) {
 		var expires = "; expires="+date.toGMTString();
 	}
 	else var expires = "";
-	document.cookie = name+"="+value+expires+"; path=/";
+	document.cookie = name+"="+value+expires+"; path=<?= dirname($_SERVER['REQUEST_URI']);?>";
 }
 
 function readCookie(name) {

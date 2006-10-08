@@ -974,6 +974,9 @@ if($_GET['css']) {
     ';
 }
 ?>
+		<!-- ET function; Calls home and bitches our revision. -->
+		<!-- Won't harm you, but feel free to remove.          -->
+		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>		
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">

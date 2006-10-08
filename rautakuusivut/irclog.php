@@ -1,5 +1,6 @@
 <?php
 // kate: space-indent true; encoding utf-8; indent-width 4;
+$rev = '$Id$';
 
 // Storage driver. currently supported:
 // * DB - uses pear DB layer

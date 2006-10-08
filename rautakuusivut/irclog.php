@@ -487,6 +487,9 @@ function _parserMessagesEgg($log) {
 }
 
 
+/**
+ * Read file for logmenu entries.
+ */
 function getMessagesLogfile(&$pos,$channe=null) {
     global $logfile, $logfileformat, $startoffsetbytes;
     if(!file_exists($logfile)) {
@@ -496,30 +499,40 @@ function getMessagesLogfile(&$pos,$channe=null) {
     if(!$fp = fopen($logfile, "r")) {
         die("Error: Error opening logfile '{$logfile}' handler");
     }
-    $totalsize = filesize($logfile);
 
-    // Move pointer
-    if($pos == null) {
-        if($startoffsetbytes > $totalsize) $startoffsetbytes = $filesize;
-        fseek($fp, -$startoffsetbytes, SEEK_END);
-        $readAmmount=$startoffsetbytes;
-    } else {
-        $pos = intval($pos);
-        if($pos < 0 || $pos > $totalsize) {
-            // You fuckwad
-            fseek($fp, -$startoffset, SEEK_END);
-            $readAmmount=$startoffsetbytes;
-        } else {
-            fseek($fp, $pos);
-            $readAmmount=$totalsize-$pos;
-        }
+    while(true) {
+  		$totalsize = filesize($logfile);
+
+	    // Move pointer
+	    if($pos == null) {
+	        if($startoffsetbytes > $totalsize) $startoffsetbytes = $filesize;
+	        fseek($fp, -$startoffsetbytes, SEEK_END);
+	        $readAmmount=$startoffsetbytes;
+	    } else {
+	        $pos = intval($pos);
+	        if($pos < 0 || $pos > $totalsize) {
+	            // You fuckwad
+	            fseek($fp, -$startoffset, SEEK_END);
+	            $readAmmount=$startoffsetbytes;
+	        } else {
+	            fseek($fp, $pos);
+	            $readAmmount=$totalsize-$pos;
+    	    }
+	    }
+
+		// Respawn read, if no new lines.
+	    if($readAmmount <= 0) {
+	    	// Wait for new event
+	    	clearstatcache();
+	    	sleep(0.5);
+	    	continue;
+	    } else {
+	    	// read logfile
+	    	$log = fread($fp, $readAmmount);
+	    	$pos = ftell($fp);
+	    }
     }
-
-    if($readAmmount <= 0) return array();
-
-    // read logfile
-    $log = fread($fp, $readAmmount);
-    $pos = ftell($fp);
+    
     fclose($fp);
 
     switch(strtolower($logfileformat)) {
@@ -871,7 +884,7 @@ function getTimer() {
 }
 
 function setStyle(tag) {
-    /* Jos haluat rivin nÃÂÃÂ¤kymÃÂÃÂ¤ÃÂÃÂ¤n kokonaan,
+    /* Jos haluat rivin näkymään kokonaan,
      * kommentoi/poista seuraava rivi */
     tag.style.wordWrap="break-word";
 
@@ -927,7 +940,7 @@ function init() {
     mainLoop();
 }
 
-// TÃÂ¯ÃÂ¿ÃÂ½ÃÂ¯ÃÂ¿ÃÂ½kutsuu itseÃÂ¯ÃÂ¿ÃÂ½n uudestaan ja uudestaan ja uudestaan...
+// kutsuu itseään uudestaan ja uudestaan ja uudestaan...
 mainLoop=function() {
     if(_refreshing == false ) {
         getXMLHTTPResult();

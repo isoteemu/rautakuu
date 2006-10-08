@@ -884,8 +884,15 @@ function dechex(b) {
 
 function colorNick(nick) {
     if(!nickColors[nick]) {
-        nickColors[nick]='#'+dechex(IntRandom(220))+dechex(IntRandom(220))+dechex(IntRandom(220));
-    }
+    	// Try to read from cookie
+    	if(color = readCookie('nc_'+nick)) {
+    		nickColors[nick]=color;
+    	} else {
+	        nickColors[nick]='#'+dechex(IntRandom(220))+dechex(IntRandom(220))+dechex(IntRandom(220));
+			// Save to cookie, for 7 days.
+	        createCookie('nc_'+nick,nickColors[nick],7);
+	    }
+	}
     return nickColors[nick];
 
 }
@@ -901,6 +908,35 @@ function formatInt(sstr) {
     var str = new String(sstr);
     if(str.length < 2) str = "0"+str;
     return str;
+}
+
+/**
+ * Cookie functions copied from:
+ * http://www.quirksmode.org/js/cookies.html
+ */
+function createCookie(name,value,days) {
+	if (days) {
+		var date = new Date();
+		date.setTime(date.getTime()+(days*24*60*60*1000));
+		var expires = "; expires="+date.toGMTString();
+	}
+	else var expires = "";
+	document.cookie = name+"="+value+expires+"; path=/";
+}
+
+function readCookie(name) {
+	var nameEQ = name + "=";
+	var ca = document.cookie.split(';');
+	for(var i=0;i < ca.length;i++) {
+		var c = ca[i];
+		while (c.charAt(0)==' ') c = c.substring(1,c.length);
+		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+	}
+	return null;
+}
+
+function eraseCookie(name) {
+	createCookie(name,"",-1);
 }
 
 /**

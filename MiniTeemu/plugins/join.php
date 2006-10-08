@@ -1,6 +1,7 @@
 <?php
 /**
  * join.php - Liittyy kanavalle welcomen saatuaan.
+ * joined.php hoitaa loppuosan.
  */
 if( $init==true ) {
     $plugin->addRule('code', "001");
@@ -8,5 +9,10 @@ if( $init==true ) {
     return;
 }
 
-$plugin->irc->join();
+foreach($plugin->irc->_channels as $channel => $status) {
+	if($status == false) {
+		$plugin->irc->join($channel);
+	}
+}
+
 ?>

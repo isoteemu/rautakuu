@@ -278,6 +278,9 @@ class irc {
     // Bufferi joka sisältää kaiken saamamme datan.
     var $_loggedin  = false;
 
+	// Array of channels, to be connected
+	var $_channels;
+
     // Trace ajuri
     var $traceDrv   = IRC_TRACE_ECHO;
 
@@ -372,8 +375,19 @@ class irc {
      * Liity kanavalle
      */
     function join($channel) {
-        if(!$this->loggedin) $this->login();
-        $this->send("JOIN $channel");
+    	if($this->_channels[$channel]) return;
+
+        $this->_channels[$channel] = false;
+        if(!$this->loggedin) {
+        	$this->login();
+        } else {
+	        $this->_join($channel);
+	        unset($this->_channels[$channel]);
+	    }
+    }
+    
+    function _join($channel) {
+    	$this->_send("JOIN $channel");
     }
 
     /**

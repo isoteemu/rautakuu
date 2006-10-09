@@ -257,31 +257,54 @@ function getMessagesDB(&$pos, $channel) {
     }
 
     if( $pos == null ) {
-        $sql = "
+        $sql = '
             SELECT
                 `key`, UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             WHERE
-                `channel` = '{$channel}'
+                `channel` = '.$DB->quote($channel).'
             ORDER BY
                 `time` DESC, `key` DESC
-            LIMIT 0 , {$startrows}";
+            LIMIT 0 , '.$startrows;
             $pos = 0;
     } else {
-        $sql = "
+    
+        $lsql = '
+    		SELECT
+    			COUNT(*) AS n
+    		FROM `ircmsg`
+    		WHERE
+    			`key` > 175016 AND
+    			`channel` = '.$DB->quote($channel).'
+    		LIMIT 0,1';
+
+        $sql = '
             SELECT
                 `key`, UNIX_TIMESTAMP(`time`) , `action`, `nick` , `msg`
             FROM
                 `ircmsg`
             WHERE
-                `key` > '{$pos}' AND
-                (
-                    `channel` = '{$channel}'
-                )
+                `key` > '.$DB->quote($pos).' AND
+                `channel` = '.$DB->quote($channel).'
             ORDER BY
-                `time` DESC, `key` DESC";
+                `time` DESC, `key` DESC';
+
+    	// Respawn update checks
+    	while(true) { 
+    
+    		// Use quick check for latest DB changes   
+    		$res =& $DB->query($lsql);
+    		if(DB::IsError($res)) return array();
+
+			list($n) = $res->fetchRow();
+			$res->free();
+
+			if($n > 0) break;
+    		sleep(1);
+    	}
     }
+
     $res =& $DB->query($sql);
     if(DB::IsError($res)) {
         die("Error: DB: ".$res->getMessage());

@@ -581,7 +581,10 @@ function getMessages($channel="#rautakuu",$time=null) {
     		$times[]	= $row['time'];
     		$act[]		= $row['action'];
     		$nicks[]	= $row['nick'];
-    		$mesgs[]	= $row['msg'];
+    		if($row['action'] == 'PRIVMSG')
+    			$mesgs[] = htmlline($row['msg']);
+    		else
+    			$mesgs[] = htmlentities($row['msg'], ENT_QUOTES, 'UTF-8');
     	} 
     	return json_encode(array(
     		$time,
@@ -841,7 +844,7 @@ function buildLayout() {
                 setText(msgTD, "has joined");
                 break;
             case "KICK" :
-                setText(msgTD, "was kicked ["+xmlResult[4][f]+"]");
+                setText(msgTD, "kicked "+xmlResult[4][f]);
                 break;
             case "MODE" :
                 setText(msgTD, "mode ["+xmlResult[4][f]+"] by <font color=\""+colorNick(xmlResult[3][f])+"\">"+xmlResult[3][f]+"</font>");

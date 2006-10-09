@@ -275,7 +275,7 @@ function getMessagesDB(&$pos, $channel) {
     			COUNT(*) AS n
     		FROM `ircmsg`
     		WHERE
-    			`key` > 175016 AND
+    			`key` > '.$DB->quote($pos).' AND
     			`channel` = '.$DB->quote($channel).'
     		LIMIT 0,1';
 
@@ -292,7 +292,7 @@ function getMessagesDB(&$pos, $channel) {
 
     	// Respawn update checks
     	while(true) { 
-    
+
     		// Use quick check for latest DB changes   
     		$res =& $DB->query($lsql);
     		if(DB::IsError($res)) return array();
@@ -799,8 +799,9 @@ function getXMLHTTPResult() {
         return false;
     } else if(xmlHttp&&xmlHttp.readyState!=0) {
         requesterInit();
+        getXMLHTTPResult();
     } else if(!xmlHttp) {
-        // Turhaa edes yrittÃÂÃÂ¤ÃÂÃÂ¤
+        // Turhaa edes yrittää
         _refreshing = true;
     } else {
         if(_refreshing == false ) {
@@ -815,12 +816,15 @@ function getXMLHTTPResult() {
 }
 
 function parseResult() {
-    if(xmlHttp.readyState==4&&xmlHttp.responseText) {
-        xmlResult = eval(xmlHttp.responseText);
-        buildLayout();
+    if(xmlHttp.readyState==4) {
+    	if(xmlHttp.responseText) {
+        	xmlResult = eval(xmlHttp.responseText);
+        	buildLayout();
+        }
         requesterInit();
+	    _refreshing = false;
+    	setTimeout("getXMLHTTPResult()", getTimer());
     }
-    _refreshing = false;
 }
 
 function buildLayout() {
@@ -1032,7 +1036,8 @@ function init() {
 
     buildLayout();
     requesterInit();
-    mainLoop();
+    getXMLHTTPResult();
+//    mainLoop();
 }
 
 // kutsuu itseään uudestaan ja uudestaan ja uudestaan...

@@ -33,7 +33,7 @@ $dbdns = "mysql://miniteemu:*******@localhost/rautakuuirc";
 // How many rows to show at begining?
 $startrows = 20;
 
-// Default channel
+// Default channel. Currently only on DB.
 $channel = "#rautakuu";
 
 // "throtling".
@@ -69,12 +69,6 @@ if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 )
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
-    //VÃÂÃÂ©rification des bornes...
-    /*
-    for($i=0;$i<=2;$i++) {
-        $tablo[$i]=bornes($tablo[$i],0,255);
-    }
-    */
     //Le str_pad permet de remplir avec des 0
     //parce que sinon rgb2html(Array(0,255,255)) retournerai #0ffff<=manque un 0 !
     return "#".str_pad(dechex(($tablo[0]<<16)|($tablo[1]<<8)|$tablo[2]),6,"0",STR_PAD_LEFT);
@@ -121,7 +115,6 @@ function irc2html($texte){
 
         switch($ord){
             case "10":
-                //->Retour ÃÂÃÂ  la ligne, fermer toutes les balises ouvertes
                 if($is_bold) {$buffer.= "</b>";$is_bold=false;}
                 if($is_under) {$buffer.= "</u>";$is_under=false;}
                 if($is_fg) {$buffer.= "</span>";$is_fg=false;}
@@ -247,7 +240,7 @@ function formatMircTime(&$time, $channel) {
 
 
 function getMessagesDB(&$pos, $channel) {
-    include_once("DB.php");
+    require_once("DB.php");
 
     global $dbdns, $startrows;
     static $DB;
@@ -674,7 +667,7 @@ if(isset($_GET['time'])) {
 
     // It really does not matter if updates aren't instant.
     // Use sleep so if server is under load, frequent updates
-    // won't trash it totally.
+    // won't trash system totally.
     if($loadavg != false) {
         $load = loadavg();
         $loadprc = ($load/$loadavg);
@@ -687,7 +680,7 @@ if(isset($_GET['time'])) {
     }
 
     /**
-     * Konqueror want's to cache, and won't return real result
+     * Konqueror want's to cache, and won't return real deal
      * in xmlHttp. Not suitable, not at all...
      */
     header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
@@ -703,7 +696,7 @@ if(isset($_GET['time'])) {
 <!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
 <html>
     <head>
-        <title><?= htmlspecialchars($_GET['channel']);?> IRC viestit</title>
+        <title><?= htmlspecialchars($_GET['channel']);?> IRC</title>
         <meta http-equiv="Content-Language" content="fi" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <style>
@@ -729,6 +722,8 @@ a:hover {
      color: #990000;
 }
 
+/*
+ * If you wan't cool-looking fades.
 #fadevert {
     background-image:url("http://teemu.sivut.rautakuu.org/rautakuu/towhite-vert.png");
     background-repeat:repeat-y;
@@ -753,6 +748,7 @@ a:hover {
     right:0;
     position:fixed;
 }
+*/
 
 #container {
     width:100%;
@@ -761,10 +757,12 @@ a:hover {
 }
 
 #container table {
+/*
     background-image:url("http://teemu.sivut.rautakuu.org/rautakuu/irssilogo.jpg");
     background-repeat:no-repeat;
     background-position:right bottom;
     background-attachment: fixed;
+*/
     padding-bottom: 20px;
 }
 
@@ -781,6 +779,7 @@ var channelparam = "&channel=<?= urlencode($_GET['channel']); ?>";
 
 var smoothScroll = <?= $smoothscrolling; ?>;
 
+// For initial table buildup.
 var xmlResult = <?= getMessages($_GET['channel']);?>;
 
 var xmlHttp = null;
@@ -791,7 +790,7 @@ var _appendId = "viestit";
 
 var nickColors = new Array();
 
-// EstÃÂÃÂ¤ÃÂÃÂ¤ tupla refreshauksen
+// To prevent double-refreshing
 var _refreshing = false;
 
 function getXMLHTTPResult() {
@@ -831,7 +830,7 @@ function buildLayout() {
 
     if(xmlResult[1].length < 1) return;
 
-    // kertoo sen hetkisen tyÃÂÃÂ¶skentely divin.
+    // Current working row
     var workTR = null;
 
     for( var f=0; f<xmlResult[1].length; ++f) {
@@ -1037,15 +1036,6 @@ function init() {
     buildLayout();
     requesterInit();
     getXMLHTTPResult();
-//    mainLoop();
-}
-
-// kutsuu itseään uudestaan ja uudestaan ja uudestaan...
-mainLoop=function() {
-    if(_refreshing == false ) {
-        getXMLHTTPResult();
-    }
-    setTimeout("mainLoop()", getTimer());
 }
 
 function scrollme(){
@@ -1066,20 +1056,13 @@ function scrollme(){
 }
 
         </script>
-<?php
-if($_GET['css']) {
-    echo '
-    <link rel="stylesheet" href="'.addslashes(htmlspecialchars($_GET['css'])).'" type="text/css" media="all" />
-    ';
-}
-?>
 		<!-- ET function; Calls home and bitches our revision. -->
 		<!-- Won't harm you, but feel free to remove.          -->
 		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>		
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">
-            <div id="foo"><noscript><p lang="fi">Sorry peipe, vaatii javascriptin :/</p><p>Sorry baby, this depends on Javascript</p></noscript></div>
+            <div id="foo"><noscript><p lang="fi">Sorry peipe, vaatii javascriptin :/</p><p>Sorry honeybynny, this depends on Javascript</p></noscript></div>
             <div id="fadevert" style="bottom:0px;"><img src="#" height="0" widht="0"></div>
             <div id="fadehori" style="top:0px;"><img src="#" height="0" widht="0"></div>
         </div>

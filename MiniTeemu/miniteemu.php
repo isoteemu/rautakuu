@@ -256,6 +256,7 @@ class irc {
     var $botRName   = "Mini Me, completes me!";
     var $botNick    = "MiniTeemu";
     var $botUName   = "rautakuu";
+    var $botPass	= '';
 
     // Kuinka monta kertaa yritetään yhdistää ennen kuin annetaan periksi.
     var $tries      = 5;
@@ -302,6 +303,8 @@ class irc {
         if( $config != null && is_array( $config )) {
             if( $config['server'] )     $this->server   = $config['server'];
             if( $config['port'] )       $this->port     = $config['port'];
+            if( $config['pass'] )       $this->botPass  = $config['pass'];
+            if( $config['username'] )   $this->botUName = $config['username'];
         }
 
         // Huuhdellaan välittömästi
@@ -366,8 +369,12 @@ class irc {
      */
     function login($usermode=0) {
         if(!$this->_state()) return false;
-        $this->send("NICK ".$this->botNick);
-        $this->send("USER ".$this->botUName." ".$usermode." * :".$this->botRName);
+        $this->_send('NICK '.$this->botNick);
+        if(!empty($this->botPass))
+        	$this->_send('PASS '.trim($this->botPass));
+
+       	// Hostname kuuluu usermoden tilalle
+        $this->_send("USER ".$this->botUName." ".$usermode." * :".$this->botRName);
         $this->loggedin = true;
     }
 

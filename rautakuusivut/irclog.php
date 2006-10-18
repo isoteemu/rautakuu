@@ -563,6 +563,7 @@ function getMessagesLogfile(&$pos,$channe=null) {
 	    	// read logfile
 	    	$log = fread($fp, $readAmmount);
 	    	$pos = ftell($fp);
+	    	break;
 	    }
     }
     

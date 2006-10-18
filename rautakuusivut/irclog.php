@@ -5,7 +5,7 @@ $rev = '$Id$';
 // Storage driver. currently supported:
 // * DB - uses pear DB layer
 // * logfile - reads messages from logfile
-$storage = "DB";
+$storage = "logfile";
 
 //
 // logfile storage
@@ -41,10 +41,11 @@ $channel = "#rautakuu";
 // fetching new messages are delayed.
 // Set $loadavg to false if throtling is not wanted
 // (eg, in windows enviroment, it does not work).
-$loadavg = 4;
-$delaytime = 5;
-$maxdelay = 10;
-
+if(is_readable('/proc/loadavg')) {
+	$loadavg = 10;
+	$delaytime = 5;
+	$maxdelay = 10;
+}
 
 // Scrolling method.
 // As RSL whished, if you don't want to use smooth scrolling,
@@ -55,17 +56,26 @@ if(isset($_GET['smoothscroll']) && ( $_GET['smoothscroll'] == "true" || $_GET['s
     $smoothscrolling = (string) $_GET['smoothscroll'];
 }
 
-// The code part
+// Add javascript header for home calling.
+// Used to collect usage stats, which is then used to see,
+// if it's worth keep bug-fixing this.
+$usagestats = true;
+
+
+///
+/// The code part
+///
 
 header("Content-Type: text/html;charset=utf-8");
-if( function_exists("putenv")) putenv('LANG="fi_FI.UTF-8');
 if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
 if( function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
+// Safe mode does not allow (by default) LANG enviroment variable.
+if( !ini_get('safe_mode') && function_exists("putenv") ) @putenv('LANG="en_US.UTF-8');
 
-ini_set("default_charset", "uft-8");
-ini_set("mbstring.encoding_translation", "on");
+@ini_set("default_charset", "uft-8");
+@ini_set("mbstring.encoding_translation", "on");
 
-if( ini_get("session.use_trans_sid") == 1 ) ini_set("session.use_trans_sid", 0 );
+if( ini_get("session.use_trans_sid") == 1 ) @ini_set("session.use_trans_sid", 0 );
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
@@ -691,13 +701,12 @@ if(isset($_GET['time'])) {
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">
-<!-- Irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.    -->
-<!-- Irclog.php: http://svn.rautakuu.org/trac/homebrevcomputing/wiki/IrcScroller          -->
+<!-- irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.    -->
+<!-- irclog.php: http://svn.rautakuu.org/trac/homebrevcomputing/wiki/IrcScroller          -->
 <!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
 <html>
     <head>
         <title><?= htmlspecialchars($_GET['channel']);?> IRC</title>
-        <meta http-equiv="Content-Language" content="fi" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <style>
 body {
@@ -834,7 +843,7 @@ function buildLayout() {
     var workTR = null;
 
     for( var f=0; f<xmlResult[1].length; ++f) {
-        // Array alkaa sijotuksella 0 niinpÃÂ¯ÃÂ¿ÃÂ½+1:htÃÂ¯ÃÂ¿ÃÂ½ei tarvita
+        // Array begins with offset 0
 
         workTR=document.createElement("TR");
         setStyle(workTR);
@@ -1056,9 +1065,10 @@ function scrollme(){
 }
 
         </script>
-		<!-- ET function; Calls home and bitches our revision. -->
-		<!-- Won't harm you, but feel free to remove.          -->
-		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>		
+<?php
+if($usagestats) echo'
+		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>';
+?>
     </head>
     <body bgcolor="#ffffff" onLoad="init()">
         <div id="container">

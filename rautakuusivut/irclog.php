@@ -248,7 +248,7 @@ function formatMircTime(&$time, $channel) {
     $times = explode(":", $time);
     $times = array_slice($times, 0, 3);
     while(count($times) < 3) {
-        array_push($times, "00");
+        array_push($times, 00);
     }
 
     $time = mktime($times[0], $times[1], $times[2]);

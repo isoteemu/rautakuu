@@ -47,6 +47,12 @@ if(is_readable('/proc/loadavg')) {
 	$maxdelay = 10;
 }
 
+// Use page compression?
+// If true, uses gzip for compressing new messages.
+// Can save (a bit) bandwith, but on quiet channel,
+// just wastes CPU cycles.
+$gzipencode = true;
+
 // Scrolling method.
 // As RSL whished, if you don't want to use smooth scrolling,
 // set this to false, so windows allways moves to bottom without
@@ -670,6 +676,22 @@ function loadavg() {
     }
 }
 
+/**
+ * Encode string to gzip-compatible.
+ * @param $content string content to encode.
+ * @param $strlen int string length
+ * @param $crc string crc checksum of string
+ */
+function  gzipencode($content, $strlen=null, $crc=null) {
+	if($strlen===null) $strlen = strlen($content);
+	if($crc===null) $crc = crc32($content);
+	$content = "\x1f\x8b\x08\x00\x00\x00\x00\x00".
+			   substr(gzcompress($content, 3), 0, - 4). // Use mid compression
+			   pack('V', $crc).
+			   pack('V', $strlen);
+	return $content;
+}
+
 
 if(empty($_GET['channel'])) $_GET['channel'] = $channel;
 
@@ -678,25 +700,48 @@ if(isset($_GET['time'])) {
     // It really does not matter if updates aren't instant.
     // Use sleep so if server is under load, frequent updates
     // won't trash system totally.
-    if($loadavg != false) {
+    if($loadavg) {
         $load = loadavg();
         $loadprc = ($load/$loadavg);
         if($loadprc > 0.80) {
             // calculate how log to delay.
             $delay = ($loadprc-0.8)*5*$delaytime;
+
+            // Don't delay longer than maximal execution time.
+            if($maxdelay >= ini_get('max_execution_time')) $maxdelay = ini_get('max_execution_time')-1;
+
             if($delay > $maxdelay) $delay = $maxdelay;
             sleep($delay);
         }
     }
 
-    /**
-     * Konqueror want's to cache, and won't return real deal
-     * in xmlHttp. Not suitable, not at all...
-     */
-    header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+	// Save old time
+	$old_time = $_GET['time'];
 
-    die(getMessages($_GET['channel'], $_GET['time']));
+	// $_GET['time'] is an pointer for getMessages.
+	$msgs = getMessages($_GET['channel'], $_GET['time']);
+	// Send time as etag identifier.
+	header('ETag: "'.$_GET['time'].'"');
+
+	// Force validation?
+	if($old_time != $_GET['time']) {
+     	// Konqueror want's to cache, and won't return real deal
+		// in xmlHttp. Not suitable, not at all...
+		header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");   // Date in the past
+	}
+
+	if($gzipencode == true && headers_sent() && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
+		$_strlen = strlen($msgs);
+		$_msgs = gzipencode($msgs,$_strlen);
+		// If uncompressed is smaller than compressed, send uncompressed one.
+		if(strlen($_msgs) < $_strlen) {
+			header('Content-Encoding: gzip');
+			$msgs = $_msgs;
+		}
+	}
+
+    die($msgs);
 }
 
 ?>

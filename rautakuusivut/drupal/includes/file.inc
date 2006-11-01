@@ -584,33 +584,42 @@ function file_transfer($source, $headers) {
 
     // Is this a partial request?
     if(isset($_SERVER['HTTP_RANGE'])) {
-      $range=substr($_SERVER['HTTP_RANGE'],strpos($_SERVER['HTTP_RANGE'],'=')+1);
-      list($range_from,$range_to) = explode('-', $range);
+      if(preg_match('/^bytes=(\d+)-(\d+)$/', $_SERVER['HTTP_RANGE'], $match)) {
 
-      // Confirm that no funnybussines is being made
-      $range_from = intval($range_from);
-      $range_to = intval($range_to);
-      if($range_to+1 >= $filesize) $range_to = $filesize-1;
-      if($range_from >= $range_to) $range_from = 0;
+        $range_from = $match[1];
+        $range_to   = $match[2];
 
-      // Send appropiate headers
-      header('HTTP/1.1 206 Partial Content');
-      header('Content-Range: bytes '.$range_from.'-'.$range_to.'/'.$filesize);
-      header('Content-Length: '.($range_to-$range_from+1));
+        if($range_to+1 >= $filesize || $range_from >= $range_to) {
+          header('416 Requested Range Not Satisfiable');
+          $range_from = 0;
+          $range_to = $filesize-1;
+        }
+        else {
+          header('HTTP/1.1 206 Partial Content');
+        }
+      }
+      else {
+        header('416 Requested Range Not Satisfiable');
+        $range_from = 0;
+        $range_to = $filesize-1;
+      }
+
+      $r = $range_to-$range_from+1;
+
+      header(sprintf('Content-Range: bytes %d-%d/%d',$range_from,$range_to,$filesize));
+      header('Content-Length: '.$r);
       // Move file pointer
       fseek($fd,$range_from);
-    } else {
-      // Send filesize
-      $range_from=0;
-      $range_to=$filesize-1;
+    }
+    else {
+      $r = $filesize;
       header('Content-Length: '.$filesize);
     }
 
     // Transfer file in 1024 byte chunks to save memory usage.
-    $r = $range_to-$range_from;
     while (!feof($fd)) {
-      if($r > 1024) {
-        $r-1024;
+      if($r >= 1024) {
+        $r=$r-1024;
         print fread($fd, 1024);
       } else {
         print fread($fd, $r);

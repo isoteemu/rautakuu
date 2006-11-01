@@ -596,6 +596,8 @@ function file_transfer($source, $headers) {
         }
         else {
           header('HTTP/1.1 206 Partial Content');
+          // Move file pointer
+          fseek($fd,$range_from);
         }
       }
       else {
@@ -608,8 +610,6 @@ function file_transfer($source, $headers) {
 
       header(sprintf('Content-Range: bytes %d-%d/%d',$range_from,$range_to,$filesize));
       header('Content-Length: '.$r);
-      // Move file pointer
-      fseek($fd,$range_from);
     }
     else {
       $r = $filesize;

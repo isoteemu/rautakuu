@@ -72,6 +72,9 @@ $usagestats = true;
 /// The code part
 ///
 
+// Remember start time.
+$starttime = time();
+
 header("Content-Type: text/html;charset=utf-8");
 if( function_exists("iconv_set_encoding") ) iconv_set_encoding("output_encoding", "UTF-8");
 if( function_exists("mb_internal_encoding") ) mb_internal_encoding("UTF-8");
@@ -82,6 +85,9 @@ if( !ini_get('safe_mode') && function_exists("putenv") ) @putenv('LANG="en_US.UT
 @ini_set("mbstring.encoding_translation", "on");
 
 if( ini_get("session.use_trans_sid") == 1 ) @ini_set("session.use_trans_sid", 0 );
+
+// Prevent error displaying, which would screw javascript
+if( $_get['time'] ) error_reporting(0);
 
 // Code from http://www.phpcs.com/codes/COLORISATION-HTML-DES-LOGS-IRC/30393.aspx
 function rgb2html($tablo) {
@@ -258,7 +264,9 @@ function formatMircTime(&$time, $channel) {
 function getMessagesDB(&$pos, $channel) {
     require_once("DB.php");
 
-    global $dbdns, $startrows;
+    global $dbdns, $startrows, $starttime;
+    $max_wait = ini_get('max_execution_time')-1;
+
     static $DB;
 
     if(!isset($DB)) {
@@ -278,15 +286,15 @@ function getMessagesDB(&$pos, $channel) {
             LIMIT 0 , '.$startrows;
             $pos = 0;
     } else {
-    
+
         $lsql = '
-    		SELECT
-    			COUNT(*) AS n
-    		FROM `ircmsg`
-    		WHERE
-    			`key` > '.$DB->quote($pos).' AND
-    			`channel` = '.$DB->quote($channel).'
-    		LIMIT 0,1';
+            SELECT
+                    COUNT(*) AS n
+            FROM `ircmsg`
+            WHERE
+                    `key` > '.$DB->quote($pos).' AND
+                    `channel` = '.$DB->quote($channel).'
+            LIMIT 0,1';
 
         $sql = '
             SELECT
@@ -299,30 +307,29 @@ function getMessagesDB(&$pos, $channel) {
             ORDER BY
                 `time` DESC, `key` DESC';
 
-    	// Respawn update checks
-    	while(true) { 
+        // Respawn update checks
+        while(true) { 
 
-    		// Use quick check for latest DB changes   
-    		$res =& $DB->query($lsql);
-    		if(DB::IsError($res)) return array();
+            // Use quick check for latest DB changes   
+            $res =& $DB->query($lsql);
+            if(DB::IsError($res)) return array();
 
-			list($n) = $res->fetchRow();
-			$res->free();
+            list($n) = $res->fetchRow();
+            $res->free();
 
-			if($n > 0) break;
-    		sleep(1);
-    	}
+            if($n > 0) break;
+            elseif($max_wait < (time()-$starttime)) // Is execution time near end?
+                break;
+            sleep(1);
+        }
     }
+
+    if($n == 0) return array(); // Bailing out. Possibly out-of-time
 
     $res =& $DB->query($sql);
     if(DB::IsError($res)) {
         die("Error: DB: ".$res->getMessage());
     }
-
-    $times = "";
-    $actions = "";
-    $nicks = "";
-    $mesgs = "";
 
     $results = array();
     while(list($key, $time, $action,  $nick, $msg)=$res->fetchRow()) {
@@ -524,7 +531,9 @@ function _parserMessagesEgg($log) {
  * Read file for logmenu entries.
  */
 function getMessagesLogfile(&$pos,$channe=null) {
-    global $logfile, $logfileformat, $startoffsetbytes;
+    global $logfile, $logfileformat, $startoffsetbytes, $starttime;
+    $max_wait = ini_get('max_execution_time')-1;
+
     if(!file_exists($logfile)) {
         die("Error: logfile '{$logfile}' does not exists");
     }
@@ -557,8 +566,11 @@ function getMessagesLogfile(&$pos,$channe=null) {
             }
         }
 
-            // Respawn read, if no new lines.
+        // Respawn read, if no new lines.
         if($readAmmount <= 0) {
+            if($max_wait < (time()-$starttime)) // Is execution time near end?
+                break;
+
             // Wait for new event
             clearstatcache();
             sleep(0.5);
@@ -700,13 +712,13 @@ function loadavg() {
  * @param $crc string crc checksum of string
  */
 function  gzipencode($content, $strlen=null, $crc=null) {
-	if($strlen===null) $strlen = strlen($content);
-	if($crc===null) $crc = crc32($content);
-	$content = "\x1f\x8b\x08\x00\x00\x00\x00\x00".
-			   substr(gzcompress($content, 3), 0, - 4). // Use mid compression
-			   pack('V', $crc).
-			   pack('V', $strlen);
-	return $content;
+    if($strlen===null) $strlen = strlen($content);
+    if($crc===null) $crc = crc32($content);
+    $content = "\x1f\x8b\x08\x00\x00\x00\x00\x00".
+                substr(gzcompress($content, 3), 0, - 4). // Use mid compression
+                pack('V', $crc).
+                pack('V', $strlen);
+    return $content;
 }
 
 
@@ -725,7 +737,7 @@ if(isset($_GET['time'])) {
             $delay = ($loadprc-0.8)*5*$delaytime;
 
             // Don't delay longer than maximal execution time.
-            if($maxdelay >= ini_get('max_execution_time')) $maxdelay = ini_get('max_execution_time')-1;
+            if($maxdelay >= ini_get('max_execution_time')) $maxdelay = ini_get('max_execution_time')-(time()-$starttime)-1;
 
             if($delay > $maxdelay) $delay = $maxdelay;
             sleep($delay);

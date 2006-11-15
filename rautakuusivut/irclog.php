@@ -651,10 +651,10 @@ function json_fallback($results, $time) {
             case 'QUIT' :
             case 'PART' :
             case 'PRIVMSG' :
-                $mesgs[] = addslashes(htmlline($row['msg']));
+                $mesgs .= '"'.addslashes(htmlline($row['msg'])).'",';
                 break;
             default :
-                $mesgs[] = htmlentities($row['msg'], ENT_QUOTES, 'UTF-8');
+                $mesgs .= '"'.htmlentities($row['msg'], ENT_QUOTES, "UTF-8").'",';
                 break;
         }
     }

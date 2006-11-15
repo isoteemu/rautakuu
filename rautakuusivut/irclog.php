@@ -237,7 +237,7 @@ function htmlline($str) {
 
     $str = eregi_replace( "([[:alnum:]]+)://([^[:space:]]*)([[:alnum:]#?/&=])", "<a href=\"\\1://\\2\\3\" target=\"_blank\">\\1://\\2\\3</a>", $str);
     $str = eregi_replace( "(([a-z0-9_]|\\-|\\.)+@([^[:space:]]*)([[:alnum:]-]))", "<a href=\"mailto:\\1%s\" >\\1</a>", $str);
-    return addslashes($str);
+    return $str;
 }
 
 function formatNick($nick) {
@@ -614,11 +614,17 @@ function getMessages($channel="#rautakuu",$time=null) {
     		$times[]	= $row['time'];
     		$act[]		= $row['action'];
     		$nicks[]	= $row['nick'];
-    		if($row['action'] == 'PRIVMSG')
-    			$mesgs[] = htmlline($row['msg']);
-    		else
-    			$mesgs[] = htmlentities($row['msg'], ENT_QUOTES, 'UTF-8');
-    	} 
+            switch($row['action']) {
+                case 'QUIT' :
+                case 'PART' :
+                case 'PRIVMSG' :
+                    $mesgs[] = htmlline($row['msg']);
+                    break;
+                default :
+                    $mesgs[] = htmlentities($row['msg'], ENT_NOQUOTES, 'UTF-8');
+                    break;
+            }
+    	}
     	return json_encode(array(
     		$time,
     		$times,
@@ -641,10 +647,16 @@ function json_fallback($results, $time) {
         $times .= '"'.$row['time'].'",';
         $actions .= '"'.$row['action'].'",';
         $nicks .= '"'.formatNick($row['nick']).'",';
-        if($row['action'] == "PRIVMSG")
-            $mesgs .= '"'.htmlline($row['msg']).'",';
-        else
-            $mesgs .= '"'.htmlentities($row['msg'], ENT_QUOTES, "UTF-8").'",';
+        switch($row['action']) {
+            case 'QUIT' :
+            case 'PART' :
+            case 'PRIVMSG' :
+                $mesgs[] = addslashes(htmlline($row['msg']));
+                break;
+            default :
+                $mesgs[] = htmlentities($row['msg'], ENT_QUOTES, 'UTF-8');
+                break;
+        }
     }
 
     $times = substr($times,0,strlen($times)-1);

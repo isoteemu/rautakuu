@@ -338,7 +338,7 @@ function getMessagesDB(&$pos, $channel) {
         }
     }
 
-    if($n == 0) return array(); // Bailing out. Possibly out-of-time
+    if(isset($n) && $n == 0) return array(); // Bailing out. Possibly out-of-time
 
     $res =& $DB->query($sql);
     if(DB::IsError($res)) {

@@ -818,7 +818,7 @@ a:hover {
     background-position:right bottom;
     background-attachment: fixed;
 */
-    padding-bottom: 20px;
+    padding-bottom: 20px;   /* Firefox hack */
 }
 
 #foo {
@@ -1112,8 +1112,8 @@ function scrollme(){
 
         </script>
 <?php
-if($usagestats) echo'
-		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>';
+if($usagestats) echo '
+		<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev='. urlencode($rev).'"></script>';
 ?>
     </head>
     <body bgcolor="#ffffff" onLoad="init()">

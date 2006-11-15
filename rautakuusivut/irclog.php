@@ -36,6 +36,19 @@ $startrows = 20;
 // Default channel. Currently only on DB.
 $channel = "#rautakuu";
 
+// Severside polling
+// Serverside polling means that client keeps connection
+// to server, and server keeps checking for updates. When
+// update is available, server sends it and client generates
+// immediatly a new connection. Good thing is, that updates
+// are allmost instant. Bad thing is, that for busy sites,
+// there is going to be a lot of open, idle connections.
+// By setting this to false, client request are served
+// immediatly, and client tries to calculate next update
+// inteval. This causes a lot of requests to server, but
+// connections are only open as minimal time as possible.
+$polling = true;
+
 // "throtling".
 // If system is near this AVG load, (%80),
 // fetching new messages are delayed.
@@ -264,7 +277,7 @@ function formatMircTime(&$time, $channel) {
 function getMessagesDB(&$pos, $channel) {
     require_once("DB.php");
 
-    global $dbdns, $startrows, $starttime;
+    global $dbdns, $startrows, $starttime, $polling;
     $max_wait = ini_get('max_execution_time')-1;
 
     static $DB;
@@ -318,8 +331,9 @@ function getMessagesDB(&$pos, $channel) {
             $res->free();
 
             if($n > 0) break;
-            elseif($max_wait < (time()-$starttime)) // Is execution time near end?
-                break;
+            elseif($polling == false) break;
+            elseif($max_wait < (time()-$starttime)) break; // Is execution time near end?
+
             sleep(1);
         }
     }
@@ -531,7 +545,7 @@ function _parserMessagesEgg($log) {
  * Read file for logmenu entries.
  */
 function getMessagesLogfile(&$pos,$channe=null) {
-    global $logfile, $logfileformat, $startoffsetbytes, $starttime;
+    global $logfile, $logfileformat, $startoffsetbytes, $starttime, $polling;
     $max_wait = ini_get('max_execution_time')-1;
 
     if(!file_exists($logfile)) {
@@ -568,8 +582,8 @@ function getMessagesLogfile(&$pos,$channe=null) {
 
         // Respawn read, if no new lines.
         if($readAmmount <= 0) {
-            if($max_wait < (time()-$starttime)) // Is execution time near end?
-                break;
+            if($polling == false) break;
+            if($max_wait < (time()-$starttime)) break; // Is execution time near end?
 
             // Wait for new event
             clearstatcache();

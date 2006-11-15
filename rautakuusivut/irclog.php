@@ -541,6 +541,10 @@ function getMessagesLogfile(&$pos,$channe=null) {
             if($startoffsetbytes > $totalsize) $startoffsetbytes = $totalsize;
             fseek($fp, -$startoffsetbytes, SEEK_END);
             $readAmmount=$startoffsetbytes;
+        } elseif($totalsize < $pos) {
+            // Possible Log reload. Read From beginning.
+            $pos = 0;
+            continue;
         } else {
             $pos = intval($pos);
             if($pos < 0 || $pos > $totalsize) {

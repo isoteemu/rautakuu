@@ -5,14 +5,14 @@ $rev = '$Id$';
 // Storage driver. currently supported:
 // * DB - uses pear DB layer
 // * logfile - reads messages from logfile
-$storage = "logfile";
+$storage = 'logfile';
 
 //
 // logfile storage
 //
 
 // logfile
-$logfile = "/home/isoteemu/irclogs/QuakeNET/#rautakuu.log";
+$logfile = '/home/isoteemu/eggdrop/logs/#ihq.rautakuu.log';
 
 // Starting offset in bytes (how many bytes are readed from end of file?)
 $startoffsetbytes = 2048;
@@ -21,7 +21,7 @@ $startoffsetbytes = 2048;
 // * mirc - For those who use m-IRC (or compatible logfile format)
 // * irssi - For default irssi logfiles
 // * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
-$logfileformat = "irssi";
+$logfileformat = 'egg';
 
 //
 // DB storage
@@ -534,39 +534,39 @@ function getMessagesLogfile(&$pos,$channe=null) {
     }
 
     while(true) {
-  		$totalsize = filesize($logfile);
+        $totalsize = filesize($logfile);
 
-	    // Move pointer
-	    if($pos == null) {
-	        if($startoffsetbytes > $totalsize) $startoffsetbytes = $filesize;
-	        fseek($fp, -$startoffsetbytes, SEEK_END);
-	        $readAmmount=$startoffsetbytes;
-	    } else {
-	        $pos = intval($pos);
-	        if($pos < 0 || $pos > $totalsize) {
-	            // You fuckwad
-	            fseek($fp, -$startoffset, SEEK_END);
-	            $readAmmount=$startoffsetbytes;
-	        } else {
-	            fseek($fp, $pos);
-	            $readAmmount=$totalsize-$pos;
-    	    }
-	    }
+        // Move pointer
+        if($pos == null) {
+            if($startoffsetbytes > $totalsize) $startoffsetbytes = $totalsize;
+            fseek($fp, -$startoffsetbytes, SEEK_END);
+            $readAmmount=$startoffsetbytes;
+        } else {
+            $pos = intval($pos);
+            if($pos < 0 || $pos > $totalsize) {
+                // You fuckwad
+                fseek($fp, -$startoffset, SEEK_END);
+                $readAmmount=$startoffsetbytes;
+            } else {
+                fseek($fp, $pos);
+                $readAmmount=$totalsize-$pos;
+            }
+        }
 
-		// Respawn read, if no new lines.
-	    if($readAmmount <= 0) {
-	    	// Wait for new event
-	    	clearstatcache();
-	    	sleep(0.5);
-	    	continue;
-	    } else {
-	    	// read logfile
-	    	$log = fread($fp, $readAmmount);
-	    	$pos = ftell($fp);
-	    	break;
-	    }
+            // Respawn read, if no new lines.
+        if($readAmmount <= 0) {
+            // Wait for new event
+            clearstatcache();
+            sleep(0.5);
+            continue;
+        } else {
+            // read logfile
+            $log = fread($fp, $readAmmount);
+            $pos = ftell($fp);
+            break;
+        }
     }
-    
+
     fclose($fp);
 
     switch(strtolower($logfileformat)) {

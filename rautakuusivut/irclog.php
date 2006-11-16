@@ -617,7 +617,7 @@ function getMessagesLogfile(&$pos,$channe=null) {
 
 }
 
-function getMessages($channel="#rautakuu",$time=null) {
+function getMessages($channel="#rautakuu",&$time=null) {
     global $storage;
 
     if(substr($channel,0,1) != "#") $channel = "#".$channel;
@@ -764,7 +764,7 @@ if(isset($_GET['time'])) {
     // $_GET['time'] is an pointer for getMessages.
     $msgs = getMessages($_GET['channel'], $_GET['time']);
     // Send time as etag identifier.
-    header('ETag: '.$_GET['time'].'');
+    header('ETag: '.$_GET['time']);
 
     // Force validation?
     if($old_time != $_GET['time']) {
@@ -772,7 +772,7 @@ if(isset($_GET['time'])) {
         // in xmlHttp. Not suitable, not at all...
         header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
         header("Expires: ".gmdate("D, d M Y H:i:s", time()+1)." GMT");
-    } elseif($_SERVER['HTTP_IF_NONE_MATCH'] == $old_time) {
+    } elseif($_SERVER['HTTP_IF_NONE_MATCH'] == $_GET['time']) {
         // Not modified
         header('HTTP/1.1 304 Not Modified');
         die();

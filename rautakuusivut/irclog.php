@@ -758,31 +758,35 @@ if(isset($_GET['time'])) {
         }
     }
 
-	// Save old time
-	$old_time = $_GET['time'];
+    // Save old time
+    $old_time = $_GET['time'];
 
-	// $_GET['time'] is an pointer for getMessages.
-	$msgs = getMessages($_GET['channel'], $_GET['time']);
-	// Send time as etag identifier.
-	header('ETag: "'.$_GET['time'].'"');
+    // $_GET['time'] is an pointer for getMessages.
+    $msgs = getMessages($_GET['channel'], $_GET['time']);
+    // Send time as etag identifier.
+    header('ETag: '.$_GET['time'].'');
 
-	// Force validation?
-	if($old_time != $_GET['time']) {
-     	// Konqueror want's to cache, and won't return real deal
-		// in xmlHttp. Not suitable, not at all...
-		header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");   // Date in the past
-	}
+    // Force validation?
+    if($old_time != $_GET['time']) {
+        // Konqueror want's to cache, and won't return real deal
+        // in xmlHttp. Not suitable, not at all...
+        header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+        header("Expires: ".gmdate("D, d M Y H:i:s", time()+1)." GMT");
+    } elseif($_SERVER['HTTP_IF_NONE_MATCH'] == $old_time) {
+        // Not modified
+        header('HTTP/1.1 304 Not Modified');
+        die();
+    }
 
-	if($gzipencode == true && headers_sent() && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
-		$_strlen = strlen($msgs);
-		$_msgs = gzipencode($msgs,$_strlen);
-		// If uncompressed is smaller than compressed, send uncompressed one.
-		if(strlen($_msgs) < $_strlen) {
-			header('Content-Encoding: gzip');
-			$msgs = $_msgs;
-		}
-	}
+    if($gzipencode == true && headers_sent() && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
+        $_strlen = strlen($msgs);
+        $_msgs = gzipencode($msgs,$_strlen);
+        // If uncompressed is smaller than compressed, send uncompressed one.
+        if(strlen($_msgs) < $_strlen) {
+            header('Content-Encoding: gzip');
+            $msgs = $_msgs;
+        }
+    }
 
     die($msgs);
 }

@@ -7,12 +7,15 @@ $rev = '$Id$';
 // * logfile - reads messages from logfile
 $storage = 'logfile';
 
+// Default channel. Currently affects only on DB, and an topic change display.
+$channel = "#rautakuu";
+
 //
 // logfile storage
 //
 
 // logfile
-$logfile = '/home/isoteemu/eggdrop/logs/#ihq.rautakuu.log';
+$logfile = '/home/isoteemu/public_html/rolleweb-2006-11.log';
 
 // Starting offset in bytes (how many bytes are readed from end of file?)
 $startoffsetbytes = 2048;
@@ -21,7 +24,7 @@ $startoffsetbytes = 2048;
 // * mirc - For those who use m-IRC (or compatible logfile format)
 // * irssi - For default irssi logfiles
 // * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
-$logfileformat = 'egg';
+$logfileformat = 'irssi';
 
 //
 // DB storage
@@ -32,9 +35,6 @@ $dbdns = "mysql://miniteemu:*******@localhost/rautakuuirc";
 
 // How many rows to show at begining?
 $startrows = 20;
-
-// Default channel. Currently only on DB.
-$channel = "#rautakuu";
 
 // Severside polling
 // Serverside polling means that client keeps connection
@@ -64,7 +64,7 @@ if(is_readable('/proc/loadavg')) {
 // If true, uses gzip for compressing new messages.
 // Can save (a bit) bandwith, but on quiet channel,
 // just wastes CPU cycles.
-$gzipencode = true;
+$gzipencode = false;
 
 // Scrolling method.
 // As RSL whished, if you don't want to use smooth scrolling,
@@ -270,7 +270,7 @@ function formatMircTime(&$time, $channel) {
         array_push($times, 00);
     }
 
-    $time = mktime($times[0], $times[1], $times[2]);
+    $time = mktime((int) $times[0], (int) $times[1], (int) $times[2]);
 }
 
 
@@ -321,7 +321,7 @@ function getMessagesDB(&$pos, $channel) {
                 `time` DESC, `key` DESC';
 
         // Respawn update checks
-        while(true) { 
+        while(true) {
 
             // Use quick check for latest DB changes   
             $res =& $DB->query($lsql);
@@ -634,7 +634,7 @@ function getMessages($channel="#rautakuu",&$time=null) {
             break;
     }
 
-    if(function_exists('json_encode')) {
+    if(function_exists('json_encodeasdf')) {
     	// Format for json_encode
     	$times	= array();
     	$act	= array();
@@ -793,12 +793,12 @@ if(isset($_GET['time'])) {
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">
-<!-- irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.    -->
-<!-- irclog.php: http://svn.rautakuu.org/trac/homebrevcomputing/wiki/IrcScroller          -->
-<!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                             -->
+<!-- irclog.php: Copyright 2006 Teemu A <teemu@rautakuu.org>. irclog is under the GPL.      -->
+<!-- irclog.php: http://svn.rautakuu.org/trac/homebrevcomputing/wiki/IrcScroller            -->
+<!-- GNU Public License: http://www.fsf.org/copyleft/gpl.html                               -->
 <html>
     <head>
-        <title><?= htmlspecialchars($_GET['channel']);?> IRC</title>
+        <title><?= htmlspecialchars($_GET['channel']);?> IrcScroller</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <style>
 body {
@@ -876,12 +876,12 @@ a:hover {
 
 var topuri = "http://<?= $_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'] ?>?time=";
 
-var channelparam = "&channel=<?= urlencode($_GET['channel']); ?>";
+var channelparam = "<?= addslashes($_GET['channel']); ?>";
 
 var smoothScroll = <?= $smoothscrolling; ?>;
 
 // For initial table buildup.
-var xmlResult = <?= getMessages($_GET['channel']);?>;
+var xmlResult = <?= getMessages($_GET['channel'], $_GET['time']);?>;
 
 var xmlHttp = null;
 
@@ -905,7 +905,7 @@ function getXMLHTTPResult() {
         _refreshing = true;
     } else {
         if(_refreshing == false ) {
-            var openUri=topuri+xmlResult[0]+channelparam;
+            var openUri=topuri+xmlResult[0]+'&channel='+escape(channelparam);
             _refreshing = true;
             xmlHttp.open("GET",openUri,true);
             xmlHttp.onreadystatechange=parseResult;
@@ -977,7 +977,7 @@ function buildLayout() {
                 setText(msgTD, "mode ["+xmlResult[4][f]+"] by <font color=\""+colorNick(xmlResult[3][f])+"\">"+xmlResult[3][f]+"</font>");
                 break;
             case "TOPIC" :
-                setText(msgTD, "changed the topic to "+xmlResult[4][f]);
+                setText(msgTD, "changed the topic of "+channelparam+" to: "+xmlResult[4][f]);
                 break;
             default :
             case "PRIVMSG" :

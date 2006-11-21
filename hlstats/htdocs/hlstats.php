@@ -131,7 +131,8 @@ if(isset($_SERVER['HTTP_USER_AGENT']) &&
     setcookie("forceie", "true");
   } elseif ( $_COOKIE['forceie'] != "true" ) {
 
-    header("Location: http://rautakuu.org/drupal/node/36");
+    //header("Location: http://rautakuu.org/drupal/node/36");
+    header("Location: http://teemu.sivut.rautakuu.org/dev/bsod/bsod.html");
     error("Internet Explorer ei ole tuettu");
   }
  }
@@ -508,7 +509,7 @@ class Table
 
                     if($col->diff) {
                         if(!is_numeric($colval)) {
-                            error(sprintf(_("Column %s is not numerical, but diff is wanted", false),$col->name));
+                            error(sprintf(_("Column %s is not numerical, but diff is wanted"),$col->name));
                         } else {
                             $diff =& $rowdata[$col->diff];
                             if( $diff == "" ) {
@@ -1301,11 +1302,16 @@ function timer() {
 ////
 //// Initialisation
 ////
+if(!defined("VERSION")) {
+//    if($rev = exec("svnversion ".escapeshellarg(dirname(__FILE__))))
+//        $rev = "r".$rev."-svn";
+//    else
+        $rev = "svn";
+    define("VERSION", $rev);
+}
 
-define("VERSION", "<sup><a href=\"http://rautakuu.org\">Rautakuu [dot] org</a></sup>");
-
-$db_classname = "DB_" . DB_TYPE;
-$db = new $db_classname;
+//$db_classname = "DB_" . DB_TYPE;
+$db = new hlstats_db();
 
 $g_options = getOptions();
 
@@ -1372,6 +1378,7 @@ if($g_options['useCache']) {
 $mode =& $HTTP_GET_VARS["mode"];
 if(empty($mode)) $mode = "contents";
 
+include_once(INCLUDE_PATH."/drupalhlstats.inc");
 
 $modes = array(
     "contents",

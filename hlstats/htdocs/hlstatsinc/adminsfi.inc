@@ -105,7 +105,7 @@ if(! function_exists("curl_init")) {
     if (($nr = $db->num_rows($res)) < 1) {
         die("<!-- Returned {$nr} rows for playerid -->");
     } else {
-        while($rowdata = $db->fetch_array($res)) {
+        while($rowdata = $db->fetch_row($res)) {
             $uniqueid[$rowdata[0]] = $rowdata[1];
         }
     }

@@ -342,8 +342,9 @@ function jump(url) {
         </table></td>
 </tr>
 
-</table><br>
-
+</table>
+<div style="width: 400px; margin: 0px auto; min-height: 22px; padding: 10px 10px 6px 42px; background-color:<?=$g_options["table_bgcolor1"];?>; border: 1px solid <?=$g_options["table_border"]; ?>; background: url('hlstatsimg/exit.png') 6px 3px no-repeat;" onClick="JavaScript:jump('http://rautakuu.org/drupal/node/98')"><strong><blink><span style="color:ff0000;">HUOM! OBS!</span></blink></strong> <a href="http://rautakuu.org/drupal/node/98">CS systemoinnit loppuvat/ovat loppuneet!</a></div>
+<br>
 <table width="90%" align="center" border=0 cellspacing=0 cellpadding=0>
 
 <tr valign="top">
@@ -373,3 +374,4 @@ google_color_text = "<?=substr($g_options["body_text"],1); ?>";
 //--></script>
 <script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
 </p>
+

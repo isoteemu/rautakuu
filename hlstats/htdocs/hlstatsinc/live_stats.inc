@@ -64,7 +64,7 @@ else
 	$server = $db->fetch_array();
 
 pageHeader(
-	array('Server Statistics', $server['name']),
+	array(_("Server Statistics"), $server['name']),
 	array($server['gamename'] => $g_options['scripturl'] . '?game=' . $server['game'],
 		'Server Statistics' => $g_options['scripturl'] . '?game=' . $server['game'],
 		$server['name'] => ''
@@ -545,7 +545,7 @@ $server_details['addon_count'] = 0;
 if ($server_rules)
 {
 ?>
-						Rules:<br>
+						<?= _("Rules"); ?>:<br>
 						<select name="rules" style="width: 200px;">
 <?php
 	# Load our plugin list
@@ -600,4 +600,15 @@ echo '<!--'.round(($time - $start), 6).'-->';
 			</table>
 		</td>
 	</tr>
+    <tr>
+        <td>
+            <table width="100%" border="0" cellspacing="1" cellpadding="2">
+                <tr bgcolor="<?php echo $g_options['table_bgcolor1']; ?>">
+                    <td style="padding: 0px;">
+                        <iframe width="100%" height="100" src="http://rautakuu.org/hlstats/eventlog.php" frameborder="0" scrolling="no" style="background-image: url('<?=$loadingimg['url'];?>'); background-position: center center; background-repeat: no-repeat;"></iframe>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
 </table>

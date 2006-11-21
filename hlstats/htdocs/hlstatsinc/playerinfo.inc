@@ -219,7 +219,7 @@
 				<tr bgcolor="<?php echo $g_options["table_bgcolor2"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
-						echo "Kotisivu:";
+						echo _("Kotisivu:");
 						echo $g_options["fontend_normal"];
 					?></td>
 					<td><?php
@@ -250,7 +250,7 @@
 				<tr bgcolor="<?php echo $g_options["table_bgcolor1"]; ?>">
 					<td><?php
 						echo $g_options["font_normal"];
-						echo "ICQ Number:";
+						echo _("ICQ Number").":";
 						echo $g_options["fontend_normal"];
 					?></td>
 					<td><?php
@@ -1861,6 +1861,15 @@ if ($db->num_rows($result) != 0)
 	<td width="100%"><?php echo $g_options["font_normal"]; ?><b>Note</b> Player event histories cover only the last <?php echo DELETEDAYS; ?> days. Items marked "Last <?php echo DELETEDAYS; ?> Days" or "*" above are generated from the player's Event History. Player kill, death and suicide totals and points ratings cover the entire recorded period.<?php echo $g_options["fontend_normal"];?></td>
 </tr>
 <?php
+    if(has_access("d")) {
+        if(isset($ban_reason)) {
+            $messages['admin'][] = sprintf('<a href="%s/hlstats/admin/ban/rm/%d">%s</a>',$g_options['drupal_url'], $player, _("Poista pelaajan banni"));
+        } else {
+            $messages['admin'][] = sprintf('<a href="%s/hlstats/admin/ban/add/%d">%s</a>',$g_options['drupal_url'], $player, _("Banni pelaaja"));
+        }
+    }
+    /*
     $messages['admin'][] = '<a href="'.$g_options["scripturl"].'?mode=admin&task=tools_editdetails_player&id='.$player.'" rel="nofollow">'._("Edit Player Details").'</a>';
+    */
 ?>
 </table><p>

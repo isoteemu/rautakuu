@@ -379,14 +379,14 @@ foreach($uniqueid as $key => $val) {
 
     $bansfetch .= $uasf->result();
     // Auria
-    $auria = new getbans_amxbans($val,'auria');
-    $auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
+    //$auria = new getbans_amxbans($val,'auria');
+    //$auria->url("http://area51.pelikaista.net/csbans/ban_search.php");
 
-    $bansfetch .= $auria->result();
+    //$bansfetch .= $auria->result();
 
     // Surffi.net
     $surffi = new getbans_amxbans($val,'surffi');
-    $surffi->url("http://pelit.surffi.net/ban4/ban_search.php");
+    $surffi->url("http://pelit.surffi.net/ban7/ban_search.php");
 
     curl_setopt($surffi->curl, CURLOPT_PROXY, "http://cache.inet.fi:8080");
     $bansfetch .= $surffi->result();

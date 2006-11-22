@@ -139,7 +139,9 @@ foreach($_variables as $_toclean) {
 
     if (is_array($_clean)) {
         foreach ( $_clean as $key => $value) {
-            if($_stripslashes && !is_array($_clean[$key]))
+            if(is_array($_clean[$key])) continue;
+
+            if($_stripslashes)
                 $value = stripslashes($value);
 
             $_clean[$key] = strtr($value, $_replace);

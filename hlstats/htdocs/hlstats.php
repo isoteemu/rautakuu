@@ -810,18 +810,6 @@ function getOptions() {
     }
 }
 
-/**
- * Check if string contains php code
- */
-function phpCheck($str) {
-    $regex = "'<?php.*?>'si";
-    if ( preg_match( $regex, $str ) ) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 //
 // void pageHeader (array title, array location)
 //
@@ -848,7 +836,7 @@ function pageHeader($title, $location, $header=true)
 // Prints the page footer.
 //
 function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
-    global $g_options, $messages;
+    global $g_options, $messages, $modified;
 
     $took = timer();
 
@@ -862,43 +850,23 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $content = ob_get_clean();
     }
 
-    $_pos = 0;
-    while(substr($content,$pos,4) == 'HLC:') {
-        $pos=$pos+4;
-        $attr = unpack('L',substr($content, $pos, 4));
-        $pos=$pos+4;
+    // Read cache info from content.
+    $hlc = hlstatCacheInfo($content);
+    if( $hlc['modified'] ) $modified = $hlc['modified'];
+    if( $hlc['footer'] ) $footer = $hlc['footer'];
+    if( $hlc['noFormatUrlParams'] ) $g_options['noFormatUrlParams'] = $hlc['noFormatUrlParams'];
 
-        switch($attr[1]) {
-            case PAGE_ATTRIB_MODIFIED :
-                // The standard Unix time_t is a signed integer data type, traditionally of 32 bits
-                // == (signend)1B + 32b/8b = 5B
-                $_time = unpack('l', substr($content, $pos, 5));
-                $modified = $_time[1];
 
-                if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified == strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-                    // File has not been modified. Tell that.
-                    header('HTTP/1.1 304 Not Modified');
-                    // In http1.1 reference: "304 response MUST NOT contain a message-body"
-                    exit();
-                }
-
-                header('Last-Modified: '.gmdate('r', $modified));
-                $pos = $pos+4;
-                break;
-            case PAGE_ATTRIB_NOFOOTER :
-                $footer = false;
-                break;
-            case PAGE_ATTRIB_NOFANCYURL :
-                $g_options["noFormatUrlParams"] = true;
-                break;
-            default :
-                echo ':( '.$attr[1];
-                break;
-        }
+    if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified <= strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+        // File has not been modified. Tell that.
+        header('HTTP/1.1 304 Not Modified');
+        // In http1.1 reference: "304 response MUST NOT contain a message-body"
+        exit();
     }
+    header('Last-Modified: '.gmdate('r', $modified));
 
     // Remove caching info crap.
-    $content = substr($content, $pos);
+    if($hlc['position'] > 0) $content = substr($content, $hlc['position']);
 
     // kirjoitetaan urlit uudestaan
     if($g_options['noFormatUrlParams'] != true) {
@@ -921,7 +889,6 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
             $cacheLifeTime = round(60*$took);
         }
         $cache->setLifeTime($cacheLifeTime);
-
 
         $messages['footer'][] = _("Caching page")."<!-- $cacheLifeTime -->";
 
@@ -986,6 +953,45 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         // in gzipencode(),
 
     die($content);
+}
+
+/**
+ * Read cache info from content.
+ * @return array
+ *    Array on readed params, offset + position.
+ */
+function hlstatCacheInfo($content) {
+
+    $r = array();
+
+    $pos = 0;
+    while(substr($content,$pos,4) == 'HLC:') {
+        $pos=$pos+4;
+        $attr = unpack('L',substr($content, $pos, 4));
+        $pos=$pos+4;
+
+        switch($attr[1]) {
+            case PAGE_ATTRIB_MODIFIED :
+                // The standard Unix time_t is a signed integer data type, traditionally of 32 bits
+                // == (signend)1B + 32b/8b = 5B
+                $_time = unpack('l', substr($content, $pos, 5));
+                $r['modified'] = $_time[1];
+                $pos = $pos+4;
+                break;
+            case PAGE_ATTRIB_NOFOOTER :
+                $r['footer'] = false;
+                break;
+            case PAGE_ATTRIB_NOFANCYURL :
+                $r['noFormatUrlParams'] = true;
+                break;
+            default :
+                echo ':( '.$attr[1];
+                break;
+        }
+    }
+
+    $r['position'] = $pos;
+    return $r;
 }
 
 /**
@@ -1347,9 +1353,6 @@ if (!isset($g_options['useCache'])) {
   } else {
     $g_options['useCache'] = false;
   }
-} else {
-    if($g_options['useCache'] == 'true' ) $g_options['useCache'] = true;
-    elseif($g_options['useCache'] == 'false' ) $g_options['useCache'] = false;
 }
 
 ////
@@ -1365,49 +1368,6 @@ if( substr($_SERVER['HTTP_REFERER'], 0, strlen( $myUrl )) != $myUrl ) {
 
 // Init timer
 timer();
-
-if($g_options['useCache']) {
-    include_once('Cache/Lite.php');
-    if(!$g_options['cacheDir']) $g_options['cacheDir'] = CACHE_DIR;
-    // Do some cache initialization, if cache is used
-    if(!class_exists("Cache_Lite")) {
-        error("Cache defined to be used but Cache_Lite class is missing. Disabling cache.", false);
-        $g_options['useCache'] = false;
-    } else {
-        $cache_options = array(
-            'cacheDir' => $g_options['cacheDir'],
-            'lifeTime' => 3600,
-            'pearErrorMode' => CACHE_LITE_ERROR_DIE
-        );
-
-        $cache = new Cache_Lite($cache_options);
-
-        // Now, test if content is cached already.
-        if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
-            // Content was cached. Fetch it.
-            $messages['footer'][] = _("Cache hit");
-
-            // Disable cache to prevent double caching.
-            $g_options['useCache'] = false;
-            // PageFooter kills script
-            pageFooter($content);
-        }
-    }
-}
-
-// Get last-modified
-$db->query('SELECT timestamp FROM hlstats_Players ORDER BY timestamp DESC LIMIT 0,1');
-list($modified) = $db->fetch_row();
-// Change to unixtime.
-$modified = strtotime($modified);
-if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified == strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-    // File has not been modified. Tell that.
-    header('HTTP/1.1 304 Not Modified');
-    // In http1.1 reference: "304 response MUST NOT contain a message-body"
-    exit();
-}
-header('Last-Modified: '.gmdate('r', $modified));
-
 
 $mode =& $_GET["mode"];
 
@@ -1434,8 +1394,6 @@ $modes = array(
     "live_stats",
     "adminsfi"
 );
-// TEMP HACK
-$g_options['amxbans'] = true;
 
 if( $g_options['amxbans'] ) {
     $modes[] = "banned";
@@ -1446,9 +1404,73 @@ if (!in_array($mode, $modes)) {
     $mode = "contents";
 }
 
+// Get last-modified
+switch($mode) {
+    case 'banned' :
+        $db->query('SELECT ban_created FROM amx_bans ORDER BY ban_created DESC LIMIT 0,1');
+        list($modified) = $db->fetch_row();
+        break;
+
+    case 'playerinfo' :
+        $db->query('SELECT timestamp FROM hlstats_Players WHERE `playerId` = '.$db->quote($_GET['player']).' ORDER BY timestamp DESC LIMIT 0,1');
+        list($modified) = $db->fetch_row();
+        $modified = strtotime($modified);
+        break;
+
+    default:
+        $db->query('SELECT timestamp FROM hlstats_Players ORDER BY timestamp DESC LIMIT 0,1');
+        list($modified) = $db->fetch_row();
+        $modified = strtotime($modified);
+        break;
+}
+
+list($modified) = $db->fetch_row();
+// Change to unixtime.
+$modified = strtotime($modified);
+
+if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified <= strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+    // File has not been modified. Tell that.
+    header('HTTP/1.1 304 Not Modified');
+    // In http1.1 reference: "304 response MUST NOT contain a message-body"
+    exit();
+}
+header('Last-Modified: '.gmdate('r', $modified));
+
+if($g_options['useCache']) {
+    include_once('Cache/Lite.php');
+    if(!$g_options['cacheDir']) $g_options['cacheDir'] = CACHE_DIR;
+    // Do some cache initialization, if cache is used
+    if(!class_exists("Cache_Lite")) {
+        error("Cache defined to be used but Cache_Lite class is missing. Disabling cache.", false);
+        $g_options['useCache'] = false;
+    } else {
+        $cache_options = array(
+            'cacheDir' => $g_options['cacheDir'],
+            'lifeTime' => 3600,
+            'pearErrorMode' => CACHE_LITE_ERROR_DIE
+        );
+
+        $cache = new Cache_Lite($cache_options);
+
+        // Now, test if content is cached.
+        if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
+
+            // Parse cache info
+            $cinfo = hlstatCacheInfo($content);
+            // If cache is valid?
+            if($cinfo['modified'] >= $modified) {
+                $messages['footer'][] = _("Cache hit");
+
+                // Disable cache to prevent double caching.
+                $g_options['useCache'] = false;
+                // PageFooter kills script
+                pageFooter($content);
+            }
+        }
+    }
+}
+
 include(INCLUDE_PATH . "/$mode.inc");
-
-
 
 /*
 } // PROFILE

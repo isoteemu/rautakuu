@@ -140,6 +140,10 @@ if(include_once("DB.php")) {
             );
         }
 
+        function quote($str) {
+            return $this->link->quote($str);
+        }
+
         function __destruct() {
             if (DB_PCONNECT != true) {
                 if(is_a($this->link,"DB"))
@@ -284,6 +288,11 @@ if(include_once("DB.php")) {
 				"<i>Last SQL Query:</i><br>\n<pre><font size=2>$this->query</font></pre>",
 				$exit
 			);
+		}
+
+		function quote ($str)
+		{
+			return mysql_real_escape_string($str, $this->link);
 		}
 
 		function dberror ()

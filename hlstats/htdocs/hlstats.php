@@ -22,6 +22,10 @@
    * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+define('PAGE_ATTRIB_MODIFIED', 0);
+define('PAGE_ATTRIB_NOFOOTER', 1);
+define('PAGE_ATTRIB_NOFANCYURL', 2);
+
 function profile_timer() {
     static $start;
     list($usec, $sec) = explode(" ", microtime());
@@ -856,26 +860,43 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $content = ob_get_clean();
     }
 
-    if(phpCheck($content)) {
-        // This is like, asking for trouble.
-        preg_match_all("/<\?php(.*?)\?>/si", $content, $_execPhpfile_raw_php_matches);
+    $_pos = 0;
+    while(substr($content,$pos,4) == 'HLC:') {
+        $pos=$pos+4;
+        $attr = unpack('L',substr($content, $pos, 4));
+        $pos=$pos+4;
 
-        $_execPhpfile_php_idx = 0;
+        switch($attr[1]) {
+            case PAGE_ATTRIB_MODIFIED :
+                // The standard Unix time_t is a signed integer data type, traditionally of 32 bits
+                // == (signend)1B + 32b/8b = 5B
+                $_time = unpack('l', substr($content, $pos, 5));
+                $modified = $_time[1];
 
-        while (isset($_execPhpfile_raw_php_matches[0][$_execPhpfile_php_idx])) {
-            $_execPhpfile_raw_php_str = $_execPhpfile_raw_php_matches[0][$_execPhpfile_php_idx];
-            $_execPhpfile_raw_php_str = str_replace("<?php", "", $_execPhpfile_raw_php_str);
-            $_execPhpfile_raw_php_str = str_replace("?>", "", $_execPhpfile_raw_php_str);
+                if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified == strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+                    // File has not been modified. Tell that.
+                    header('HTTP/1.1 304 Not Modified');
+                    // In http1.1 reference: "304 response MUST NOT contain a message-body"
+                    exit();
+                }
 
-            ob_start();
-            eval("$_execPhpfile_raw_php_str");
-            $_execPhpfile_exec_php_str = ob_get_contents();
-            ob_end_clean();
-
-            $content = preg_replace("/<\?php(.*?)\?>/si", $_execPhpfile_exec_php_str, $content, 1);
-            $_execPhpfile_php_idx++;
+                header('Last-Modified: '.gmdate('r', $modified));
+                $pos = $pos+4;
+                break;
+            case PAGE_ATTRIB_NOFOOTER :
+                $footer = false;
+                break;
+            case PAGE_ATTRIB_NOFANCYURL :
+                $g_options["noFormatUrlParams"] = true;
+                break;
+            default :
+                echo ':( '.$attr[1];
+                break;
         }
     }
+
+    // Remove caching info crap.
+    $content = substr($content, $pos);
 
     // kirjoitetaan urlit uudestaan
     if($g_options['noFormatUrlParams'] != true) {
@@ -890,23 +911,9 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $content = preg_replace('%href=\"'.$me.'(\?[^\"]*?)\"%e', 'formatUrlParams("\\1");', $content);
     }
 
-    if(! pageNotFound()) {
-        // Now, as all main content edition is done, do ETag header.
-        // It takes resouces, but can save time in page loading.
-        if(!$etag) $etag = crc32($content);
-        header("ETag: \"".$etag."\"");
-
-
-
-        // Set locale for time
-        setlocale(LC_TIME, "C");
-        if(!$modified) $modified = gmdate("D, d M Y H:i:s")." GMT";
-        header("Last-Modified: ".$modified);
-    }
-
     // Cacheammeko...
     if($g_options['useCache'] && !pageNotFound()) {
-        global $cache, $db;
+        global $cache, $db, $modified;
 
         if($cacheLifeTime === null) {
             $cacheLifeTime = round(60*$took);
@@ -917,12 +924,12 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
         $messages['footer'][] = _("Caching page")."<!-- $cacheLifeTime -->";
 
         $tosave = $content;
-        $tosave = '<?php $g_options["noFormatUrlParams"]=true;?>'.$tosave;
-        $tosave = '<?php $etag="'.$etag.'";?>'.$tosave;
-        $tosave = '<?php $modified="'.$modified.'";?>'.$tosave;
-
+        // Save so we don't format urls again from cached pages
+        $tosave = 'HLC:'.pack('L', PAGE_ATTRIB_NOFANCYURL).$tosave;
+        // Save modified date
+        if($modified) $tosave = 'HLC:'.pack('Ll', PAGE_ATTRIB_MODIFIED, $modified).$tosave;
         // If footer was not wantet to be show, save that option to cached file.
-        if($footer==false) $tosave = '<?php $footer=false; ?>'.$tosave;
+        if($footer==false) $tosave = 'HLC:'.pack('L', PAGE_ATTRIB_NOFOOTER).$tosave;
 
         $cache->save($tosave, $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages");
 
@@ -972,7 +979,7 @@ function pageFooter($content=null,$footer=true,$cacheLifeTime=null) {
 
     // Compress content
     if($g_options['doGzip'])
-        $content = gzipencode($content, $etag);
+        $content = gzipencode($content);
         // as we use crc32 anyway in etag, there is no point of calculating it again
         // in gzipencode(),
 
@@ -1288,21 +1295,21 @@ $path = $url;
 }
 
 function pageNotFound($status = NULL) {
-  static $is404;
-  if(!isset($is404)) $is404 = false;
-  if($status != NULL) $is404 = $status;
-  return $is404;
+    static $is404;
+    if(!isset($is404)) $is404 = false;
+    if($status != NULL) $is404 = $status;
+    return $is404;
 }
 
 function timer() {
-  static $start;
-  list($usec, $sec) = explode(" ", microtime());
-  $now = ((float)$usec + (float)$sec);
-  if(!isset( $start )) {
-    $start = $now;
-  }
-  $timed = $now - $start;
-  return $timed;
+    static $start;
+    list($usec, $sec) = explode(" ", microtime());
+    $now = ((float)$usec + (float)$sec);
+    if(!isset( $start )) {
+        $start = $now;
+    }
+    $timed = $now - $start;
+    return $timed;
 }
 
 ////
@@ -1335,7 +1342,6 @@ if(isset($HTTP_GET_VARS["nocache"])) {
 if (!isset($g_options['useCache'])) {
   if(include_once('Cache/Lite.php') && ( defined('CACHE_DIR') || $g_options['cacheDir'])) {
     $g_options['useCache'] = true;
-    if(!$g_options['cacheDir']) $g_options['cacheDir'] = CACHE_DIR;
   } else {
     $g_options['useCache'] = false;
   }
@@ -1359,6 +1365,8 @@ if( substr($_SERVER['HTTP_REFERER'], 0, strlen( $myUrl )) != $myUrl ) {
 timer();
 
 if($g_options['useCache']) {
+    include_once('Cache/Lite.php');
+    if(!$g_options['cacheDir']) $g_options['cacheDir'] = CACHE_DIR;
     // Do some cache initialization, if cache is used
     if(!class_exists("Cache_Lite")) {
         error("Cache defined to be used but Cache_Lite class is missing. Disabling cache.", false);
@@ -1369,14 +1377,14 @@ if($g_options['useCache']) {
             'lifeTime' => 3600,
             'pearErrorMode' => CACHE_LITE_ERROR_DIE
         );
-        
+
         $cache = new Cache_Lite($cache_options);
-        
+
         // Now, test if content is cached already.
         if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
             // Content was cached. Fetch it.
             $messages['footer'][] = _("Cache hit");
-        
+
             // Disable cache to prevent double caching.
             $g_options['useCache'] = false;
             // PageFooter kills script
@@ -1385,7 +1393,22 @@ if($g_options['useCache']) {
     }
 }
 
-$mode =& $HTTP_GET_VARS["mode"];
+// Get last-modified
+$db->query('SELECT timestamp FROM hlstats_Players ORDER BY timestamp DESC LIMIT 0,1');
+list($modified) = $db->fetch_row();
+// Change to unixtime.
+$modified = strtotime($modified);
+if( isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $modified == strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+    // File has not been modified. Tell that.
+    header('HTTP/1.1 304 Not Modified');
+    // In http1.1 reference: "304 response MUST NOT contain a message-body"
+    exit();
+}
+header('Last-Modified: '.gmdate('r', $modified));
+
+
+$mode =& $_GET["mode"];
+
 if(empty($mode)) $mode = "contents";
 
 include_once(INCLUDE_PATH."/drupalhlstats.inc");

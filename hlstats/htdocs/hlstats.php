@@ -1,4 +1,5 @@
 <?php
+  // kate: space-indent on; indent-width 4;
   /*
    * HLstats - Real-time player and clan rankings and statistics for Half-Life
    * http://sourceforge.net/projects/hlstats/
@@ -22,14 +23,14 @@
    */
 
 function profile_timer() {
-        static $start;
-        list($usec, $sec) = explode(" ", microtime());
-        $now = ((float)$usec + (float)$sec);
-        if(!isset( $start )) {
-            $start = $now;
-        }
-        $timed = $now - $start;
-        return $timed;
+    static $start;
+    list($usec, $sec) = explode(" ", microtime());
+    $now = ((float)$usec + (float)$sec);
+    if(!isset( $start )) {
+        $start = $now;
+    }
+    $timed = $now - $start;
+    return $timed;
 }
 
 function profile($dump = false) {
@@ -104,12 +105,61 @@ define("INCLUDE_PATH", dirname(__FILE__)."/hlstatsinc");
 
 if(!defined("DIRECTORY_SEPARATOR")) define("DIRECTORY_SEPARATOR", "/");
 
-$serverparts = explode(".", $_SERVER['HTTP_HOST']);
+if(isset($_SERVER['PATH_INFO'])) {
+    if(substr($_SERVER['PATH_INFO'], -1) != "/") {
+        header("HTTP/1.1 301 Moved Permanently");
+        header("Location: ".$_SERVER['REQUEST_URI']."/");
+    }
+    $pathParts = explode("/", $_SERVER['PATH_INFO']);
+    foreach($pathParts as $pathPart) {
+        if(strstr($pathPart, ",")) {
+            $key=substr($pathPart, 0, strpos($pathPart,","));
+            $val=substr($pathPart, strpos($pathPart,",")+1);
+            $_GET[$key] = $val;
+        }
+    }
+}
+
+
+// Allows HLstats to work with register_globals Off
+// Check variables, and remove slashes and uncostitutional characters from strings
+$_replace = array('&' => '&amp;', '"' => '&quot;', '<' => '&lt;', '>' => '&gt;', '%26' => '&amp;', '%22' => '&quot;', '%3C' => '&lt;', '%3E' => '&gt;','%27' => '&#39;', "'" => '&#39;');
+$_variables = array('_POST', '_GET', '_COOKIE', '_REQUEST');
+$_protected = array('_toclean', '_clean', 'key', 'value', '_protected', '_variables', '_replace', '_globals', '_SESSION', '_POST', '_GET', '_COOKIE', '_REQUEST', 'GLOBALS', '_SERVER');
+// Do some cleanup in GET, POST and cookie data.
+if (get_magic_quotes_gpc()) $_stripslashes = true;
+
+foreach($_variables as $_toclean) {
+
+    $_clean =& $$_toclean;
+
+    if (is_array($_clean)) {
+        foreach ( $_clean as $key => $value) {
+            if($_stripslashes && !is_array($_clean[$key]))
+                $value = stripslashes($value);
+
+            $_clean[$key] = strtr($value, $_replace);
+
+            if(in_array($key, $_protected)) continue;
+
+            // Nuke variable.
+            if(isset($$key)) unset($$key);
+        }
+        /// TODO: Make it so that we _dont_ use globals
+        // Make it global
+        extract($_clean, EXTR_SKIP);
+    }
+}
+
+// Backward compatibility
+$HTTP_GET_VARS =& $_GET;
+
+$serverparts = explode('.', $_SERVER['HTTP_HOST']);
 //$serverparts = array_reverse($serverparts);
-$confprefix="";
+$confprefix='';
 
 foreach($serverparts as $serverpart) {
-    $confprefix = implode(".",$serverparts);
+    $confprefix = implode('.',$serverparts);
     $conffile = INCLUDE_PATH.DIRECTORY_SEPARATOR."conf.".$confprefix.".inc.php";
     if(file_exists($conffile)) {
         require($conffile);
@@ -124,51 +174,17 @@ if(!defined("DB_NAME")) require(INCLUDE_PATH."/conf.inc.php");
 
 // IE check
 if(isset($_SERVER['HTTP_USER_AGENT']) &&
-   preg_match('/msie.*.(win)/i' ,$_SERVER['HTTP_USER_AGENT']) &&
-   !preg_match('/opera/i',$_SERVER['HTTP_USER_AGENT'])) {
+    preg_match('/msie.*.(win)/i' ,$_SERVER['HTTP_USER_AGENT']) &&
+    !preg_match('/opera/i',$_SERVER['HTTP_USER_AGENT'])) {
 
-  if( $_GET['forceie'] == "true" ) {
-    setcookie("forceie", "true");
-  } elseif ( $_COOKIE['forceie'] != "true" ) {
-
-    //header("Location: http://rautakuu.org/drupal/node/36");
-    header("Location: http://teemu.sivut.rautakuu.org/dev/bsod/bsod.html");
-    error("Internet Explorer ei ole tuettu");
-  }
- }
-
-// Allows HLstats to work with register_globals Off
-// TODO: Make it so that we _dont_ use globals
-if ( function_exists('ini_get') ) {
-  $globals = ini_get('register_globals');
- } else {
-  $globals = get_cfg_var('register_globals');
- }
-if ($globals != 1) {
-  @extract($_SERVER, EXTR_SKIP);
-  @extract($_COOKIE, EXTR_SKIP);
-  @extract($_POST, EXTR_SKIP);
-  @extract($_GET, EXTR_SKIP);
-  @extract($_ENV, EXTR_SKIP);
- }
-
-if(isset($_SERVER['PATH_INFO'])) {
-  if(substr($_SERVER['PATH_INFO'], -1) != "/") {
-    header("HTTP/1.1 301 Moved Permanently");
-    header("Location: ".$_SERVER['REQUEST_URI']."/");
-  }
-  $pathParts = explode("/", $_SERVER['PATH_INFO']);
-  foreach($pathParts as $pathPart) {
-    if(strstr($pathPart, ",")) {
-      $key=substr($pathPart, 0, strpos($pathPart,","));
-      $val=substr($pathPart, strpos($pathPart,",")+1);
-      $HTTP_GET_VARS[$key] = $val;
-      if(!isset($$key)) {
-        $$key = $val;
-      }
+    if( $_GET['forceie'] == "true" ) {
+        setcookie("forceie", "true");
+    } elseif ( $_COOKIE['forceie'] != "true" ) {
+        //header("Location: http://rautakuu.org/drupal/node/36");
+        header("Location: http://teemu.sivut.rautakuu.org/dev/bsod/bsod.html");
+        error("Internet Explorer ei ole tuettu");
     }
-  }
- }
+}
 
 header("Content-Type: text/html; charset=utf-8");
 
@@ -176,23 +192,13 @@ header("Content-Type: text/html; charset=utf-8");
 setlocale(LC_ALL, "fi_FI.UTF8");
 
 // Check PHP configuration
-
-if (version_compare(phpversion(), "4.1.0", "<"))
-  {
+if (version_compare(phpversion(), "4.1.0", "<")) {
     error("HLstats requires PHP version 4.1.0 or newer (you are running PHP version " . phpversion() . ").");
-  }
-
-@ini_set("get_magic_quotes_gpc", "On");
-if (!get_magic_quotes_gpc())
-  {
-    error("HLstats requires <b>magic_quotes_gpc</b> to be <i>enabled</i>. Check your php.ini or refer to the PHP manual for more information.");
-  }
-
+}
 @ini_set("get_magic_quotes_runtime", "off");
-if (get_magic_quotes_runtime())
-  {
+if (get_magic_quotes_runtime()) {
     error("HLstats requires <b>magic_quotes_runtime</b> to be <i>disabled</i>. Check your php.ini or refer to the PHP manual for more information.");
-  }
+}
 
 // this doesn't work with php 4.0.3+
 /*if (!ini_get("track_vars"))
@@ -1326,13 +1332,16 @@ if(isset($HTTP_GET_VARS["nocache"])) {
     $g_options['useCache'] = false;
 }
 
-if (!$g_options['useCache']) {
-  if(include_once('Cache/Lite.php')) {
+if (!isset($g_options['useCache'])) {
+  if(include_once('Cache/Lite.php') && ( defined('CACHE_DIR') || $g_options['cacheDir'])) {
     $g_options['useCache'] = true;
     if(!$g_options['cacheDir']) $g_options['cacheDir'] = CACHE_DIR;
   } else {
     $g_options['useCache'] = false;
   }
+} else {
+    if($g_options['useCache'] == 'true' ) $g_options['useCache'] = true;
+    elseif($g_options['useCache'] == 'false' ) $g_options['useCache'] = false;
 }
 
 ////
@@ -1354,24 +1363,25 @@ if($g_options['useCache']) {
     if(!class_exists("Cache_Lite")) {
         error("Cache defined to be used but Cache_Lite class is missing. Disabling cache.", false);
         $g_options['useCache'] = false;
-    }
-    $cache_options = array(
-        'cacheDir' => $g_options['cacheDir'],
-        'lifeTime' => 3600,
-        'pearErrorMode' => CACHE_LITE_ERROR_DIE
-    );
-
-    $cache = new Cache_Lite($cache_options);
-
-    // Now, test if content is cached already.
-    if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
-        // Content was cached. Fetch it.
-        $messages['footer'][] = _("Cache hit");
-
-        // Disable cache to prevent double caching.
-        $g_options['useCache'] = false;
-        // PageFooter kills script
-        pageFooter($content);
+    } else {
+        $cache_options = array(
+            'cacheDir' => $g_options['cacheDir'],
+            'lifeTime' => 3600,
+            'pearErrorMode' => CACHE_LITE_ERROR_DIE
+        );
+        
+        $cache = new Cache_Lite($cache_options);
+        
+        // Now, test if content is cached already.
+        if ($content = $cache->get($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], "pages")) {
+            // Content was cached. Fetch it.
+            $messages['footer'][] = _("Cache hit");
+        
+            // Disable cache to prevent double caching.
+            $g_options['useCache'] = false;
+            // PageFooter kills script
+            pageFooter($content);
+        }
     }
 }
 
@@ -1406,11 +1416,10 @@ if( $g_options['amxbans'] ) {
     $modes[] = "banned";
 }
 
-if (!in_array($mode, $modes))
-  {
+if (!in_array($mode, $modes)) {
     pageNotFound(true);
     $mode = "contents";
-  }
+}
 
 include(INCLUDE_PATH . "/$mode.inc");
 

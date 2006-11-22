@@ -177,21 +177,6 @@ foreach($serverparts as $serverpart) {
 
 if(!defined("DB_NAME")) require(INCLUDE_PATH."/conf.inc.php");
 
-
-// IE check
-if(isset($_SERVER['HTTP_USER_AGENT']) &&
-    preg_match('/msie.*.(win)/i' ,$_SERVER['HTTP_USER_AGENT']) &&
-    !preg_match('/opera/i',$_SERVER['HTTP_USER_AGENT'])) {
-
-    if( $_GET['forceie'] == "true" ) {
-        setcookie("forceie", "true");
-    } elseif ( $_COOKIE['forceie'] != "true" ) {
-        //header("Location: http://rautakuu.org/drupal/node/36");
-        header("Location: http://teemu.sivut.rautakuu.org/dev/bsod/bsod.html");
-        error("Internet Explorer ei ole tuettu");
-    }
-}
-
 header("Content-Type: text/html; charset=utf-8");
 
 // Set Finnish locale

@@ -185,7 +185,7 @@ echo $jag; ?>" />
         /* IE */
         * html #overlay{
             background-color: #333;
-            back\ground-color: transparent;
+            background-color: transparent;
             <?php $spacerimg = getImage("/spacer"); ?>
             background-image: url('<?=$spacerimg['url'];?>');
             filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src="<?=$overlayimg['url'];?>", sizingMethod="scale");
@@ -227,7 +227,7 @@ $db->query("
            AND
                 (
                     `whom` = '".$_SERVER['REMOTE_ADDR']."'
-                XOR
+                AND
                     `from` = '".$_SERVER['SCRIPT_URI']."'
                 )
            OR
@@ -275,6 +275,7 @@ function jump(url) {
 // -->
 </script>
 <script type="text/javascript" src="cs-suggest/ggsgst.js"></script>
+<script type="text/javascript" src="http://rautakuu.org/drupal/modules/bsod/bsod.js"></script>
 </head>
 <body bgcolor="<?php echo $g_options["body_bgcolor"]; ?>"
     background="<?php echo $g_options["body_background"]; ?>"

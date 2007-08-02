@@ -1,15 +1,16 @@
 <?php
 /* kate: space-indent true; encoding utf-8; indent-width 2; */
 $links = array(
+  'Rautakuu [dot] org' => 'http://rautakuu.org/drupal',
   'Web IRC' =>  'http://irc.rautakuu.org',
   'Koodit'  =>  'http://svn.rautakuu.org/',
   'IRC statistiikka' => 'http://janoks.sivut.rautakuu.org/pisg/',
   'Horde' => 'https://horde.rautakuu.org',
-  'Hlstλts' => 'http://rautakuu.org/hlstats',
-  'Blogit' => 'https://tao.rautakuu.org/',
   'VIP' => 'https://vip.rautakuu.org/',
-  'pr0npr0x' => 'https://1984.rautakuu.org/',
-  'Rautakuu [dot] org' => 'http://rautakuu.org/drupal',
+  'A-pu-va!' => array(
+    'url' => 'http://rautakuu.org/drupal/book',
+    'class' => 'help'
+  )
 );
 
 $blinks = array(
@@ -18,6 +19,26 @@ $blinks = array(
     'class' => 'external'
   ),
   't3h s0urc3' => 'http://svn.rautakuu.org/trac/homebrevcomputing/browser/rautakuusivut/splash',
+  't3h s0urc3' => 'http://svn.rautakuu.org/trac/homebrevcomputing/browser/rautakuusivut/splash',
+  'Server Info' => 'http://rautakuu.org/phpsysinfo/',
+  'Horde Dynamic Mail' => array(
+    'url' => 'https://horde.rautakuu.org/dimp/?frameset_loaded=1',
+    'class' => 'beta'
+   ),
+   /*
+  'pr0npr0x' =>  array(
+    'url' => 'https://1984.rautakuu.org/',
+    'class' => 'beta',
+  ),
+  */
+  'Olen Rikollinen?' => array(
+    'url' => 'http://www.olenrikollinen.org/',
+    'class' => 'external',
+  ),
+  'RoundCube email' => array(
+    'url' => 'http://rautakuu.org/roundcubemail/',
+    'class' => 'beta',
+  ),
 );
 
 /**
@@ -32,6 +53,8 @@ function lentavahollantilainen() {
     'Vote for change, vote for judgement day',
     'Rautakuu [dot] org',
     'ÄLÄ HÄTÄILE',
+    'To Serve and to Protect',
+    'Säätäminen on tuuninkia',
   );
 
   $str = $lauseet[array_rand($lauseet)];
@@ -58,7 +81,7 @@ function aboutLink(&$links) {
 
 header("Content-Type: text/html; charset=UTF-8");
 
-// Haetaan käyttäjät joilla on nettisivutilaa tietokannasta
+// Haetaan kÃ¤yttÃ¤jÃ¤t joilla on nettisivutilaa tietokannasta
 include_once("conf.inc.php");
 
 if($cyrus_dns) {
@@ -90,7 +113,6 @@ while(count($blinks) > 0) {
 
 // jos ei ole teemaa valittu, kokeillan hokasta joku.
 if(empty($_COOKIE['style'])) {
-  $theme = false;
   include_once("conf.inc.php");
   include_once("DB.php");
 
@@ -114,7 +136,7 @@ if(empty($_COOKIE['style'])) {
     }
     $res = $hlds->query("SELECT COUNT(*) FROM `watchdog` WHERE `timestamp` >  UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY)) AND `hostname` = '{$_SERVER['REMOTE_ADDR']}'");
     if($res->fetchRow() > 0) {
-      $theme = "Nausicaä";
+      $theme = "NausicaÃ¤";
     }
     $res->free();
     $drupal->disconnect();
@@ -176,13 +198,13 @@ if(empty($_COOKIE['style'])) {
     <table border="0" cellpadding="0" cellspacing="0" align="center" id="main">
       <thead>
         <tr>
-          <td align="center"><img id="logo" src="img/spacer.gif" alt="Rautakuu [dot] org" width="276" height="219" align="baseline" border="0" align="center" /></td>
+          <td align="center"><a href="http://rautakuu.org/drupal"><img id="logo" src="img/spacer.gif" alt="Rautakuu [dot] org" width="276" height="219" align="baseline" border="0" align="center" /></a></td>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td valign="bottom" height="150">
-            <form action="http://rautakuu.org/drupal/search/node" method="post" name="f">
+            <form action="http://rautakuu.org/drupal/search/opensearch" method="post" name="f">
             <table border="0" width="520" cellpadding="0" cellspacing="0" height="25">
               <tr>
                 <td align="center" valign="bottom">
@@ -193,7 +215,7 @@ if(empty($_COOKIE['style'])) {
             <table border="0" cellpadding="0" cellspacing="0" width="100%" id="navbuttons">
               <tr height="72">
                 <td align="center" valign="bottom">
-                  <a id="1a" class="q" href="http://rautakuu.org/drupal" onclick="return qs(this)"><img id="image1" src="img/rautakuu.gif" alt="Rautakuu [dot] org" onmouseover="d('1')" onmouseout="e('1')" border="0" height="35" width="35"></a><!-- SEP --><a id="2a" class="q" href="https://horde.rautakuu.org" onclick="return qs(this)"><img id="image2" src="img/horde.gif" alt="Horde email" onmouseover="d('2')" onmouseout="e('2')" border="0" height="35" width="35"></a><!-- SEP --><a id="3a" class="q" href="http://rautakuu.org/hlstats" onclick="return qs(this)"><img id="image3" src="img/cs.gif" alt="Hlstλts - Pelaajien ranking" onmouseover="d('3')" onmouseout="e('3')" border="0" height="35" width="35"></a><!-- SEP --><a id="4a" class="q" href="https://tao.rautakuu.org" onclick="return qs(this)"><img id="image4" src="img/tao.gif" alt="Tao - 道" onmouseover="d('4')" onmouseout="e('4')" border="0" height="35" width="35"></a><!-- SEP --><a id="5a" class="q" href="http://svn.rautakuu.org" onclick="return qs(this)"><img id="image5" src="img/mantis.gif" alt="Projektit" onmouseover="d('5')" onmouseout="e('5')" border="0" height="35" width="35"><!-- SEP --><a id="6a" class="q" href="javascript:document.f.submit();" onclick="return qs(this)"><img id="image6" src="img/binocular.gif" alt="Etsi" onmouseover="d('6')" onmouseout="e('6')" border="0" height="35" width="35"></a>
+                  <a id="1a" class="q" href="http://rautakuu.org/drupal" onclick="return qs(this)"><img id="image1" src="img/rautakuu.gif" alt="Rautakuu [dot] org" onmouseover="d('1')" onmouseout="e('1')" border="0" height="35" width="35"></a><!-- SEP --><a id="2a" class="q" href="https://horde.rautakuu.org" onclick="return qs(this)"><img id="image2" src="img/horde.gif" alt="Horde email" onmouseover="d('2')" onmouseout="e('2')" border="0" height="35" width="35"></a><!-- SEP --><img id="image3" src="img/cs.gif" alt="Deprecated" onmouseover="d('3')" onmouseout="e('3')" border="0" height="35" width="35"><!-- SEP --><a id="4a" class="q" href="https://tao.rautakuu.org" onclick="return qs(this)"><img id="image4" src="img/tao.gif" alt="Tao - é" onmouseover="d('4')" onmouseout="e('4')" border="0" height="35" width="35"></a><!-- SEP --><a id="5a" class="q" href="http://svn.rautakuu.org" onclick="return qs(this)"><img id="image5" src="img/mantis.gif" alt="Projektit" onmouseover="d('5')" onmouseout="e('5')" border="0" height="35" width="35"><!-- SEP --><a id="6a" class="q" href="javascript:document.f.submit();" onclick="return qs(this)"><img id="image6" src="img/binocular.gif" alt="Etsi" onmouseover="d('6')" onmouseout="e('6')" border="0" height="35" width="35"></a>
                </td>
               </tr>
             </table>
@@ -247,7 +269,7 @@ while($i < $num) {
     </table>
     <div id="copyright">
       <!--Creative Commons License-->
-      <a rel="license" href="http://creativecommons.org/licenses/by-sa/1.0/fi/">Some Rights reserved</a><!--/Creative Commons License--><!-- <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/1.0/fi/">&copy; WTF?</a><!--/Creative Commons License--><!-- <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
           <Work rdf:about="">
               <license rdf:resource="http://creativecommons.org/licenses/by-sa/1.0/fi/" />
       <dc:title>Rautakuu [dot] org</dc:title>
@@ -258,5 +280,9 @@ while($i < $num) {
       </div>
     </div>
     </div>
+  <div style="display:none;">
+<!-- <a href="http://rautakuu.org/gustydefensive.php">contact</a> -->
+<!-- <a href="mailto:spamtrap@rautakuu.org">spamtrap@rautakuu.org</a> -->
+  </div>
   </body>
 </html>

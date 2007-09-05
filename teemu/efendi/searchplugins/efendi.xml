@@ -3,7 +3,7 @@
   <ShortName>Efendi-sanakirja</ShortName>
   <Description>Efendi-sanakirjan Suomi-Englanti-Suomi haku.</Description>
   <InputEncoding>iso-8859-1</InputEncoding>
-  <Image height="16" width="16" type="image/x-icon">http://www.virtuaaliyliopisto.fi/favicon.ico</Image>
+  <Image height="16" width="16" type="image/x-icon">data:image/x-icon;base64,R0lGODlhEAAQALMAAP//////zMz/zMzMzJnMmZmZmWaZZmZmZv//mf//Zv//M///AP/M///MzP/Mmf/MZiH5BAAAAAAALAAAAAAQABAAAARaEMhJq71YjjNAOVdRAIPRGeMwToYJECS8gaQmCwNOCNJX7LmJAKcCDY7BSW5AUB2bQ8rwKDkUlh1NgEHw8V6DwBIsgQEMHLBAhqKISAYBw1UwXKykdGbPv0QAADs=</Image>
   <Url type="text/html" method="get" template="http://www.virtuaaliyliopisto.fi/index.php">
     <Param name="node" value="vy_sanakirja"/>
     <Param name="efendi_word" value="{searchTerms}"/>

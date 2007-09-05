@@ -15,6 +15,7 @@
                    em:homepageURL="http://www.virtuaaliyliopisto.fi/?node=vy_sanakirja"
                    em:iconURL="chrome://efendi/content/skin/32x32.png">
     <em:contributor>Teemu Autto</em:contributor>
+    <em:contributor>Kalle Virta</em:contributor>
     <em:targetApplication RDF:resource="rdf:#$vN+Dy"/>
   </RDF:Description>
 </RDF:RDF>

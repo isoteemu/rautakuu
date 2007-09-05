@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://efendi/chrome/skin/overlay.css" type="text/css"?>
+<overlay id="efendiOverlay" 
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  
+  <script type="application/x-javascript" src="overlay.js"/>
+
+  <popup id="contentAreaContextMenu">
+    <menuseparator id="efendi-menuitem-separator" />
+    <menuitem label="Käännä sana" id="efendi-menuitem" class="menuitem-iconic" oncommand="efendiHaku();"></menuitem>
+ </popup>
+</overlay>

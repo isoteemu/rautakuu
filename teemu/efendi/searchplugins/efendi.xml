@@ -1,0 +1,13 @@
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>Efendi-sanakirja</ShortName>
+  <Description>Efendi-sanakirjan Suomi-Englanti-Suomi haku.</Description>
+  <InputEncoding>iso-8859-1</InputEncoding>
+  <Image height="16" width="16" type="image/x-icon">http://www.virtuaaliyliopisto.fi/favicon.ico</Image>
+  <Url type="text/html" method="get" template="http://www.virtuaaliyliopisto.fi/index.php">
+    <Param name="node" value="vy_sanakirja"/>
+    <Param name="efendi_word" value="{searchTerms}"/>
+  </Url>
+  <moz:SearchForm>http://www.virtuaaliyliopisto.fi/?node=vy_sanakirja</moz:SearchForm>
+  <Contact>webmaster@virtuaaliyliopisto.fi</Contact>
+</OpenSearchDescription>

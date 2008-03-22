@@ -25,6 +25,9 @@ a {
     background-attachment: fixed;
 	background-position: center top;
     height:30px;
+    border-bottom-color : #000000;
+    border-bottom-style : solid;
+    border-bottom-width : 1px;
 }
 
 #header strong {
@@ -120,6 +123,9 @@ a {
 
 #footer {
     background-color:#282E22;
+    border-top-color : #000000;
+    border-top-style : solid;
+    border-top-width : 1px;
 }
 
 #about {

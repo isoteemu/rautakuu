@@ -61,6 +61,6 @@
     <item url="js/styleswitcher.js" uploadstatus="1" />
     <item url="css/cs.css" uploadstatus="1" />
     <item url="conf.inc.php" uploadstatus="1" />
-    <item url="css/et.css" />
+    <item url="css/et.css" uploadstatus="1" />
   </project>
 </webproject>

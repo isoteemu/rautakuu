@@ -1,0 +1,133 @@
+/* kate: space-indent true; encoding utf-8; indent-width 2; */
+#logo {
+  background-image: url('../img/rq2/rq2.png');
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-position: center center;
+  width:825px;
+  height:541px;
+}
+
+body {
+    background-color:#0f0f0f;
+}
+
+#header {
+  background: #0f0f0f url('../img/rq2/header-bg.png') top left repeat-x;
+  height:36px;
+}
+
+#container {
+    background-color:#0f0f0f;
+}
+
+#main {
+  width: 700px;
+}
+
+#main tbody {
+  display:none;
+}
+
+.searchbox {
+  padding:0;
+  padding-right:20px;
+}
+
+#footer {
+    color:#ffffff;
+    background: #000 url('../img/rq2/footer-bg.png') top left repeat-x;
+    width:100%;
+    height:100%;
+    padding-top:1px;
+  }
+
+#about {
+  background-color: #0f0f0f;
+  border: #2F2F2F solid 1px;
+}
+
+#about a {
+  padding:3px;
+  color:#2F2F2F;
+  background-color : inherit;
+  display:block;
+  text-decoration:none;
+
+
+  border: transparent solid 1px;
+
+  overflow:hidden;
+}
+
+
+#about a:hover {
+  color:#fff;
+  padding:3px;
+  background:#000 url('../img/rq2/header-bg.png') top left repeat-x;
+  text-decoration:none;
+
+  border: #2F2F2F solid 1px;
+
+  overflow:hidden;
+
+  -moz-border-radius: 0.2em;  /* Mozilla */
+  border-radius: 0.2em;       /* CSS 3 */
+}
+
+#about-left {
+  border-right-color : #2F2F2F;
+  border-right-style : solid;
+  border-right-width : 1px;
+}
+
+#about-center {
+  border-right-color : #2F2F2F;
+  border-right-style : solid;
+  border-right-width : 1px;
+  border-left-color : #000;
+  border-left-style : solid;
+  border-left-width : 1px;
+}
+
+#about-right {
+  border-left-color : #000;
+  border-left-style : solid;
+  border-left-width : 1px;
+}
+
+#copyright {
+  clear:both;
+  background: #0f0f0f url('../img/rq2/copy-bg.png') repeat-x center top;
+  color : #2F2F2F;
+  width : 100%;
+  height: 50px;
+  text-align : center;
+  padding-top:20px;
+}
+
+#copyright a {
+  color : #2F2F2F;
+  text-decoration:none;
+  vertical-align:middle;
+}
+
+#copyright a:hover{
+  color:#fff;
+  background-color : #000;
+}
+
+a.external {
+    background: url('../img/rq2/network.png') center right no-repeat;
+    padding-right: 16px;
+}
+
+a.help {
+    background: url('../img/rq2/book.png') center right no-repeat;
+    padding-right: 16px;
+}
+
+a.beta {
+    background: url('../img/rq2/bell.png') center right no-repeat;
+    padding-right: 16px;
+}

@@ -24,6 +24,17 @@ a.external {
     padding-right: 13px;
 }
 
+a.beta {
+    background: url('../img/idea.png') center right no-repeat;
+    padding-right: 16px;
+}
+
+a.help {
+    background: url('../img/help.png') center right no-repeat;
+    padding-right: 16px;
+}
+
+
 #header {
     text-align:right;
 

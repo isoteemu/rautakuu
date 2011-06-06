@@ -1,23 +1,23 @@
-== Rautakuu [dot] org » HLstλts ==
+== Rautakuu `[`dot`]` org » HLstλts ==
 
 Rautakuun [http://rautakuu.org/hlstats hlstats] on customoitu [http://www.unitedadmins.com/index.php?p=content&content=hlstats United Adminsin Hlstatsista]. Projekti sai alkunsa siitä, että Valve julkaisi (taas) päivityksen, joka rikkoi vanhan CSn yhteensopivuutta. Samalla se myös rikkoi Hlstatsin ominaisuuksia, ja koska hlstatsia ei ole kehitetty enään pidempään aikaan, päätettiin itse korjata ongelma.
 Myöhemmässä vaiheessa myös ominaisuuksia alettiin lisätä, joista monet ovat backportteja [http://www.hlstatsx.com HLstatsX:stä].
 
 === Parannuksia vakio-hlstatsiin satunnaisessa järjestyksessä ===
- * '''Hakukone ystävälliset urlit''' [[br]] Aluperäinen hlstats käytti GET metodia urleissa. Toimii, mutteivat hakukoneet tykkää. Haxin avulla koodissa urlit muutettaan hakukoneystävällisemmiksi.
- * '''Sivujen cacheaminen, pakkaaminen ja esihaku''' [[br]] Monet tietokannan käsittelyyn lisätyt joinit tekevät sivujen aukeamisesta hidasta, aktiivisessa ja pitkän aikavälin tarkastelussa. Niinpä ensinnäkin sivut pyritään cahceamaan. Toiseksi, myös sivut on mahdollista pakata nettikaistan säästämiseksi (puhtaan tekstin pakkaus säästää paljon kaistaa ja vie vähän tehoa). Ja, lisäksi mozilla sisältää mahdollisuuden [http://www.mozilla.org/projects/netlib/Link_Prefetching_FAQ.html#What_is_link_prefetching "esihakea"] sivut, joille mahdollisesti käyttäjä seuraavaksi sunnistaa.
- * '''Sijoituksen näyttö pelaajan tietosivulla''' [[br]] Vaikea uskoa että tämä omiaisuus uupui alkuperäisestä hlstatsista.
- * '''Pankissa olevat hyffet''' [[br]] Rautakuun erikoisuuksiin kuuluu [http://rautakuu.org/drupal/node/26 VIPeille] [http://rautakuu.org/drupal/cs-pankki pankkipalvelut]. Näyttää rahasumman pankkitilillä.
- * '''amxbans tukì''' [[br]] [http://www.amxbans.net/ AMX Bans] tuki. Näyttää bannitut pelaajat
- * '''Vac bannien huomaus''' [[br]] Jatkoa amx bans tuelle, bannii amxbans kantaan pelaajan, jos pelaaja saa VAC bannit.
- * '''Parannuksia serverin tietojen näytössä''' [[br]] Jos serverillä ei ole pelaajia, voi kuka tahansa vaihtaa serverin mappia. Lisäksi myös heti hlstatsin etusivulla näytetään serverin senhetkinen kartta ja pelaajamäärä.
- * '''Skillin ja rankingin kehitys''' [[br]] Näyttää onko skill ja/tai rankin muuttunut viikon takaiseen.
- * '''Aktiivisten pelaajien ranking''' [[br]] Jos pelaaja ei ole pelannut N päivän aikana serverillä, häntä käsitellään inaktiivisena, ja sijoitus poistetaan. skill ja tiedot pysyvät kannassa, ja sijoitus lasketaan heti uudestaan pelaajan taas alkaessa pelaamisen.
- * '''RSS uutisten esitys''' [[br]] Voidaan esittää uutisia hlstatsin etusivulla pohjautuen RSS newsfeediin.
- * '''Maatuki''' [[br]] Käyttämälle Geoip:tä, kertoo mistä päin mailmaa pelaaja on.
- * '''Rautakuu [dot] org specifikoituja muutoksia''' [[br]] Ominaisuuksia mm hakea rautakuun käyttäjäkannasta pelaajalle tiedot etc.
- * '''"Tuki" [http://admins.fi/banlist/bans/ admins.fi], [http://area51.pelikaista.net/csbans/ban_list.php aurian] ja [http://pelit.surffi.net/ban4/ban_list.php SurffiNET] banneille''' [[br]] Tuella tarkoitetaan sitä, että jos pelaaja on bannittu, näkyy kuvake sijoituksen vieressä banniin.
- * '''[http://www.gravatar.com/ Gravatar] kuvat''' [[br]] Jos pelaaja on asettanut Avatarin joko drupalissa, tai asettanut hlstatsiin sähköpostinsa sekä omaa GRavatarin, on pelaajan sivulla avatarin kuvake.
+ * *Hakukone ystävälliset urlit* <br> Aluperäinen hlstats käytti GET metodia urleissa. Toimii, mutteivat hakukoneet tykkää. Haxin avulla koodissa urlit muutettaan hakukoneystävällisemmiksi.
+ * *Sivujen cacheaminen, pakkaaminen ja esihaku* <br> Monet tietokannan käsittelyyn lisätyt joinit tekevät sivujen aukeamisesta hidasta, aktiivisessa ja pitkän aikavälin tarkastelussa. Niinpä ensinnäkin sivut pyritään cahceamaan. Toiseksi, myös sivut on mahdollista pakata nettikaistan säästämiseksi (puhtaan tekstin pakkaus säästää paljon kaistaa ja vie vähän tehoa). Ja, lisäksi mozilla sisältää mahdollisuuden [http://www.mozilla.org/projects/netlib/Link_Prefetching_FAQ.html#What_is_link_prefetching "esihakea"] sivut, joille mahdollisesti käyttäjä seuraavaksi sunnistaa.
+ * *Sijoituksen näyttö pelaajan tietosivulla* <br> Vaikea uskoa että tämä omiaisuus uupui alkuperäisestä hlstatsista.
+ * *Pankissa olevat hyffet* <br> Rautakuun erikoisuuksiin kuuluu [http://rautakuu.org/drupal/node/26 VIPeille] [http://rautakuu.org/drupal/cs-pankki pankkipalvelut]. Näyttää rahasumman pankkitilillä.
+ * *amxbans tukì* <br> [http://www.amxbans.net/ AMX Bans] tuki. Näyttää bannitut pelaajat
+ * *Vac bannien huomaus* <br> Jatkoa amx bans tuelle, bannii amxbans kantaan pelaajan, jos pelaaja saa VAC bannit.
+ * *Parannuksia serverin tietojen näytössä* <br> Jos serverillä ei ole pelaajia, voi kuka tahansa vaihtaa serverin mappia. Lisäksi myös heti hlstatsin etusivulla näytetään serverin senhetkinen kartta ja pelaajamäärä.
+ * *Skillin ja rankingin kehitys* <br> Näyttää onko skill ja/tai rankin muuttunut viikon takaiseen.
+ * *Aktiivisten pelaajien ranking* <br> Jos pelaaja ei ole pelannut N päivän aikana serverillä, häntä käsitellään inaktiivisena, ja sijoitus poistetaan. skill ja tiedot pysyvät kannassa, ja sijoitus lasketaan heti uudestaan pelaajan taas alkaessa pelaamisen.
+ * *RSS uutisten esitys* <br> Voidaan esittää uutisia hlstatsin etusivulla pohjautuen RSS newsfeediin.
+ * *Maatuki* <br> Käyttämälle Geoip:tä, kertoo mistä päin mailmaa pelaaja on.
+ * *Rautakuu [dot] org specifikoituja muutoksia* <br> Ominaisuuksia mm hakea rautakuun käyttäjäkannasta pelaajalle tiedot etc.
+ * *"Tuki" [http://admins.fi/banlist/bans/ admins.fi], [http://area51.pelikaista.net/csbans/ban_list.php aurian] ja [http://pelit.surffi.net/ban4/ban_list.php SurffiNET] banneille* <br> Tuella tarkoitetaan sitä, että jos pelaaja on bannittu, näkyy kuvake sijoituksen vieressä banniin.
+ * *[http://www.gravatar.com/ Gravatar] kuvat* <br> Jos pelaaja on asettanut Avatarin joko drupalissa, tai asettanut hlstatsiin sähköpostinsa sekä omaa GRavatarin, on pelaajan sivulla avatarin kuvake.
 === TEH S0URC3C0D3 ===
 SVN: https://rautakuu.googlecode.com/svn/hlstats/
 

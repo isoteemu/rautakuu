@@ -14,18 +14,10 @@ Primary design use for Irc Scroller is to display irc-logs as real-time updating
   * Smart (n+1) calculation in client side, when next update should be fetched.
   * [http://www.mirc.net/newbie/colors.php Mirc colors].
 
-== Download ==
- * Fetch directly from [/repos/homebrevcomputing/rautakuusivut/irclog.php subversion]
- * WebSVN: source:rautakuusivut/irclog.php ([/trac/homebrevcomputing/log/rautakuusivut/irclog.php ChangeLog])
- * Latest snapshot: attachment:ircscroller.tar.gz
- * Or look from bottom, section "Attachements"
-
 == Demos, Documents and Links ==
- * '''Demos'''[[br]]
+ * '''Demos'''
    * [http://rsl.sivut.rautakuu.org/index.php?menu=2 RSL webpages]. Uses !MiniTeemus offered logging.
    * [http://rolleweb.net/irc RolleWeb]
    * [http://rautakuu.org/drupal/ Rautakuu frontpage], where it has been operated over two years now.
- * .. which brings as naturally to our support channel, [irc://irc.quakenet.org/#rautakuu #rautakuu @ QuakeNET]
  * IrcScrollerSetup -- Documentation for Irc Scroller setup
- * http://rautakuu.org/drupal/node/88 -- How to get irc scroller working in your web page; the easy way (in Finnish).
  * http://www.gnu.org/licenses/gpl.txt -- License text for Irc Scroller.

@@ -1,0 +1,61 @@
+== hlstats_Adminsfi_Cache ==
+Tämä taulu toimii cachena ulkopuolisilta haetuille banneille.<br>
+ * {{{uniqueId}}}<br> Sarake tallettaa haettavan käyttäjän SteamID:n
+ * {{{group}}}<br> Bannin ryhmä, akai lähde. Tämä sekä {{{uniqueId}}} muodostavat taulun avaimen.
+ * {{{checked}}}<br> Aika, jolloin viimeksi bannin tilanne on tarkastettu. Idea on luonnollisestikkin se, että vanhimmat bannit päivitetään ensimmäisenä.
+ * {{{result}}}<br> Bannin haun tuloksen linkkiurl.
+
+{{{
+CREATE TABLE `hlstats_Adminsfi_Cache` (
+  `uniqueId` varchar(64) NOT NULL default '',
+  `group` varchar(32) NOT NULL default '',
+  `checked` datetime NOT NULL default '0000-00-00 00:00:00',
+  `result` varchar(255) default NULL,
+  PRIMARY KEY  (`uniqueId`,`group`),
+  KEY `checked` (`checked`)
+) ENGINE=MyISAM;
+}}}
+
+== hlstats_Link_Trace ==
+Sisältää jäljityksen siitä, kuka mennyt minnekkin sivuille. Tätä tietoa sitten jälkikäteen käytetään arvailemaan, minkä sivun selaimen kannattaisi hakea ennakkoon. Jos koneessa vähäänkään vääntöä, kannatta tämä ominaisuus poistaa lähdekoodista, koska se on *köh*paska*köh*.
+
+{{{
+CREATE TABLE `hlstats_Link_Trace` (
+  `id` int(11) NOT NULL auto_increment,
+  `time` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  `whom` varchar(16) NOT NULL default '',
+  `from` varchar(255) NOT NULL default '',
+  `to` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`id`),
+  KEY `whom` (`whom`)
+) ENGINE=MyISAM;
+}}}
+
+== hlstats_Old_Rank ==
+Pitää vanhat sijoitukset. Joka viikko cronissa nuketetaan, ja kopioidaan uudet rankingit. Heikkoa, mutta toimii(tm).
+{{{
+CREATE TABLE `hlstats_Old_Rank` (
+  `rank` int(10) unsigned default NULL,
+  `skill` int(11) unsigned NOT NULL default '1000',
+  `playerId` int(10) NOT NULL default '0',
+  `game` varchar(16) NOT NULL default 'cstrike',
+  PRIMARY KEY  (`playerId`),
+  KEY `rank` (`rank`)
+) ENGINE=MyISAM;
+}}}
+
+== hlstats_Events_Chat ==
+Löydetty jostain kolmannen osapuolen hlstats-patcheistä.
+{{{
+CREATE TABLE `hlstats_Events_Chat` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `eventTime` datetime NOT NULL default '0000-00-00 00:00:00',
+  `serverid` int(10) unsigned NOT NULL default '0',
+  `playerid` int(10) unsigned NOT NULL default '0',
+  `type` smallint(6) NOT NULL default '0',
+  `message` text NOT NULL,
+  `map` varchar(20) NOT NULL default '',
+  PRIMARY KEY  (`id`),
+  KEY `eventTime` (`eventTime`)
+) ENGINE=MyISAM;
+}}}

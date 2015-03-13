@@ -1,0 +1,110 @@
+# Irc Scroller Setup #
+
+Irc scroller contains just an one php script. To get it working, you obviously need an supported irc log, and PHP enabled web-server. Setup for those are beyond scope of this document.
+
+## Configuring Irc Scroller ##
+Open ircscroller php file using your [favorite text editor](http://www.kate-editor.org/). At the beginning of file, you find some configurable parameters.
+```
+// kate: space-indent true; encoding utf-8; indent-width 4;
+$rev = '$Id: irclog.php 292 2006-10-09 12:51:26Z teemu $';
+```
+Leave it as-it.
+
+```
+// Storage driver. currently supported:
+// * DB - uses pear DB layer
+// * logfile - reads messages from logfile
+$storage = "DB";
+```
+Log file format. This is important. set it to `DB`, if you're using [Pear\_DB](http://pear.php.net/DB) logformat (not probably). Set it to `logfile` if you're using file-based logs (choose this).
+
+### File storage ###
+```
+//
+// logfile storage
+//
+
+// logfile
+$logfile = "/home/isoteemu/irclogs/QuakeNET/#rautakuu.log";
+
+```
+`/path/to/our/log.file` if you're using logfile storage.
+
+```
+// Starting offset in bytes (how many bytes are readed from end of file?)
+$startoffsetbytes = 2048;
+```
+How many bytes are reader at the end of logfile at the Irc Scroller initialization phase. If you don't know what to answer, leave it default. default is 10-20 lines of common irc-chattering.
+
+```
+// Format of logfile. Currently supported:
+// * mirc - For those who use m-IRC (or compatible logfile format)
+// * irssi - For default irssi logfiles
+// * egg - Eggdrop logfile (set quick-logs 1 on eggdrop to see dynamic updates)
+$logfileformat = "irssi";
+```
+If you're using file-based storage, which logfile parser should be used.
+
+### Database storage ###
+```
+//
+// DB storage
+//
+
+// DB dns
+$dbdns = "mysql://miniteemu:*******@localhost/rautakuuirc";
+```
+Database storage settings. If you're not using DB as your `$storage`, just skip them. If you are, `$dbdns` holds pear\_db connection string. Look more from pears documentation.
+
+```
+// How many rows to show at begining?
+$startrows = 20;
+
+```
+At the initialization phase, how many rows should be fetched.
+
+```
+// Default channel. Currently only on DB.
+$channel = "#rautakuu";
+```
+Channel to be fetched by default.
+
+### Throttling ###
+```
+// "throtling".
+// If system is near this AVG load, (%80),
+// fetching new messages are delayed.
+// Set $loadavg to false if throtling is not wanted
+// (eg, in windows enviroment, it does not work).
+$loadavg = 4;
+```
+If you're not concerned about possible loads on server, or think Irc Scroller is an important feature, or you're not using linux/unix which supports average thru /proc, set `$loadavg = false;`. But if you want throttling, this is the place to set desired throttling average level. It's heavily depended on hardware under the hood, and 4 is ration for our 400mhz Pentium II. in `uptime` command output, look for 5min average (last number).
+
+```
+$delaytime = 5;
+```
+`$delaytime` is time in seconds, how long to delay if average level is reached. There is small calculation preceding it, so final time will vary, depending on actual average.
+
+```
+$maxdelay = 10;
+```
+`$maxdelay` defines, how long at maximum throttling will occur.
+
+### Misc ###
+```
+// Scrolling method.
+// As RSL whished, if you don't want to use smooth scrolling,
+// set this to false, so windows allways moves to bottom without
+// smooth scrolling
+$smoothscrolling = (string) "true";
+```
+Not to name any [persons](http://rsl.sivut.rautakuu.org), but it was requested that smooth scrolling would be disabled, and so `$smoothscrolling` exists. If you want scroll to immediately jump at bottom of the messages, instead of slowly moving near bottom, set this to `false`.
+
+
+
+```
+<!-- ET function; Calls home and bitches our revision. -->
+<!-- Won't harm you, but feel free to remove.          -->
+<script type="text/javascript" src="http://teemu.sivut.rautakuu.org/rautakuu/irclog.js?rev=<?= urlencode($rev); ?>"></script>
+```
+At near bottom, you find that line. By removing it, you'll disable spyw...feature, that allows us to create better software. But in any other way, remove of it wont affect Irc Scroller.
